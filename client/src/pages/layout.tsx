@@ -4,6 +4,8 @@ import { Header } from '@/components/header';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import { useLocation } from 'wouter';
+import { BackButton } from '@/components/ui/back-button';
 
 interface LayoutProps {
   children: React.ReactNode;
