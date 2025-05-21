@@ -29,7 +29,15 @@ import {
   insertGoalSchema,
   insertAchievementSchema,
   insertUserAchievementSchema,
-  insertSettingSchema
+  insertSettingSchema,
+  // Marketing & Engagement schemas
+  insertAudienceSegmentSchema,
+  insertSegmentMemberSchema,
+  insertEmailTemplateSchema,
+  insertMarketingChannelSchema,
+  insertContactFormSchema,
+  insertFormSubmissionSchema,
+  insertEngagementMetricSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1228,6 +1236,520 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Falha ao excluir conquista" });
+    }
+  });
+  
+  // ==========================================================================
+  // MARKETING E ENGAJAMENTO - AUDIENCE SEGMENTS (SEGMENTOS DE PÚBLICO)
+  // ==========================================================================
+  app.get("/api/audience-segments", async (req, res) => {
+    try {
+      const segments = await storage.listAudienceSegments();
+      res.json(segments);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar segmentos de público" });
+    }
+  });
+  
+  app.get("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de segmento inválido" });
+      }
+      
+      const segment = await storage.getAudienceSegment(id);
+      if (!segment) {
+        return res.status(404).json({ message: "Segmento não encontrado" });
+      }
+      
+      res.json(segment);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar segmento de público" });
+    }
+  });
+  
+  app.post("/api/audience-segments", async (req, res) => {
+    try {
+      const validatedData = insertAudienceSegmentSchema.parse(req.body);
+      const segment = await storage.createAudienceSegment(validatedData);
+      res.status(201).json(segment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de segmento inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar segmento de público" });
+    }
+  });
+  
+  app.put("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de segmento inválido" });
+      }
+      
+      const validatedData = insertAudienceSegmentSchema.partial().parse(req.body);
+      const updatedSegment = await storage.updateAudienceSegment(id, validatedData);
+      
+      if (!updatedSegment) {
+        return res.status(404).json({ message: "Segmento não encontrado" });
+      }
+      
+      res.json(updatedSegment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de segmento inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar segmento de público" });
+    }
+  });
+  
+  app.delete("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de segmento inválido" });
+      }
+      
+      const deleted = await storage.deleteAudienceSegment(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Segmento não encontrado" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir segmento de público" });
+    }
+  });
+  
+  // Segment Members API
+  app.get("/api/audience-segments/:segmentId/members", async (req, res) => {
+    try {
+      const segmentId = Number(req.params.segmentId);
+      if (isNaN(segmentId)) {
+        return res.status(400).json({ message: "ID de segmento inválido" });
+      }
+      
+      const members = await storage.listSegmentMembers(segmentId);
+      res.json(members);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar membros do segmento" });
+    }
+  });
+  
+  app.post("/api/audience-segments/:segmentId/members", async (req, res) => {
+    try {
+      const segmentId = Number(req.params.segmentId);
+      const { contactId } = req.body;
+      
+      if (isNaN(segmentId) || !contactId) {
+        return res.status(400).json({ message: "ID de segmento ou contato inválido" });
+      }
+      
+      const member = await storage.addContactToSegment(segmentId, contactId);
+      res.status(201).json(member);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao adicionar contato ao segmento" });
+    }
+  });
+  
+  app.delete("/api/audience-segments/:segmentId/members/:contactId", async (req, res) => {
+    try {
+      const segmentId = Number(req.params.segmentId);
+      const contactId = Number(req.params.contactId);
+      
+      if (isNaN(segmentId) || isNaN(contactId)) {
+        return res.status(400).json({ message: "ID de segmento ou contato inválido" });
+      }
+      
+      const deleted = await storage.removeContactFromSegment(segmentId, contactId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Membro não encontrado no segmento" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao remover contato do segmento" });
+    }
+  });
+  
+  // ==========================================================================
+  // MARKETING E ENGAJAMENTO - EMAIL TEMPLATES (MODELOS DE EMAIL)
+  // ==========================================================================
+  app.get("/api/email-templates", async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const templates = await storage.listEmailTemplates(category);
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar modelos de email" });
+    }
+  });
+  
+  app.get("/api/email-templates/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de modelo inválido" });
+      }
+      
+      const template = await storage.getEmailTemplate(id);
+      if (!template) {
+        return res.status(404).json({ message: "Modelo de email não encontrado" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar modelo de email" });
+    }
+  });
+  
+  app.post("/api/email-templates", async (req, res) => {
+    try {
+      const validatedData = insertEmailTemplateSchema.parse(req.body);
+      const template = await storage.createEmailTemplate(validatedData);
+      res.status(201).json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de modelo inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar modelo de email" });
+    }
+  });
+  
+  app.put("/api/email-templates/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de modelo inválido" });
+      }
+      
+      const validatedData = insertEmailTemplateSchema.partial().parse(req.body);
+      const updatedTemplate = await storage.updateEmailTemplate(id, validatedData);
+      
+      if (!updatedTemplate) {
+        return res.status(404).json({ message: "Modelo de email não encontrado" });
+      }
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de modelo inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar modelo de email" });
+    }
+  });
+  
+  app.delete("/api/email-templates/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de modelo inválido" });
+      }
+      
+      const deleted = await storage.deleteEmailTemplate(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Modelo de email não encontrado" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir modelo de email" });
+    }
+  });
+  
+  // ==========================================================================
+  // MARKETING E ENGAJAMENTO - MARKETING CHANNELS (CANAIS DE MARKETING)
+  // ==========================================================================
+  app.get("/api/marketing-channels", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const channels = await storage.listMarketingChannels(type);
+      res.json(channels);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar canais de marketing" });
+    }
+  });
+  
+  app.get("/api/marketing-channels/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de canal inválido" });
+      }
+      
+      const channel = await storage.getMarketingChannel(id);
+      if (!channel) {
+        return res.status(404).json({ message: "Canal de marketing não encontrado" });
+      }
+      
+      res.json(channel);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar canal de marketing" });
+    }
+  });
+  
+  app.post("/api/marketing-channels", async (req, res) => {
+    try {
+      const validatedData = insertMarketingChannelSchema.parse(req.body);
+      const channel = await storage.createMarketingChannel(validatedData);
+      res.status(201).json(channel);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de canal inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar canal de marketing" });
+    }
+  });
+  
+  app.put("/api/marketing-channels/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de canal inválido" });
+      }
+      
+      const validatedData = insertMarketingChannelSchema.partial().parse(req.body);
+      const updatedChannel = await storage.updateMarketingChannel(id, validatedData);
+      
+      if (!updatedChannel) {
+        return res.status(404).json({ message: "Canal de marketing não encontrado" });
+      }
+      
+      res.json(updatedChannel);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de canal inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar canal de marketing" });
+    }
+  });
+  
+  app.delete("/api/marketing-channels/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de canal inválido" });
+      }
+      
+      const deleted = await storage.deleteMarketingChannel(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Canal de marketing não encontrado" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir canal de marketing" });
+    }
+  });
+  
+  // ==========================================================================
+  // MARKETING E ENGAJAMENTO - CONTACT FORMS (FORMULÁRIOS DE CONTATO)
+  // ==========================================================================
+  app.get("/api/contact-forms", async (req, res) => {
+    try {
+      const forms = await storage.listContactForms();
+      res.json(forms);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar formulários de contato" });
+    }
+  });
+  
+  app.get("/api/contact-forms/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de formulário inválido" });
+      }
+      
+      const form = await storage.getContactForm(id);
+      if (!form) {
+        return res.status(404).json({ message: "Formulário de contato não encontrado" });
+      }
+      
+      res.json(form);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar formulário de contato" });
+    }
+  });
+  
+  app.post("/api/contact-forms", async (req, res) => {
+    try {
+      const validatedData = insertContactFormSchema.parse(req.body);
+      const form = await storage.createContactForm(validatedData);
+      res.status(201).json(form);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de formulário inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar formulário de contato" });
+    }
+  });
+  
+  app.put("/api/contact-forms/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de formulário inválido" });
+      }
+      
+      const validatedData = insertContactFormSchema.partial().parse(req.body);
+      const updatedForm = await storage.updateContactForm(id, validatedData);
+      
+      if (!updatedForm) {
+        return res.status(404).json({ message: "Formulário de contato não encontrado" });
+      }
+      
+      res.json(updatedForm);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de formulário inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar formulário de contato" });
+    }
+  });
+  
+  app.delete("/api/contact-forms/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de formulário inválido" });
+      }
+      
+      const deleted = await storage.deleteContactForm(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Formulário de contato não encontrado" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir formulário de contato" });
+    }
+  });
+  
+  // Form Submissions API
+  app.get("/api/form-submissions", async (req, res) => {
+    try {
+      const formId = req.query.formId ? Number(req.query.formId) : undefined;
+      const submissions = await storage.listFormSubmissions(formId);
+      res.json(submissions);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar submissões de formulário" });
+    }
+  });
+  
+  app.get("/api/form-submissions/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de submissão inválido" });
+      }
+      
+      const submission = await storage.getFormSubmission(id);
+      if (!submission) {
+        return res.status(404).json({ message: "Submissão de formulário não encontrada" });
+      }
+      
+      res.json(submission);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar submissão de formulário" });
+    }
+  });
+  
+  app.post("/api/form-submissions", async (req, res) => {
+    try {
+      const validatedData = insertFormSubmissionSchema.parse(req.body);
+      const submission = await storage.createFormSubmission(validatedData);
+      res.status(201).json(submission);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de submissão inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar submissão de formulário" });
+    }
+  });
+  
+  app.patch("/api/form-submissions/:id/status", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de submissão inválido" });
+      }
+      
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status não informado" });
+      }
+      
+      const submission = await storage.updateFormSubmissionStatus(id, status);
+      if (!submission) {
+        return res.status(404).json({ message: "Submissão de formulário não encontrada" });
+      }
+      
+      res.json(submission);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao atualizar status da submissão" });
+    }
+  });
+  
+  // ==========================================================================
+  // MARKETING E ENGAJAMENTO - ENGAGEMENT METRICS (MÉTRICAS DE ENGAJAMENTO)
+  // ==========================================================================
+  app.post("/api/engagement-metrics", async (req, res) => {
+    try {
+      const validatedData = insertEngagementMetricSchema.parse(req.body);
+      const metric = await storage.recordEngagement(validatedData);
+      res.status(201).json(metric);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de métrica inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao registrar métrica de engajamento" });
+    }
+  });
+  
+  app.get("/api/contacts/:contactId/engagements", async (req, res) => {
+    try {
+      const contactId = Number(req.params.contactId);
+      if (isNaN(contactId)) {
+        return res.status(400).json({ message: "ID de contato inválido" });
+      }
+      
+      const engagements = await storage.getContactEngagements(contactId);
+      res.json(engagements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar engajamentos do contato" });
+    }
+  });
+  
+  app.get("/api/engagements/by-event/:eventType", async (req, res) => {
+    try {
+      const { eventType } = req.params;
+      if (!eventType) {
+        return res.status(400).json({ message: "Tipo de evento não informado" });
+      }
+      
+      const engagements = await storage.getEventTypeEngagements(eventType);
+      res.json(engagements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar engajamentos por tipo de evento" });
+    }
+  });
+  
+  app.get("/api/engagements/by-source/:sourceType/:sourceId?", async (req, res) => {
+    try {
+      const { sourceType } = req.params;
+      const sourceId = req.params.sourceId ? Number(req.params.sourceId) : undefined;
+      
+      if (!sourceType) {
+        return res.status(400).json({ message: "Tipo de fonte não informado" });
+      }
+      
+      const engagements = await storage.getSourceEngagements(sourceType, sourceId);
+      res.json(engagements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar engajamentos por fonte" });
     }
   });
   
