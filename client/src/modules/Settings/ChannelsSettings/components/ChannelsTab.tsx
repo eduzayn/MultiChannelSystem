@@ -33,8 +33,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { QRCodeSVG } from "qrcode.react";
-import QRCodeDisplay from "@/components/QRCodeDisplay";
+// Importando de forma compatível com a versão atual instalada
+import * as QRCodeReact from "qrcode.react";
 
 export const ChannelsTab = () => {
   // Estados principais
@@ -587,7 +587,24 @@ export const ChannelsTab = () => {
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
-                      <QRCodeDisplay qrCodeData={channelQrCodeData} isImage={true} />
+                      {channelQrCodeData && (
+                        <>
+                          {channelQrCodeData.startsWith('data:image') ? (
+                            <img 
+                              src={channelQrCodeData} 
+                              alt="QR Code para WhatsApp" 
+                              style={{ maxWidth: '100%', height: 'auto' }}
+                            />
+                          ) : (
+                            <QRCodeReact.QRCodeSVG
+                              value={channelQrCodeData}
+                              size={256}
+                              level="H"
+                              includeMargin={true}
+                            />
+                          )}
+                        </>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
