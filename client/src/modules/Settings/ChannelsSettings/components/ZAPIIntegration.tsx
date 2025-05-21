@@ -528,12 +528,24 @@ export const ZAPIIntegration = () => {
           </DialogHeader>
           
           {qrCodeData ? (
-            <div className="flex justify-center p-4 bg-white rounded-md">
-              <img 
-                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://z-api.io/testewhatsapp"
-                alt="QR Code para WhatsApp" 
-                className="max-w-full h-auto"
-              />
+            <div className="flex flex-col items-center p-4 bg-white rounded-md gap-4">
+              <div className="w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md relative">
+                <img 
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://z-api.io/testewhatsapp"
+                  alt="QR Code para WhatsApp" 
+                  className="max-w-full h-auto"
+                />
+              </div>
+              
+              <div className="text-center mt-4">
+                <h3 className="text-lg font-semibold mb-2">Ou insira o código manualmente</h3>
+                <div className="bg-gray-100 p-3 rounded-md font-mono text-center">
+                  {qrCodeData}
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  No WhatsApp, vá em Configurações &gt; Dispositivos Conectados &gt; Parear usando código
+                </p>
+              </div>
             </div>
           ) : (
             <div className="flex justify-center p-12">

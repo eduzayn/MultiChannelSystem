@@ -145,8 +145,8 @@ export async function getZapiQRCode(
     if (process.env.NODE_ENV === 'development' || !instanceId || instanceId === 'test') {
       console.log("Usando simulação para QR Code (apenas para teste)");
       
-      // QR Code simulado (URL direta de uma imagem online) para eliminar problemas de formatação base64
-      const mockQRCode = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://z-api.io/testewhatsapp";
+      // Código simulado para conectar o WhatsApp
+      const mockQRCode = "1-2ABCD-34EFGH-5IJKL";
       
       return {
         success: true,
@@ -155,9 +155,10 @@ export async function getZapiQRCode(
     }
     
     // Chamada real à API Z-API
-    // Conforme documentação da Z-API: https://developer.z-api.io/instance/qrcode
+    // Endpoint para obter o QR Code em formato de texto (código)
+    // Referência: https://developer.z-api.io/instance/qrcode
     const response = await axios.get(
-      `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code`,
+      `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/text`,
       { 
         headers: getHeadersWithToken(clientToken),
         responseType: 'json'
