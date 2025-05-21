@@ -599,8 +599,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
       </ScrollArea>
       
       {/* Campo de entrada de mensagem */}
-      <div className="border-t">
-        <div className="p-3">
+      <div className="border-t flex justify-center">
+        <div className="max-w-3xl w-full p-3">
           <div className="flex flex-col">
             {/* Sugestões */}
             <div className="mb-2 flex gap-2 overflow-x-auto">
