@@ -6,7 +6,9 @@ import {
   insertUserSchema, 
   insertContactSchema, 
   insertCompanySchema, 
-  insertDealSchema 
+  insertDealSchema,
+  insertConversationSchema,
+  insertMessageSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -294,6 +296,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete deal" });
+    }
+  });
+
+  // Conversations API
+  app.get("/api/conversations", async (req, res) => {
+    try {
+      const conversations = await storage.listConversations();
+      res.json(conversations);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar conversas" });
+    }
+  });
+
+  app.get("/api/conversations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conversa inválido" });
+      }
+      
+      const conversation = await storage.getConversation(id);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversa não encontrada" });
+      }
+      
+      res.json(conversation);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar conversa" });
+    }
+  });
+
+  app.post("/api/conversations", async (req, res) => {
+    try {
+      const validatedData = insertConversationSchema.parse(req.body);
+      const conversation = await storage.createConversation(validatedData);
+      res.status(201).json(conversation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de conversa inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar conversa" });
+    }
+  });
+
+  app.put("/api/conversations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conversa inválido" });
+      }
+      
+      const validatedData = insertConversationSchema.partial().parse(req.body);
+      const updatedConversation = await storage.updateConversation(id, validatedData);
+      
+      if (!updatedConversation) {
+        return res.status(404).json({ message: "Conversa não encontrada" });
+      }
+      
+      res.json(updatedConversation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de conversa inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar conversa" });
+    }
+  });
+
+  app.delete("/api/conversations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conversa inválido" });
+      }
+      
+      const deleted = await storage.deleteConversation(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Conversa não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir conversa" });
+    }
+  });
+
+  // Messages API
+  app.get("/api/conversations/:conversationId/messages", async (req, res) => {
+    try {
+      const conversationId = Number(req.params.conversationId);
+      if (isNaN(conversationId)) {
+        return res.status(400).json({ message: "ID de conversa inválido" });
+      }
+      
+      const messages = await storage.listMessagesByConversation(conversationId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar mensagens" });
+    }
+  });
+
+  app.get("/api/messages/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de mensagem inválido" });
+      }
+      
+      const message = await storage.getMessage(id);
+      if (!message) {
+        return res.status(404).json({ message: "Mensagem não encontrada" });
+      }
+      
+      res.json(message);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar mensagem" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const validatedData = insertMessageSchema.parse(req.body);
+      const message = await storage.createMessage(validatedData);
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de mensagem inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar mensagem" });
+    }
+  });
+
+  app.put("/api/messages/:id/status", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de mensagem inválido" });
+      }
+      
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({ message: "Status não informado" });
+      }
+      
+      const message = await storage.updateMessageStatus(id, status);
+      if (!message) {
+        return res.status(404).json({ message: "Mensagem não encontrada" });
+      }
+      
+      res.json(message);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao atualizar status da mensagem" });
     }
   });
 

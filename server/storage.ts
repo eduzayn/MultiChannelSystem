@@ -2,8 +2,12 @@ import {
   users, type User, type InsertUser,
   contacts, type Contact, type InsertContact,
   companies, type Company, type InsertCompany,
-  deals, type Deal, type InsertDeal 
+  deals, type Deal, type InsertDeal,
+  conversations, type Conversation, type InsertConversation,
+  messages, type Message, type InsertMessage 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, or, and, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -33,224 +37,242 @@ export interface IStorage {
   createDeal(deal: InsertDeal): Promise<Deal>;
   updateDeal(id: number, deal: Partial<InsertDeal>): Promise<Deal | undefined>;
   deleteDeal(id: number): Promise<boolean>;
+
+  // Conversation operations
+  getConversation(id: number): Promise<Conversation | undefined>;
+  listConversations(): Promise<Conversation[]>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  updateConversation(id: number, conversation: Partial<InsertConversation>): Promise<Conversation | undefined>;
+  deleteConversation(id: number): Promise<boolean>;
+
+  // Message operations
+  getMessage(id: number): Promise<Message | undefined>;
+  listMessagesByConversation(conversationId: number): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  updateMessageStatus(id: number, status: string): Promise<Message | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private contacts: Map<number, Contact>;
-  private companies: Map<number, Company>;
-  private deals: Map<number, Deal>;
-  
-  private userCurrentId: number;
-  private contactCurrentId: number;
-  private companyCurrentId: number;
-  private dealCurrentId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.contacts = new Map();
-    this.companies = new Map();
-    this.deals = new Map();
-    
-    this.userCurrentId = 1;
-    this.contactCurrentId = 1;
-    this.companyCurrentId = 1;
-    this.dealCurrentId = 1;
-    
-    // Add some initial data for demo purposes
-    this.users.set(1, {
-      id: 1,
-      username: "admin",
-      password: "admin123",
-      displayName: "Ana Silva",
-      email: "ana@example.com",
-      role: "admin",
-      avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80",
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    
-    this.users.set(2, {
-      id: 2,
-      username: "supervisor",
-      password: "supervisor123",
-      displayName: "Carlos Oliveira",
-      email: "carlos@example.com",
-      role: "supervisor",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80",
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    
-    this.users.set(3, {
-      id: 3,
-      username: "agent",
-      password: "agent123",
-      displayName: "Mariana Santos",
-      email: "mariana@example.com",
-      role: "agent",
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80",
-      isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    
-    this.userCurrentId = 4;
-  }
-
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userCurrentId++;
-    const now = new Date();
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      isActive: true,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values({
+      ...insertUser,
+      role: insertUser.role || "agent",
+      avatar: insertUser.avatar || null
+    }).returning();
     return user;
   }
   
   async listUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    return await db.select().from(users);
   }
   
   // Contact operations
   async getContact(id: number): Promise<Contact | undefined> {
-    return this.contacts.get(id);
+    const [contact] = await db.select().from(contacts).where(eq(contacts.id, id));
+    return contact;
   }
   
   async listContacts(): Promise<Contact[]> {
-    return Array.from(this.contacts.values());
+    return await db.select().from(contacts);
   }
   
   async createContact(insertContact: InsertContact): Promise<Contact> {
-    const id = this.contactCurrentId++;
-    const now = new Date();
-    const contact: Contact = {
+    const [contact] = await db.insert(contacts).values({
       ...insertContact,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.contacts.set(id, contact);
+      email: insertContact.email || null,
+      phone: insertContact.phone || null,
+      company: insertContact.company || null,
+      notes: insertContact.notes || null,
+      createdBy: insertContact.createdBy || null
+    }).returning();
     return contact;
   }
   
   async updateContact(id: number, contactData: Partial<InsertContact>): Promise<Contact | undefined> {
-    const contact = this.contacts.get(id);
-    if (!contact) return undefined;
-    
-    const updatedContact: Contact = {
-      ...contact,
-      ...contactData,
-      id,
-      updatedAt: new Date()
-    };
-    
-    this.contacts.set(id, updatedContact);
-    return updatedContact;
+    const [contact] = await db.update(contacts)
+      .set({
+        ...contactData,
+        updatedAt: new Date()
+      })
+      .where(eq(contacts.id, id))
+      .returning();
+    return contact;
   }
   
   async deleteContact(id: number): Promise<boolean> {
-    return this.contacts.delete(id);
+    const result = await db.delete(contacts).where(eq(contacts.id, id));
+    return !!result;
   }
   
   // Company operations
   async getCompany(id: number): Promise<Company | undefined> {
-    return this.companies.get(id);
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company;
   }
   
   async listCompanies(): Promise<Company[]> {
-    return Array.from(this.companies.values());
+    return await db.select().from(companies);
   }
   
   async createCompany(insertCompany: InsertCompany): Promise<Company> {
-    const id = this.companyCurrentId++;
-    const now = new Date();
-    const company: Company = {
+    const [company] = await db.insert(companies).values({
       ...insertCompany,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.companies.set(id, company);
+      website: insertCompany.website || null,
+      industry: insertCompany.industry || null,
+      size: insertCompany.size || null,
+      address: insertCompany.address || null,
+      notes: insertCompany.notes || null,
+      createdBy: insertCompany.createdBy || null
+    }).returning();
     return company;
   }
   
   async updateCompany(id: number, companyData: Partial<InsertCompany>): Promise<Company | undefined> {
-    const company = this.companies.get(id);
-    if (!company) return undefined;
-    
-    const updatedCompany: Company = {
-      ...company,
-      ...companyData,
-      id,
-      updatedAt: new Date()
-    };
-    
-    this.companies.set(id, updatedCompany);
-    return updatedCompany;
+    const [company] = await db.update(companies)
+      .set({
+        ...companyData,
+        updatedAt: new Date()
+      })
+      .where(eq(companies.id, id))
+      .returning();
+    return company;
   }
   
   async deleteCompany(id: number): Promise<boolean> {
-    return this.companies.delete(id);
+    const result = await db.delete(companies).where(eq(companies.id, id));
+    return !!result;
   }
   
   // Deal operations
   async getDeal(id: number): Promise<Deal | undefined> {
-    return this.deals.get(id);
+    const [deal] = await db.select().from(deals).where(eq(deals.id, id));
+    return deal;
   }
   
   async listDeals(): Promise<Deal[]> {
-    return Array.from(this.deals.values());
+    return await db.select().from(deals);
   }
   
   async createDeal(insertDeal: InsertDeal): Promise<Deal> {
-    const id = this.dealCurrentId++;
-    const now = new Date();
-    const deal: Deal = {
+    const [deal] = await db.insert(deals).values({
       ...insertDeal,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.deals.set(id, deal);
+      value: insertDeal.value || null,
+      notes: insertDeal.notes || null,
+      contactId: insertDeal.contactId || null,
+      companyId: insertDeal.companyId || null,
+      expectedCloseDate: insertDeal.expectedCloseDate || null,
+      assignedTo: insertDeal.assignedTo || null
+    }).returning();
     return deal;
   }
   
   async updateDeal(id: number, dealData: Partial<InsertDeal>): Promise<Deal | undefined> {
-    const deal = this.deals.get(id);
-    if (!deal) return undefined;
-    
-    const updatedDeal: Deal = {
-      ...deal,
-      ...dealData,
-      id,
-      updatedAt: new Date()
-    };
-    
-    this.deals.set(id, updatedDeal);
-    return updatedDeal;
+    const [deal] = await db.update(deals)
+      .set({
+        ...dealData,
+        updatedAt: new Date()
+      })
+      .where(eq(deals.id, id))
+      .returning();
+    return deal;
   }
   
   async deleteDeal(id: number): Promise<boolean> {
-    return this.deals.delete(id);
+    const result = await db.delete(deals).where(eq(deals.id, id));
+    return !!result;
+  }
+
+  // Conversation operations
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conversation;
+  }
+  
+  async listConversations(): Promise<Conversation[]> {
+    return await db.select().from(conversations).orderBy(desc(conversations.lastMessageAt));
+  }
+  
+  async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
+    const [conversation] = await db.insert(conversations).values({
+      ...insertConversation,
+      avatar: insertConversation.avatar || null,
+      lastMessage: insertConversation.lastMessage || '',
+      assignedTo: insertConversation.assignedTo || null,
+      contactId: insertConversation.contactId || null
+    }).returning();
+    return conversation;
+  }
+  
+  async updateConversation(id: number, conversationData: Partial<InsertConversation>): Promise<Conversation | undefined> {
+    const [conversation] = await db.update(conversations)
+      .set({
+        ...conversationData,
+        updatedAt: new Date()
+      })
+      .where(eq(conversations.id, id))
+      .returning();
+    return conversation;
+  }
+  
+  async deleteConversation(id: number): Promise<boolean> {
+    const result = await db.delete(conversations).where(eq(conversations.id, id));
+    return !!result;
+  }
+
+  // Message operations
+  async getMessage(id: number): Promise<Message | undefined> {
+    const [message] = await db.select().from(messages).where(eq(messages.id, id));
+    return message;
+  }
+  
+  async listMessagesByConversation(conversationId: number): Promise<Message[]> {
+    return await db.select()
+      .from(messages)
+      .where(eq(messages.conversationId, conversationId))
+      .orderBy(messages.timestamp);
+  }
+  
+  async createMessage(insertMessage: InsertMessage): Promise<Message> {
+    const [message] = await db.insert(messages).values({
+      ...insertMessage,
+      metadata: insertMessage.metadata || {}
+    }).returning();
+    
+    // Update the conversation with the last message
+    await db.update(conversations)
+      .set({
+        lastMessage: insertMessage.content,
+        lastMessageAt: insertMessage.timestamp || new Date(),
+        unreadCount: insertMessage.sender === 'contact' ? db.raw('unread_count + 1') : db.raw('unread_count'),
+        updatedAt: new Date()
+      })
+      .where(eq(conversations.id, insertMessage.conversationId));
+    
+    return message;
+  }
+  
+  async updateMessageStatus(id: number, status: string): Promise<Message | undefined> {
+    const [message] = await db.update(messages)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(messages.id, id))
+      .returning();
+    return message;
   }
 }
 
-export const storage = new MemStorage();
+// Inicializa com o armazenamento em banco de dados
+export const storage = new DatabaseStorage();

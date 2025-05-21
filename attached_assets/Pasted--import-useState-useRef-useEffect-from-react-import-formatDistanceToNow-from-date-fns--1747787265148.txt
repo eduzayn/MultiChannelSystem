@@ -1,0 +1,773 @@
+
+import { useState, useRef, useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { 
+  Search, 
+  Phone, 
+  Video,
+  Info, 
+  MoreHorizontal,
+  Paperclip,
+  Smile,
+  Send,
+  Reply,
+  ThumbsUp,
+  Mic,
+  Plus,
+  X
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface User {
+  id: string;
+  name: string;
+  avatar?: string;
+  title?: string;
+}
+
+interface Message {
+  id: string;
+  content: string;
+  timestamp: Date;
+  sender: User;
+  attachments?: {
+    type: "image" | "file" | "audio";
+    url: string;
+    name?: string;
+    size?: string;
+  }[];
+  reactions?: {
+    emoji: string;
+    count: number;
+    userIds: string[];
+  }[];
+}
+
+interface Channel {
+  id: string;
+  name: string;
+  description?: string;
+  isPrivate: boolean;
+  members?: User[];
+  topic?: string;
+}
+
+interface DirectMessage {
+  id: string;
+  users: User[];
+}
+
+interface MessagePanelProps {
+  channelId?: string;
+  dmId?: string;
+  onToggleDetails: () => void;
+}
+
+// Usuário atual
+const currentUser: User = {
+  id: "current-user",
+  name: "João da Silva",
+  title: "Administrador",
+};
+
+// Dados de exemplo
+const users: User[] = [
+  { id: "1", name: "Ana Beatriz", avatar: "https://ui.shadcn.com/avatars/01.png", title: "Designer" },
+  { id: "2", name: "Carlos Silva", avatar: "https://ui.shadcn.com/avatars/02.png", title: "Desenvolvedor" },
+  { id: "3", name: "Mariana Costa", avatar: "https://ui.shadcn.com/avatars/03.png", title: "Gerente de Produto" },
+  { id: "4", name: "Pedro Santos", avatar: "https://ui.shadcn.com/avatars/04.png", title: "Analista de Suporte" },
+];
+
+const channels: Record<string, Channel> = {
+  "1": {
+    id: "1",
+    name: "geral",
+    isPrivate: false,
+    topic: "Discussões gerais sobre o projeto Omnichannel",
+    members: [...users, currentUser],
+  },
+  "2": {
+    id: "2",
+    name: "anuncios",
+    isPrivate: false,
+    topic: "Anúncios e comunicados importantes da empresa",
+    members: [...users, currentUser],
+  }
+};
+
+const directMessages: Record<string, DirectMessage> = {
+  "dm1": {
+    id: "dm1",
+    users: [users[0]],
+  },
+  "dm2": {
+    id: "dm2",
+    users: [users[1]],
+  },
+};
+
+// Mensagens de exemplo
+const generateMessages = (channelId: string | undefined, dmId: string | undefined): Message[] => {
+  if (!channelId && !dmId) return [];
+
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  if (channelId) {
+    return [
+      {
+        id: "1",
+        content: "Bom dia equipe! Alguém pode me atualizar sobre o status do novo recurso de Chat Interno?",
+        timestamp: new Date(today.setHours(today.getHours() - 2)),
+        sender: users[2], // Mariana
+      },
+      {
+        id: "2",
+        content: "Estamos avançando bem, terminamos a interface principal e estamos trabalhando na integração com WebSockets.",
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 15)),
+        sender: users[1], // Carlos
+      },
+      {
+        id: "3",
+        content: "Ótimo! Preciso de um design para a seção de configurações de notificações. @Ana Beatriz pode ajudar?",
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 5)),
+        sender: users[2], // Mariana
+      },
+      {
+        id: "4",
+        content: "Claro! Vou começar a trabalhar nisso hoje à tarde e envio uma prévia amanhã.",
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 3)),
+        sender: users[0], // Ana
+        reactions: [
+          { emoji: "👍", count: 2, userIds: [users[2].id, users[1].id] },
+          { emoji: "🎉", count: 1, userIds: [users[3].id] },
+        ],
+      },
+      {
+        id: "5",
+        content: "Aqui estão alguns recursos que podemos nos inspirar:",
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 10)),
+        sender: users[3], // Pedro
+        attachments: [
+          { 
+            type: "image", 
+            url: "https://via.placeholder.com/800x400?text=UI+Reference", 
+            name: "ui-reference.jpg" 
+          },
+        ],
+      },
+    ];
+  } else if (dmId) {
+    const otherUser = directMessages[dmId].users[0];
+    return [
+      {
+        id: "dm1",
+        content: `Olá ${currentUser.name}, tudo bem?`,
+        timestamp: new Date(today.setHours(today.getHours() - 1)),
+        sender: otherUser,
+      },
+      {
+        id: "dm2",
+        content: `Oi ${otherUser.name}! Tudo ótimo, e com você?`,
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 5)),
+        sender: currentUser,
+      },
+      {
+        id: "dm3",
+        content: "Estou bem! Só queria dar uma atualização rápida sobre aquele projeto que conversamos.",
+        timestamp: new Date(today.setMinutes(today.getMinutes() + 2)),
+        sender: otherUser,
+      },
+    ];
+  }
+  
+  return [];
+};
+
+export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelProps) => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Efeito para carregar mensagens quando o canal ou DM muda
+  useEffect(() => {
+    setMessages(generateMessages(channelId, dmId));
+    
+    // Resetar estado
+    setNewMessage("");
+    setIsRecording(false);
+    
+    // Simulação de "está digitando"
+    if (channelId === "1" || dmId === "dm1") {
+      setIsTyping(true);
+      const timer = setTimeout(() => setIsTyping(false), 5000);
+      return () => clearTimeout(timer);
+    }
+    
+    return () => {};
+  }, [channelId, dmId]);
+  
+  // Rolar para o final quando as mensagens mudam
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+  
+  // Manipular envio de mensagem
+  const handleSendMessage = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (newMessage.trim()) {
+      const newMsg: Message = {
+        id: `new-${Date.now()}`,
+        content: newMessage.trim(),
+        timestamp: new Date(),
+        sender: currentUser,
+      };
+      
+      setMessages(prev => [...prev, newMsg]);
+      setNewMessage("");
+      
+      // Simular resposta
+      if (channelId || dmId) {
+        setTimeout(() => {
+          const otherUser = dmId 
+            ? directMessages[dmId].users[0] 
+            : users[Math.floor(Math.random() * users.length)];
+          
+          const responseMsg: Message = {
+            id: `resp-${Date.now()}`,
+            content: "Entendido! Vamos continuar essa conversa mais tarde.",
+            timestamp: new Date(),
+            sender: otherUser,
+          };
+          
+          setMessages(prev => [...prev, responseMsg]);
+          setIsTyping(false);
+        }, 8000);
+        
+        // Simular "está digitando"
+        setTimeout(() => {
+          setIsTyping(true);
+        }, 2000);
+      }
+    }
+  };
+  
+  // Lidar com Enter para enviar (permitir Shift+Enter para nova linha)
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+  
+  // Renderizar avatar do usuário
+  const renderUserAvatar = (user: User) => {
+    if (user.avatar) {
+      return (
+        <img 
+          src={user.avatar} 
+          alt={user.name} 
+          className="h-8 w-8 rounded-full"
+        />
+      );
+    }
+    
+    return (
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+        {user.name.charAt(0)}
+      </div>
+    );
+  };
+  
+  // Determinar título do painel de mensagens
+  const getPanelTitle = () => {
+    if (channelId && channels[channelId]) {
+      const channel = channels[channelId];
+      return (
+        <div className="flex items-center">
+          <span className="mr-1 font-medium">{channel.isPrivate ? "🔒" : "#"}</span>
+          <span>{channel.name}</span>
+        </div>
+      );
+    }
+    
+    if (dmId && directMessages[dmId]) {
+      const dm = directMessages[dmId];
+      if (dm.users.length === 1) {
+        return dm.users[0].name;
+      }
+      return dm.users.map(u => u.name.split(" ")[0]).join(", ");
+    }
+    
+    return "Nova conversa";
+  };
+  
+  // Determinar tópico ou informações adicionais
+  const getPanelSubtitle = () => {
+    if (channelId && channels[channelId]) {
+      const channel = channels[channelId];
+      return channel.topic || `${channel.members?.length || 0} membros`;
+    }
+    
+    if (dmId && directMessages[dmId]) {
+      const dm = directMessages[dmId];
+      if (dm.users.length === 1) {
+        return dm.users[0].title || "";
+      }
+    }
+    
+    return "";
+  };
+  
+  // Renderizar conteúdo da mensagem com formatação
+  const renderMessageContent = (content: string) => {
+    // Implementação simples de formatação - em uma versão real usaríamos uma biblioteca como marked
+    let formattedContent = content;
+    
+    // Substituir @mentions
+    formattedContent = formattedContent.replace(
+      /@([a-zA-Z\s]+)/g,
+      '<span class="text-primary font-medium">@$1</span>'
+    );
+    
+    return (
+      <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+    );
+  };
+
+  const aiSuggestions = [
+    "Poderia detalhar mais sobre a pauta da reunião?",
+    "Vou verificar e te retorno em breve",
+    "Entendido, obrigado pela atualização!"
+  ];
+
+  const emojis = ["😊", "👍", "❤️", "😂", "🔥", "✅", "🎉", "🙏", "👌", "🤔"];
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* Cabeçalho */}
+      <header className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex items-center overflow-hidden">
+          <div className="mr-2">
+            {dmId && directMessages[dmId]?.users.length === 1 && (
+              renderUserAvatar(directMessages[dmId].users[0])
+            )}
+          </div>
+          <div className="overflow-hidden">
+            <h2 className="truncate text-sm font-medium">
+              {getPanelTitle()}
+            </h2>
+            {getPanelSubtitle() && (
+              <p className="truncate text-xs text-muted-foreground">
+                {getPanelSubtitle()}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Phone className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Chamada de voz</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Video className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Chamada de vídeo</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Search className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Pesquisar na conversa</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={onToggleDetails}>
+                <Info className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Detalhes</TooltipContent>
+          </Tooltip>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                Configurações de notificações
+              </DropdownMenuItem>
+              {channelId && (
+                <>
+                  <DropdownMenuItem>
+                    Ver membros
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Adicionar pessoas
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    Sair do canal
+                  </DropdownMenuItem>
+                </>
+              )}
+              {dmId && (
+                <>
+                  <DropdownMenuItem>
+                    Ver perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    Silenciar conversa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive">
+                    Bloquear usuário
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+      
+      {/* Área de mensagens */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-4">
+          {messages.map((message, index) => {
+            // Verificar se a mensagem anterior é do mesmo remetente
+            const prevMessage = index > 0 ? messages[index - 1] : null;
+            const isConsecutive = prevMessage && prevMessage.sender.id === message.sender.id;
+            
+            // Calcular diferença de tempo entre mensagens
+            const shouldGroupWithPrev = isConsecutive && 
+              (new Date(message.timestamp).getTime() - new Date(prevMessage!.timestamp).getTime() < 300000); // 5 minutos
+              
+            return (
+              <div key={message.id} className={shouldGroupWithPrev ? "mt-1 pl-10" : "mt-4"}>
+                {!shouldGroupWithPrev && (
+                  <div className="mb-1.5 flex items-center">
+                    <div className="mr-2">
+                      {renderUserAvatar(message.sender)}
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="mr-2 font-medium">{message.sender.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(message.timestamp), {
+                          addSuffix: true,
+                          locale: ptBR
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Conteúdo da mensagem */}
+                <div className={`group relative ${shouldGroupWithPrev ? "" : "pl-10"}`}>
+                  <div className="break-words text-sm">
+                    {renderMessageContent(message.content)}
+                  </div>
+                  
+                  {/* Anexos */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {message.attachments.map((attachment, i) => (
+                        <div key={i} className="overflow-hidden rounded-md">
+                          {attachment.type === "image" && (
+                            <img 
+                              src={attachment.url} 
+                              alt={attachment.name || "Anexo"} 
+                              className="max-h-80 w-auto rounded-md"
+                            />
+                          )}
+                          {attachment.type === "file" && (
+                            <div className="flex items-center rounded-md border bg-background p-2">
+                              <div className="mr-2 flex h-10 w-10 items-center justify-center rounded-md bg-muted">
+                                <Paperclip className="h-5 w-5" />
+                              </div>
+                              <div className="mr-2">
+                                <p className="text-sm font-medium">{attachment.name}</p>
+                                {attachment.size && (
+                                  <p className="text-xs text-muted-foreground">{attachment.size}</p>
+                                )}
+                              </div>
+                              <Button size="sm" variant="outline" className="ml-auto">
+                                Download
+                              </Button>
+                            </div>
+                          )}
+                          {attachment.type === "audio" && (
+                            <div className="flex items-center rounded-md border bg-background p-2">
+                              <Button variant="outline" size="icon" className="mr-2">
+                                <Mic className="h-4 w-4" />
+                              </Button>
+                              <div className="flex-1">
+                                <div className="h-1.5 rounded-full bg-muted">
+                                  <div className="h-full w-1/3 rounded-full bg-primary" />
+                                </div>
+                              </div>
+                              <span className="ml-2 text-xs">0:15</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Reações */}
+                  {message.reactions && message.reactions.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {message.reactions.map((reaction, i) => (
+                        <button 
+                          key={i} 
+                          className="flex items-center rounded-full border bg-muted px-2 py-0.5 text-xs hover:bg-muted/80"
+                        >
+                          <span className="mr-1">{reaction.emoji}</span>
+                          <span>{reaction.count}</span>
+                        </button>
+                      ))}
+                      <button className="flex h-6 w-6 items-center justify-center rounded-full border bg-muted text-xs hover:bg-muted/80">
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Ações da mensagem (visíveis no hover) */}
+                  <div className="absolute -right-2 top-0 hidden gap-1 rounded-md border bg-background p-0.5 shadow-sm group-hover:flex">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Reply className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Responder</TooltipContent>
+                    </Tooltip>
+                    
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <ThumbsUp className="h-3.5 w-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Reagir</TooltipContent>
+                    </Tooltip>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <MoreHorizontal className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Copiar link</DropdownMenuItem>
+                        <DropdownMenuItem>Salvar mensagem</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {message.sender.id === currentUser.id && (
+                          <>
+                            <DropdownMenuItem>Editar</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              Excluir
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Indicador de digitação */}
+          {isTyping && (
+            <div className="flex items-center pl-10">
+              <div className="flex items-center space-x-1">
+                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "0ms" }} />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "200ms" }} />
+                <div className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground" style={{ animationDelay: "400ms" }} />
+              </div>
+              <span className="ml-2 text-xs text-muted-foreground">
+                {dmId ? `${directMessages[dmId].users[0].name} está digitando...` : "Alguém está digitando..."}
+              </span>
+            </div>
+          )}
+          
+          {/* Referência para rolagem automática */}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+      
+      {/* Área de input */}
+      <div className="flex flex-col border-t">
+        {/* Sugestões da IA */}
+        <div className="flex items-center gap-2 overflow-x-auto p-2">
+          <span className="text-xs font-medium text-primary">Sugestões:</span>
+          {aiSuggestions.map((suggestion, index) => (
+            <button
+              key={index}
+              className="flex-shrink-0 rounded-full border bg-background px-3 py-1 text-xs hover:bg-muted"
+              onClick={() => setNewMessage(suggestion)}
+            >
+              {suggestion.length > 30 ? suggestion.substring(0, 30) + "..." : suggestion}
+            </button>
+          ))}
+        </div>
+        
+        {/* Formulário de entrada */}
+        <form onSubmit={handleSendMessage} className="flex flex-col p-2">
+          <div className="relative flex w-full items-end rounded-md border bg-background p-1">
+            <div className="flex items-center gap-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-72">
+                  <div className="grid grid-cols-10 gap-1">
+                    {emojis.map((emoji, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setNewMessage(prev => prev + emoji)}
+                      >
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="start" className="w-56">
+                  <div className="grid gap-1">
+                    <Button variant="ghost" className="justify-start">
+                      Imagem
+                    </Button>
+                    <Button variant="ghost" className="justify-start">
+                      Arquivo
+                    </Button>
+                    <Button variant="ghost" className="justify-start">
+                      Áudio
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <Textarea
+              className="min-h-[40px] flex-1 resize-none border-0 p-2"
+              placeholder={isRecording ? "Gravando áudio..." : channelId ? `Mensagem para #${channels[channelId].name}` : "Escreva sua mensagem..."}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isRecording}
+              rows={1}
+            />
+
+            {isRecording ? (
+              <div className="flex items-center">
+                <span className="animate-pulse text-xs font-medium text-destructive">
+                  Gravando...
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 h-8 w-8 rounded-full text-destructive"
+                  onClick={() => setIsRecording(false)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="submit"
+                size="icon"
+                className={`h-8 w-8 rounded-full ${newMessage.trim() ? 'bg-primary hover:bg-primary/90' : 'bg-muted hover:bg-muted/90'}`}
+                disabled={!newMessage.trim() && !isRecording}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex items-center justify-between px-2 pt-1">
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+                onClick={() => setIsRecording(!isRecording)}
+              >
+                <Mic className="mr-1 h-3.5 w-3.5" />
+                Gravar áudio
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-6 px-1.5 text-xs font-normal text-muted-foreground hover:text-foreground"
+              >
+                <span className="mr-1">@</span>
+                Mencionar
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                className="h-6 px-2 text-xs font-normal"
+                variant="secondary"
+              >
+                ✨ Sugestões da IA
+              </Button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
