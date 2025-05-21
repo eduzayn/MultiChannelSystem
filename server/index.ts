@@ -1,9 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./db-init";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import { socketService } from "./services/socketService";
 
 const app = express();
 app.use(express.json());
