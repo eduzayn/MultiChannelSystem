@@ -366,7 +366,7 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Cabeçalho */}
-      <header className="flex items-center justify-between border-b px-4 py-2">
+      <header className="flex items-center justify-between border-b px-4 py-3 bg-background">
         <div className="flex items-center overflow-hidden">
           <div className="mr-2">
             {dmId && directMessages[dmId]?.users.length === 1 && (
@@ -384,11 +384,11 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Phone className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Phone className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Chamada de voz</TooltipContent>
@@ -396,8 +396,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
           
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Video className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Video className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Chamada de vídeo</TooltipContent>
@@ -405,8 +405,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
           
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Search className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Search className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Pesquisar na conversa</TooltipContent>
@@ -414,8 +414,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
           
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={onToggleDetails}>
-                <Info className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleDetails}>
+                <Info className="h-5 w-5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Detalhes</TooltipContent>
@@ -423,8 +423,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <MoreHorizontal className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -599,8 +599,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
       </ScrollArea>
       
       {/* Campo de entrada de mensagem */}
-      <div className="border-t flex justify-center">
-        <div className="max-w-3xl w-full p-3">
+      <div className="border-t bg-background w-full">
+        <div className="px-6 py-4">
           <div className="flex flex-col">
             {/* Sugestões */}
             <div className="mb-2 flex gap-2 overflow-x-auto">
@@ -617,7 +617,7 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
             
             {/* Campo de texto e botões */}
             <form onSubmit={handleSendMessage} className="flex">
-              <div className="flex w-full items-end rounded-md border">
+              <div className="flex w-full items-end rounded-md border bg-white">
                 <div className="flex-1 p-2">
                   <Input
                     value={newMessage}
@@ -641,7 +641,7 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
                 </div>
               </div>
               
-              <Button type="submit" className="ml-2 rounded-full h-10 w-10 p-0" disabled={!newMessage.trim()}>
+              <Button type="submit" className="ml-2 rounded-full h-10 w-10 p-0 bg-blue-500 hover:bg-blue-600" disabled={!newMessage.trim()}>
                 <Send className="h-5 w-5" />
               </Button>
             </form>
