@@ -26,6 +26,7 @@ import BrandingSettings from "@/pages/settings-branding";
 import CompanySettings from "@/pages/settings-company";
 import GoalsSettings from "@/pages/settings-goals";
 import LocalizationSettings from "@/pages/settings-localization";
+import NotificationsSettings from "@/pages/settings-notifications";
 import Settings from "@/pages/settings";
 
 function Router() {
@@ -55,6 +56,7 @@ function Router() {
         <Route path="/settings/company" component={CompanySettings} />
         <Route path="/settings/goals" component={GoalsSettings} />
         <Route path="/settings/localization" component={LocalizationSettings} />
+        <Route path="/settings/notifications" component={NotificationsSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
