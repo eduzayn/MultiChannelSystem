@@ -649,6 +649,203 @@ export type CampaignResult = typeof campaignResults.$inferSelect;
 export type InsertAutomation = z.infer<typeof insertAutomationSchema>;
 export type Automation = typeof automations.$inferSelect;
 
+// Análise e Performance: KPIs (Indicadores-chave de performance)
+export const kpis = pgTable("kpis", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(), // sales, customer_service, marketing, etc.
+  metricType: text("metric_type").notNull(), // count, percentage, amount, ratio, etc.
+  formula: jsonb("formula"), // Como este KPI é calculado (campos/operações)
+  targetValue: integer("target_value"), // Valor alvo (opcional)
+  warningThreshold: integer("warning_threshold"), // Limiar de alerta (opcional)
+  criticalThreshold: integer("critical_threshold"), // Limiar crítico (opcional)
+  compareToHistorical: boolean("compare_to_historical").default(false), // Comparar com histórico
+  historicalPeriods: integer("historical_periods"), // Quanto histórico considerar (em períodos)
+  active: boolean("active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertKpiSchema = createInsertSchema(kpis).pick({
+  name: true,
+  description: true,
+  category: true,
+  metricType: true,
+  formula: true,
+  targetValue: true,
+  warningThreshold: true,
+  criticalThreshold: true,
+  compareToHistorical: true,
+  historicalPeriods: true,
+  active: true,
+  createdBy: true,
+});
+
+// Análise e Performance: Valores de KPI (medições históricas)
+export const kpiValues = pgTable("kpi_values", {
+  id: serial("id").primaryKey(),
+  kpiId: integer("kpi_id").references(() => kpis.id).notNull(),
+  value: integer("value").notNull(), // Valor numérico (para cálculos)
+  textValue: text("text_value"), // Representação textual (ex: "45%")
+  dateFrom: timestamp("date_from").notNull(), // Data de início do período
+  dateTo: timestamp("date_to").notNull(), // Data de fim do período
+  periodType: text("period_type").notNull(), // daily, weekly, monthly, quarterly, yearly
+  metadata: jsonb("metadata"), // Dados adicionais sobre a medição
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertKpiValueSchema = createInsertSchema(kpiValues).pick({
+  kpiId: true,
+  value: true,
+  textValue: true,
+  dateFrom: true,
+  dateTo: true,
+  periodType: true,
+  metadata: true,
+});
+
+// Análise e Performance: Dashboards
+export const dashboards = pgTable("dashboards", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  layout: jsonb("layout").notNull(), // Configuração do layout (grid)
+  isDefault: boolean("is_default").default(false),
+  isPublic: boolean("is_public").default(false), // Visível para todos os usuários
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertDashboardSchema = createInsertSchema(dashboards).pick({
+  name: true,
+  description: true,
+  layout: true,
+  isDefault: true,
+  isPublic: true,
+  createdBy: true,
+});
+
+// Análise e Performance: Widgets (elementos do dashboard)
+export const dashboardWidgets = pgTable("dashboard_widgets", {
+  id: serial("id").primaryKey(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  title: text("title").notNull(),
+  type: text("type").notNull(), // chart, table, kpi, goal, custom
+  size: text("size").notNull(), // small, medium, large
+  position: jsonb("position").notNull(), // { x, y, w, h } - posição no grid
+  configuration: jsonb("configuration").notNull(), // Configuração específica
+  dataSource: jsonb("data_source").notNull(), // Fonte de dados (queries, filtros, etc)
+  refreshInterval: integer("refresh_interval"), // Em segundos, se automaticamente atualizado
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertDashboardWidgetSchema = createInsertSchema(dashboardWidgets).pick({
+  dashboardId: true,
+  title: true,
+  type: true,
+  size: true,
+  position: true,
+  configuration: true,
+  dataSource: true,
+  refreshInterval: true,
+});
+
+// Análise e Performance: Relatórios personalizados
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // static, dynamic, scheduled
+  format: text("format").notNull(), // pdf, excel, csv, html
+  query: jsonb("query").notNull(), // Definição da consulta (filtros, campos, ordenação)
+  schedule: jsonb("schedule"), // Configuração de agendamento (se agendado)
+  lastRunAt: timestamp("last_run_at"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertReportSchema = createInsertSchema(reports).pick({
+  name: true,
+  description: true,
+  type: true,
+  format: true,
+  query: true,
+  schedule: true,
+  createdBy: true,
+});
+
+// Análise e Performance: Relatórios gerados
+export const reportResults = pgTable("report_results", {
+  id: serial("id").primaryKey(),
+  reportId: integer("report_id").references(() => reports.id).notNull(),
+  fileUrl: text("file_url"), // URL para o arquivo gerado
+  status: text("status").notNull(), // success, error, processing
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // Metadados do relatório (número de registros, etc)
+  generatedAt: timestamp("generated_at").defaultNow(),
+  expiresAt: timestamp("expires_at"), // Quando o resultado expira (se temporário)
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertReportResultSchema = createInsertSchema(reportResults).pick({
+  reportId: true,
+  fileUrl: true,
+  status: true,
+  errorMessage: true,
+  metadata: true,
+  expiresAt: true,
+});
+
+// Análise e Performance: Métricas de atividade do usuário
+export const userActivities = pgTable("user_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  activityType: text("activity_type").notNull(), // login, message_sent, deal_created, etc.
+  entityType: text("entity_type"), // contact, deal, message, etc.
+  entityId: integer("entity_id"), // ID da entidade relacionada
+  details: jsonb("details"), // Detalhes específicos da atividade
+  performedAt: timestamp("performed_at").defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivities).pick({
+  userId: true,
+  activityType: true,
+  entityType: true,
+  entityId: true,
+  details: true,
+  performedAt: true,
+  ipAddress: true,
+  userAgent: true,
+});
+
+// Análise e Performance: Métricas de performance da equipe
+export const teamPerformanceMetrics = pgTable("team_performance_metrics", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id).notNull(),
+  period: text("period").notNull(), // daily, weekly, monthly, quarterly, yearly
+  dateFrom: timestamp("date_from").notNull(),
+  dateTo: timestamp("date_to").notNull(),
+  metrics: jsonb("metrics").notNull(), // JSON com diferentes métricas e valores
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTeamPerformanceMetricSchema = createInsertSchema(teamPerformanceMetrics).pick({
+  teamId: true,
+  period: true,
+  dateFrom: true,
+  dateTo: true,
+  metrics: true,
+});
+
 // Export types for marketing and engagement tables
 export type InsertAudienceSegment = z.infer<typeof insertAudienceSegmentSchema>;
 export type AudienceSegment = typeof audienceSegments.$inferSelect;
@@ -670,6 +867,31 @@ export type FormSubmission = typeof formSubmissions.$inferSelect;
 
 export type InsertEngagementMetric = z.infer<typeof insertEngagementMetricSchema>;
 export type EngagementMetric = typeof engagementMetrics.$inferSelect;
+
+// Export types for análise e performance tables
+export type InsertKpi = z.infer<typeof insertKpiSchema>;
+export type Kpi = typeof kpis.$inferSelect;
+
+export type InsertKpiValue = z.infer<typeof insertKpiValueSchema>;
+export type KpiValue = typeof kpiValues.$inferSelect;
+
+export type InsertDashboard = z.infer<typeof insertDashboardSchema>;
+export type Dashboard = typeof dashboards.$inferSelect;
+
+export type InsertDashboardWidget = z.infer<typeof insertDashboardWidgetSchema>;
+export type DashboardWidget = typeof dashboardWidgets.$inferSelect;
+
+export type InsertReport = z.infer<typeof insertReportSchema>;
+export type Report = typeof reports.$inferSelect;
+
+export type InsertReportResult = z.infer<typeof insertReportResultSchema>;
+export type ReportResult = typeof reportResults.$inferSelect;
+
+export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
+export type UserActivity = typeof userActivities.$inferSelect;
+
+export type InsertTeamPerformanceMetric = z.infer<typeof insertTeamPerformanceMetricSchema>;
+export type TeamPerformanceMetric = typeof teamPerformanceMetrics.$inferSelect;
 
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
