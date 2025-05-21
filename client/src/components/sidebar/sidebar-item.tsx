@@ -28,9 +28,9 @@ export function SidebarItem({ icon, label, href, badge, submenu }: SidebarItemPr
       onMouseLeave={() => setIsHovering(false)}
     >
       <Link href={href}>
-        <a 
+        <div 
           className={cn(
-            "flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md group",
+            "flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md group cursor-pointer",
             isActive 
               ? "bg-primary-700 text-white" 
               : "text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -48,7 +48,7 @@ export function SidebarItem({ icon, label, href, badge, submenu }: SidebarItemPr
               {badge}
             </span>
           )}
-        </a>
+        </div>
       </Link>
       
       {submenu && submenu.length > 0 && (
@@ -61,9 +61,9 @@ export function SidebarItem({ icon, label, href, badge, submenu }: SidebarItemPr
           <div className="py-1">
             {submenu.map((item, index) => (
               <Link key={index} href={item.href}>
-                <a className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-600">
+                <div className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 cursor-pointer">
                   {item.label}
-                </a>
+                </div>
               </Link>
             ))}
           </div>
