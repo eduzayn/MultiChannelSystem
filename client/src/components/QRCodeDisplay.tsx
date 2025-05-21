@@ -30,29 +30,31 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData }) => {
     return <div>Aguardando QR Code...</div>;
   }
 
-  switch (qrCodeType) {
-    case 'dataurl':
-      // URL de dados completo (data:image/png;base64,...)
-      return <img src={qrCodeData} alt="QR Code para WhatsApp" className="max-w-full h-auto" />;
-    
-    case 'base64':
-      // String base64 sem prefixo
-      return <img 
-        src={`data:image/png;base64,${qrCodeData}`} 
-        alt="QR Code para WhatsApp" 
-        className="max-w-full h-auto"
-      />;
-    
-    case 'text':
-      // Texto para gerar QR code via biblioteca
-      return <QRCodeSVG value={qrCodeData} size={256} />;
-    
-    default:
-      // Fallback para API de QR code do Google
-      return <img 
-        src={`https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(qrCodeData)}`}
-        alt="QR Code para WhatsApp" 
-        className="max-w-full h-auto"
-      />;
+  // Em vez de lidar com diferentes formatos em um switch, vamos usar a biblioteca QRCode
+  // para gerar o QR Code a partir do texto, que é o formato mais seguro.
+  // Isso evita problemas com URLs inválidas.
+  
+  // Se começa com "data:image" e parece ser uma URL de imagem válida, tenta exibir como imagem
+  if (qrCodeType === 'dataurl' && /^data:image\/(png|jpg|jpeg|gif);base64,[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
+    return <img 
+      src={qrCodeData} 
+      alt="QR Code para WhatsApp" 
+      className="max-w-full h-auto" 
+    />;
   }
+  
+  // Em todos os outros casos, incluindo texto ou strings que não são URLs de imagem válidas,
+  // usamos a biblioteca QRCode para gerar um QR Code a partir do texto
+  return (
+    <div className="bg-white p-4 rounded-md">
+      <QRCodeSVG 
+        value={qrCodeData} 
+        size={256}
+        bgColor={"#ffffff"}
+        fgColor={"#000000"}
+        level={"L"}
+        includeMargin={true}
+      />
+    </div>
+  );
 };
