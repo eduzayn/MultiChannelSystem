@@ -36,6 +36,10 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
     queryFn: async () => {
       try {
         const response = await axios.get('/api/conversations');
+        
+        // Logging para debug
+        console.log("Conversas recebidas do servidor:", response.data);
+        
         return response.data.map((conversation: any) => ({
           id: conversation.id.toString(),
           name: conversation.name,
@@ -44,7 +48,9 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
           unreadCount: conversation.unreadCount || 0,
           channel: conversation.channel,
           status: conversation.status,
-          contactId: conversation.contactId
+          contactId: conversation.contactId,
+          identifier: conversation.identifier, // Adicionar o identificador
+          avatar: conversation.avatar // Adicionar avatar, se existir
         }));
       } catch (err) {
         console.error("Erro ao buscar conversas:", err);

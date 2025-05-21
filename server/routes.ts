@@ -416,9 +416,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Conversations API
   app.get("/api/conversations", async (req, res) => {
     try {
-      const conversations = await storage.listConversations();
-      res.json(conversations);
+      // Usar diretamente o banco de dados para garantir dados atualizados
+      try {
+        const { db } = await import('./db');
+        const { conversations } = await import('../shared/schema');
+        const { desc } = await import('drizzle-orm');
+        
+        // Buscar conversas mais recentes primeiro
+        const dbConversations = await db.query.conversations.findMany({
+          orderBy: [desc(conversations.lastMessageAt)]
+        });
+        
+        console.log(`Retornando ${dbConversations.length} conversas para a interface`);
+        
+        // Garantir que não haja caching
+        res.set('Cache-Control', 'no-store');
+        res.json(dbConversations);
+      } catch (dbError) {
+        console.error("Erro ao acessar banco de dados para conversas:", dbError);
+        // Fallback para o storage padrão
+        const conversations = await storage.listConversations();
+        res.json(conversations);
+      }
     } catch (error) {
+      console.error("Falha ao buscar conversas:", error);
       res.status(500).json({ message: "Falha ao buscar conversas" });
     }
   });

@@ -94,11 +94,19 @@ export function registerZapiRoutes(app: Router) {
               .values({
                 name: contact.name,
                 channel: "whatsapp",
+                identifier: formattedPhone, // Adicionar o número de telefone como identificador
                 contactId: contact.id,
                 status: "open",
                 lastMessage: messageContent,
                 lastMessageAt: new Date(),
-                unreadCount: 1
+                unreadCount: 1,
+                metadata: {
+                  source: "zapi-webhook",
+                  originalData: {
+                    tenantId,
+                    channelId
+                  }
+                }
               })
               .returning();
               
@@ -111,7 +119,8 @@ export function registerZapiRoutes(app: Router) {
                 lastMessage: messageContent,
                 lastMessageAt: new Date(),
                 unreadCount: (conversation.unreadCount || 0) + 1,
-                status: "open" // Reabrir se estava fechada
+                status: "open", // Reabrir se estava fechada
+                identifier: formattedPhone // Garantir que o identificador esteja atualizado
               })
               .where(eq(conversations.id, conversation.id));
             

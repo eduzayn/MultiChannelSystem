@@ -96,14 +96,19 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messagesList]);
 
-  // Extrai o número de telefone formatado da conversa (assumindo que é o identifier)
+  // Extrai o número de telefone formatado da conversa
   const extractPhoneNumber = () => {
     // Se não for WhatsApp, retorna null
     if (conversation.channel !== 'whatsapp') return null;
     
-    // Assumindo que o identifier é o número do telefone
-    // Remove caracteres não numéricos (espaços, parênteses, traços, etc.)
-    return conversation.identifier?.replace(/\D/g, '');
+    // Usar o campo identifier para obter o número de telefone
+    if (conversation.identifier) {
+      return conversation.identifier.replace(/\D/g, '');
+    } 
+    
+    // Fallback para outros cenários (ex: conversas antigas)
+    console.log("Conversação sem identificador:", conversation);
+    return null;
   };
 
   // Função para enviar nova mensagem
