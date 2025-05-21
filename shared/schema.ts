@@ -893,6 +893,28 @@ export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertTeamPerformanceMetric = z.infer<typeof insertTeamPerformanceMetricSchema>;
 export type TeamPerformanceMetric = typeof teamPerformanceMetrics.$inferSelect;
 
+// Tipos para as tabelas do módulo de Configurações (Administração)
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
+
+export type InsertSettingHistory = z.infer<typeof insertSettingHistorySchema>;
+export type SettingHistory = typeof settingHistory.$inferSelect;
+
+export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
+export type AdminNotification = typeof adminNotifications.$inferSelect;
+
+export type InsertNotificationAcknowledgement = z.infer<typeof insertNotificationAcknowledgementSchema>;
+export type NotificationAcknowledgement = typeof notificationAcknowledgements.$inferSelect;
+
+export type InsertSecurityPolicy = z.infer<typeof insertSecurityPolicySchema>;
+export type SecurityPolicy = typeof securityPolicies.$inferSelect;
+
+export type InsertIntegration = z.infer<typeof insertIntegrationSchema>;
+export type Integration = typeof integrations.$inferSelect;
+
+export type InsertIntegrationLog = z.infer<typeof insertIntegrationLogSchema>;
+export type IntegrationLog = typeof integrationLogs.$inferSelect;
+
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
 
@@ -913,3 +935,181 @@ export type UserAchievement = typeof userAchievements.$inferSelect;
 
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
+
+// Audit Logs para rastrear ações do usuário (módulo de Configurações/Administração)
+export const auditLogs = pgTable("audit_logs", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  action: text("action").notNull(), // create, update, delete, login, etc.
+  entityType: text("entity_type"), // user, team, deal, etc.
+  entityId: integer("entity_id"), // ID da entidade afetada
+  oldValues: jsonb("old_values"), // Valores anteriores (se aplicável)
+  newValues: jsonb("new_values"), // Novos valores (se aplicável)
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  performedAt: timestamp("performed_at").defaultNow(),
+  metadata: jsonb("metadata"), // Informações adicionais
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
+  userId: true,
+  action: true,
+  entityType: true,
+  entityId: true,
+  oldValues: true,
+  newValues: true,
+  ipAddress: true,
+  userAgent: true,
+  performedAt: true,
+  metadata: true,
+});
+
+// Histórico de alterações de configurações
+export const settingHistory = pgTable("setting_history", {
+  id: serial("id").primaryKey(),
+  settingId: integer("setting_id").references(() => settings.id).notNull(),
+  category: text("category").notNull(),
+  key: text("key").notNull(),
+  oldValue: jsonb("old_value"), // Valor anterior
+  newValue: jsonb("new_value").notNull(), // Novo valor
+  changedBy: integer("changed_by").references(() => users.id),
+  changedAt: timestamp("changed_at").defaultNow(),
+  reason: text("reason"), // Motivo da alteração
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertSettingHistorySchema = createInsertSchema(settingHistory).pick({
+  settingId: true,
+  category: true,
+  key: true,
+  oldValue: true,
+  newValue: true,
+  changedBy: true,
+  changedAt: true,
+  reason: true,
+});
+
+// Notificações Administrativas
+export const adminNotifications = pgTable("admin_notifications", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  type: text("type").notNull(), // info, warning, error, success
+  priority: text("priority").default("normal"), // low, normal, high, critical
+  isGlobal: boolean("is_global").default(false), // Se true, para todos os usuários
+  targetUserIds: jsonb("target_user_ids").default([]), // Array de IDs de usuários específicos
+  targetRoles: jsonb("target_roles").default([]), // Array de roles que devem receber
+  startDate: timestamp("start_date").defaultNow(),
+  endDate: timestamp("end_date"), // Quando expira
+  requiresAcknowledgement: boolean("requires_acknowledgement").default(false),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAdminNotificationSchema = createInsertSchema(adminNotifications).pick({
+  title: true,
+  message: true,
+  type: true,
+  priority: true,
+  isGlobal: true,
+  targetUserIds: true,
+  targetRoles: true,
+  startDate: true,
+  endDate: true,
+  requiresAcknowledgement: true,
+  createdBy: true,
+});
+
+// Reconhecimento de Notificações
+export const notificationAcknowledgements = pgTable("notification_acknowledgements", {
+  id: serial("id").primaryKey(),
+  notificationId: integer("notification_id").references(() => adminNotifications.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  acknowledgedAt: timestamp("acknowledged_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    notificationUserUnique: unique().on(table.notificationId, table.userId),
+  }
+});
+
+export const insertNotificationAcknowledgementSchema = createInsertSchema(notificationAcknowledgements).pick({
+  notificationId: true,
+  userId: true,
+  acknowledgedAt: true,
+});
+
+// Políticas de Segurança
+export const securityPolicies = pgTable("security_policies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // password, session, data_access, etc.
+  settings: jsonb("settings").notNull(), // Configurações específicas da política
+  isActive: boolean("is_active").default(true),
+  appliesTo: jsonb("applies_to").notNull(), // Roles ou usuários específicos
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSecurityPolicySchema = createInsertSchema(securityPolicies).pick({
+  name: true,
+  description: true,
+  type: true,
+  settings: true,
+  isActive: true,
+  appliesTo: true,
+  createdBy: true,
+});
+
+// Integrações com Sistemas Externos
+export const integrations = pgTable("integrations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  provider: text("provider").notNull(), // google, slack, salesforce, etc.
+  type: text("type").notNull(), // auth, data_sync, webhook, etc.
+  config: jsonb("config").notNull(), // Configurações da integração
+  credentials: jsonb("credentials"), // Credenciais (criptografadas)
+  status: text("status").default("inactive"), // active, inactive, error
+  lastSyncAt: timestamp("last_sync_at"),
+  lastErrorMessage: text("last_error_message"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertIntegrationSchema = createInsertSchema(integrations).pick({
+  name: true,
+  provider: true,
+  type: true,
+  config: true,
+  credentials: true,
+  status: true,
+  lastSyncAt: true,
+  lastErrorMessage: true,
+  createdBy: true,
+});
+
+// Logs de Integração
+export const integrationLogs = pgTable("integration_logs", {
+  id: serial("id").primaryKey(),
+  integrationId: integer("integration_id").references(() => integrations.id).notNull(),
+  event: text("event").notNull(), // sync_started, sync_completed, error, etc.
+  status: text("status").notNull(), // success, error, warning
+  message: text("message"),
+  details: jsonb("details"),
+  performedAt: timestamp("performed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertIntegrationLogSchema = createInsertSchema(integrationLogs).pick({
+  integrationId: true,
+  event: true,
+  status: true,
+  message: true,
+  details: true,
+  performedAt: true,
+});
