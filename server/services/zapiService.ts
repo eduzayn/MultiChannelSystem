@@ -235,6 +235,18 @@ export async function testZapiConnection(
         details: response.data
       };
     } else if (connectionStatus === false) {
+      // Mensagem "You are not connected" é normal quando o WhatsApp não está conectado
+      // mas as credenciais estão corretas - isso não é realmente um erro
+      if (response.data?.error === "You are not connected." || 
+          response.data?.message === "You are not connected.") {
+        return {
+          success: true,
+          message: "Credenciais corretas! O WhatsApp não está conectado. Gere um QR code para conectar.",
+          status: "disconnected",
+          details: response.data
+        };
+      }
+      
       return {
         success: false,
         message: `WhatsApp não conectado. Status: ${statusMessage || "Desconectado"}`,
