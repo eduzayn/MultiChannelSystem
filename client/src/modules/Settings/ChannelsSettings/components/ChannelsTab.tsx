@@ -36,8 +36,7 @@ import { Badge } from "@/components/ui/badge";
 // Não precisamos importar QRCode diretamente, vamos usar uma abordagem mais básica
 
 export const ChannelsTab = () => {
-  // Estados principais
-  const [openAddChannelDialog, setOpenAddChannelDialog] = useState(false);
+  // Estados principais - removido o estado do modal de adição de canal
   const [openChannelConfigDialog, setOpenChannelConfigDialog] = useState(false);
   const [selectedChannelType, setSelectedChannelType] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
