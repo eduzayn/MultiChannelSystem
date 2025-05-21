@@ -33,8 +33,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-// Importando de forma compatível com a versão atual instalada
-import * as QRCodeReact from "qrcode.react";
+// Não precisamos importar QRCode diretamente, vamos usar uma abordagem mais básica
 
 export const ChannelsTab = () => {
   // Estados principais
@@ -588,22 +587,22 @@ export const ChannelsTab = () => {
                   <div className="w-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
                       {channelQrCodeData && (
-                        <>
-                          {channelQrCodeData.startsWith('data:image') ? (
-                            <img 
-                              src={channelQrCodeData} 
-                              alt="QR Code para WhatsApp" 
-                              style={{ maxWidth: '100%', height: 'auto' }}
-                            />
-                          ) : (
-                            <QRCodeReact.QRCodeSVG
-                              value={channelQrCodeData}
-                              size={256}
-                              level="H"
-                              includeMargin={true}
-                            />
-                          )}
-                        </>
+                        <img 
+                          src={channelQrCodeData.startsWith('data:image') ? channelQrCodeData : `data:image/png;base64,${channelQrCodeData}`} 
+                          alt="QR Code para WhatsApp" 
+                          style={{ maxWidth: '100%', height: 'auto' }}
+                          onError={(e) => {
+                            console.error("Erro ao carregar imagem QR code");
+                            // Em caso de erro, exibimos uma mensagem para o usuário
+                            const container = e.currentTarget.parentElement;
+                            if (container) {
+                              const errorMsg = document.createElement('div');
+                              errorMsg.innerHTML = '<p style="color: red;">Erro ao carregar QR Code. Por favor, tente novamente.</p>';
+                              container.appendChild(errorMsg);
+                            }
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
