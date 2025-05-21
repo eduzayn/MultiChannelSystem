@@ -37,6 +37,13 @@ import {
   insertReportResultSchema,
   insertUserActivitySchema,
   insertTeamPerformanceMetricSchema,
+  // Configurações (Administração) imports
+  insertAuditLogSchema,
+  insertSettingHistorySchema,
+  insertAdminNotificationSchema,
+  insertSecurityPolicySchema,
+  insertIntegrationSchema,
+  insertIntegrationLogSchema,
   insertUserAchievementSchema,
   insertSettingSchema,
   // Marketing & Engagement schemas

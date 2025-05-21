@@ -34,10 +34,18 @@ import {
   reports, type Report, type InsertReport,
   reportResults, type ReportResult, type InsertReportResult,
   userActivities, type UserActivity, type InsertUserActivity,
-  teamPerformanceMetrics, type TeamPerformanceMetric, type InsertTeamPerformanceMetric
+  teamPerformanceMetrics, type TeamPerformanceMetric, type InsertTeamPerformanceMetric,
+  // Configurações (Administração) imports
+  auditLogs, type AuditLog, type InsertAuditLog,
+  settingHistory, type SettingHistory, type InsertSettingHistory,
+  adminNotifications, type AdminNotification, type InsertAdminNotification,
+  notificationAcknowledgements, type NotificationAcknowledgement, type InsertNotificationAcknowledgement,
+  securityPolicies, type SecurityPolicy, type InsertSecurityPolicy,
+  integrations, type Integration, type InsertIntegration,
+  integrationLogs, type IntegrationLog, type InsertIntegrationLog
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, or, and, isNull } from "drizzle-orm";
+import { eq, desc, or, and, isNull, gte, lte, lt, inArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -118,6 +126,62 @@ export interface IStorage {
   listTeamPerformanceMetrics(teamId: number, period?: string): Promise<TeamPerformanceMetric[]>;
   createTeamPerformanceMetric(metric: InsertTeamPerformanceMetric): Promise<TeamPerformanceMetric>;
   updateTeamPerformanceMetric(id: number, metric: Partial<InsertTeamPerformanceMetric>): Promise<TeamPerformanceMetric | undefined>;
+  
+  // Configurações (Administração): Logs de Auditoria
+  getAuditLog(id: number): Promise<AuditLog | undefined>;
+  listAuditLogs(options?: {
+    userId?: number;
+    action?: string;
+    entityType?: string;
+    entityId?: number;
+    fromDate?: Date;
+    toDate?: Date;
+    limit?: number;
+  }): Promise<AuditLog[]>;
+  createAuditLog(logData: InsertAuditLog): Promise<AuditLog>;
+  
+  // Configurações (Administração): Histórico de Configurações
+  getSettingHistory(id: number): Promise<SettingHistory | undefined>;
+  listSettingHistory(settingId?: number, category?: string, key?: string): Promise<SettingHistory[]>;
+  createSettingHistory(historyData: InsertSettingHistory): Promise<SettingHistory>;
+  
+  // Configurações (Administração): Notificações Administrativas
+  getAdminNotification(id: number): Promise<AdminNotification | undefined>;
+  listAdminNotifications(options?: {
+    isGlobal?: boolean;
+    userId?: number;
+    role?: string;
+    active?: boolean;
+    type?: string;
+    priority?: string;
+  }): Promise<AdminNotification[]>;
+  createAdminNotification(notificationData: InsertAdminNotification): Promise<AdminNotification>;
+  updateAdminNotification(id: number, notificationData: Partial<InsertAdminNotification>): Promise<AdminNotification | undefined>;
+  deleteAdminNotification(id: number): Promise<boolean>;
+  
+  // Configurações (Administração): Reconhecimento de Notificações
+  acknowledgeNotification(notificationId: number, userId: number): Promise<NotificationAcknowledgement>;
+  getUserNotificationAcknowledgements(userId: number, notificationIds?: number[]): Promise<NotificationAcknowledgement[]>;
+  
+  // Configurações (Administração): Políticas de Segurança
+  getSecurityPolicy(id: number): Promise<SecurityPolicy | undefined>;
+  listSecurityPolicies(type?: string, isActive?: boolean): Promise<SecurityPolicy[]>;
+  createSecurityPolicy(policyData: InsertSecurityPolicy): Promise<SecurityPolicy>;
+  updateSecurityPolicy(id: number, policyData: Partial<InsertSecurityPolicy>): Promise<SecurityPolicy | undefined>;
+  deleteSecurityPolicy(id: number): Promise<boolean>;
+  
+  // Configurações (Administração): Integrações
+  getIntegration(id: number): Promise<Integration | undefined>;
+  listIntegrations(provider?: string, type?: string, status?: string): Promise<Integration[]>;
+  createIntegration(integrationData: InsertIntegration): Promise<Integration>;
+  updateIntegration(id: number, integrationData: Partial<InsertIntegration>): Promise<Integration | undefined>;
+  deleteIntegration(id: number): Promise<boolean>;
+  
+  // Configurações (Administração): Logs de Integração
+  getIntegrationLog(id: number): Promise<IntegrationLog | undefined>;
+  listIntegrationLogs(integrationId: number, event?: string, status?: string, limit?: number): Promise<IntegrationLog[]>;
+  createIntegrationLog(logData: InsertIntegrationLog): Promise<IntegrationLog>;
+  deleteIntegrationLogs(integrationId: number, olderThan?: Date): Promise<boolean>;
   
   // Marketing & Engagement: Contact Forms
   getContactForm(id: number): Promise<ContactForm | undefined>;
@@ -1674,6 +1738,437 @@ export class DatabaseStorage implements IStorage {
       .where(eq(teamPerformanceMetrics.id, id))
       .returning();
     return metric;
+  }
+
+  // Configurações (Administração): Logs de Auditoria
+  async getAuditLog(id: number): Promise<AuditLog | undefined> {
+    const [log] = await db.select().from(auditLogs).where(eq(auditLogs.id, id));
+    return log;
+  }
+
+  async listAuditLogs(options?: {
+    userId?: number;
+    action?: string;
+    entityType?: string;
+    entityId?: number;
+    fromDate?: Date;
+    toDate?: Date;
+    limit?: number;
+  }): Promise<AuditLog[]> {
+    // Construir condições de filtragem
+    const conditions = [];
+    
+    if (options?.userId) {
+      conditions.push(eq(auditLogs.userId, options.userId));
+    }
+    
+    if (options?.action) {
+      conditions.push(eq(auditLogs.action, options.action));
+    }
+    
+    if (options?.entityType) {
+      conditions.push(eq(auditLogs.entityType, options.entityType));
+    }
+    
+    if (options?.entityId) {
+      conditions.push(eq(auditLogs.entityId, options.entityId));
+    }
+    
+    if (options?.fromDate) {
+      conditions.push(gte(auditLogs.performedAt, options.fromDate));
+    }
+    
+    if (options?.toDate) {
+      conditions.push(lte(auditLogs.performedAt, options.toDate));
+    }
+    
+    // Aplicar filtros se houver condições
+    let query = db.select().from(auditLogs);
+    
+    if (conditions.length > 0) {
+      query = conditions.length === 1 
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
+    
+    // Aplicar ordenação
+    query = query.orderBy(desc(auditLogs.performedAt));
+    
+    // Aplicar limite se fornecido
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+    
+    return query;
+  }
+
+  async createAuditLog(logData: InsertAuditLog): Promise<AuditLog> {
+    const [log] = await db.insert(auditLogs).values({
+      ...logData,
+      createdAt: new Date()
+    }).returning();
+    return log;
+  }
+
+  // Configurações (Administração): Histórico de Configurações
+  async getSettingHistory(id: number): Promise<SettingHistory | undefined> {
+    const [history] = await db.select().from(settingHistory).where(eq(settingHistory.id, id));
+    return history;
+  }
+
+  async listSettingHistory(settingId?: number, category?: string, key?: string): Promise<SettingHistory[]> {
+    // Construir condições de filtragem
+    const conditions = [];
+    
+    if (settingId) {
+      conditions.push(eq(settingHistory.settingId, settingId));
+    }
+    
+    if (category) {
+      conditions.push(eq(settingHistory.category, category));
+    }
+    
+    if (key) {
+      conditions.push(eq(settingHistory.key, key));
+    }
+    
+    // Aplicar filtros se houver condições
+    let query = db.select().from(settingHistory);
+    
+    if (conditions.length > 0) {
+      query = conditions.length === 1 
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
+    
+    // Ordenar por data de alteração (mais recente primeiro)
+    return query.orderBy(desc(settingHistory.changedAt));
+  }
+
+  async createSettingHistory(historyData: InsertSettingHistory): Promise<SettingHistory> {
+    const [history] = await db.insert(settingHistory).values({
+      ...historyData,
+      createdAt: new Date()
+    }).returning();
+    return history;
+  }
+
+  // Configurações (Administração): Notificações Administrativas
+  async getAdminNotification(id: number): Promise<AdminNotification | undefined> {
+    const [notification] = await db.select().from(adminNotifications).where(eq(adminNotifications.id, id));
+    return notification;
+  }
+
+  async listAdminNotifications(options?: {
+    isGlobal?: boolean;
+    userId?: number;
+    role?: string;
+    active?: boolean;
+    type?: string;
+    priority?: string;
+  }): Promise<AdminNotification[]> {
+    // Consulta base
+    let query = db.select().from(adminNotifications);
+    
+    // Condições simples
+    const conditions = [];
+    
+    if (options?.isGlobal !== undefined) {
+      conditions.push(eq(adminNotifications.isGlobal, options.isGlobal));
+    }
+    
+    if (options?.type) {
+      conditions.push(eq(adminNotifications.type, options.type));
+    }
+    
+    if (options?.priority) {
+      conditions.push(eq(adminNotifications.priority, options.priority));
+    }
+    
+    // Verificar se a notificação está ativa (startDate <= now <= endDate ou endDate is null)
+    if (options?.active) {
+      const now = new Date();
+      conditions.push(lte(adminNotifications.startDate, now));
+      conditions.push(
+        or(
+          isNull(adminNotifications.endDate),
+          gte(adminNotifications.endDate, now)
+        )
+      );
+    }
+    
+    // Aplicar condições simples
+    if (conditions.length > 0) {
+      query = conditions.length === 1
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
+    
+    // Executar a consulta
+    const notifications = await query.orderBy(
+      desc(adminNotifications.priority),
+      desc(adminNotifications.createdAt)
+    );
+    
+    // Filtrar por targetUserIds ou targetRoles (necessário fazer isso no código JS
+    // porque envolve verificar valores dentro de arrays JSON)
+    return notifications.filter(notification => {
+      // Se é global, sempre inclui
+      if (notification.isGlobal) return true;
+      
+      // Verificar se o usuário está nos destinatários específicos
+      if (options?.userId && notification.targetUserIds) {
+        const userIds = notification.targetUserIds as number[];
+        if (userIds.includes(options.userId)) return true;
+      }
+      
+      // Verificar se a role está nas roles destinatárias
+      if (options?.role && notification.targetRoles) {
+        const roles = notification.targetRoles as string[];
+        if (roles.includes(options.role)) return true;
+      }
+      
+      // Se chegou aqui, não passou nos filtros
+      return false;
+    });
+  }
+
+  async createAdminNotification(notificationData: InsertAdminNotification): Promise<AdminNotification> {
+    const [notification] = await db.insert(adminNotifications).values({
+      ...notificationData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return notification;
+  }
+
+  async updateAdminNotification(id: number, notificationData: Partial<InsertAdminNotification>): Promise<AdminNotification | undefined> {
+    const [notification] = await db.update(adminNotifications)
+      .set({
+        ...notificationData,
+        updatedAt: new Date()
+      })
+      .where(eq(adminNotifications.id, id))
+      .returning();
+    return notification;
+  }
+
+  async deleteAdminNotification(id: number): Promise<boolean> {
+    // Primeiro, remover todos os reconhecimentos associados
+    await db.delete(notificationAcknowledgements)
+      .where(eq(notificationAcknowledgements.notificationId, id));
+    
+    // Em seguida, excluir a notificação
+    const result = await db.delete(adminNotifications)
+      .where(eq(adminNotifications.id, id));
+    return !!result;
+  }
+
+  // Configurações (Administração): Reconhecimento de Notificações
+  async acknowledgeNotification(notificationId: number, userId: number): Promise<NotificationAcknowledgement> {
+    // Verificar se já existe
+    const [existing] = await db.select()
+      .from(notificationAcknowledgements)
+      .where(
+        and(
+          eq(notificationAcknowledgements.notificationId, notificationId),
+          eq(notificationAcknowledgements.userId, userId)
+        )
+      );
+    
+    if (existing) {
+      return existing;
+    }
+    
+    // Criar novo reconhecimento
+    const [ack] = await db.insert(notificationAcknowledgements).values({
+      notificationId,
+      userId,
+      acknowledgedAt: new Date(),
+      createdAt: new Date()
+    }).returning();
+    
+    return ack;
+  }
+
+  async getUserNotificationAcknowledgements(userId: number, notificationIds?: number[]): Promise<NotificationAcknowledgement[]> {
+    let query = db.select()
+      .from(notificationAcknowledgements)
+      .where(eq(notificationAcknowledgements.userId, userId));
+    
+    if (notificationIds && notificationIds.length > 0) {
+      query = query.where(inArray(notificationAcknowledgements.notificationId, notificationIds));
+    }
+    
+    return query;
+  }
+
+  // Configurações (Administração): Políticas de Segurança
+  async getSecurityPolicy(id: number): Promise<SecurityPolicy | undefined> {
+    const [policy] = await db.select().from(securityPolicies).where(eq(securityPolicies.id, id));
+    return policy;
+  }
+
+  async listSecurityPolicies(type?: string, isActive?: boolean): Promise<SecurityPolicy[]> {
+    let query = db.select().from(securityPolicies);
+    
+    const conditions = [];
+    
+    if (type) {
+      conditions.push(eq(securityPolicies.type, type));
+    }
+    
+    if (isActive !== undefined) {
+      conditions.push(eq(securityPolicies.isActive, isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = conditions.length === 1
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
+    
+    return query.orderBy(securityPolicies.name);
+  }
+
+  async createSecurityPolicy(policyData: InsertSecurityPolicy): Promise<SecurityPolicy> {
+    const [policy] = await db.insert(securityPolicies).values({
+      ...policyData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return policy;
+  }
+
+  async updateSecurityPolicy(id: number, policyData: Partial<InsertSecurityPolicy>): Promise<SecurityPolicy | undefined> {
+    const [policy] = await db.update(securityPolicies)
+      .set({
+        ...policyData,
+        updatedAt: new Date()
+      })
+      .where(eq(securityPolicies.id, id))
+      .returning();
+    return policy;
+  }
+
+  async deleteSecurityPolicy(id: number): Promise<boolean> {
+    const result = await db.delete(securityPolicies).where(eq(securityPolicies.id, id));
+    return !!result;
+  }
+
+  // Configurações (Administração): Integrações
+  async getIntegration(id: number): Promise<Integration | undefined> {
+    const [integration] = await db.select().from(integrations).where(eq(integrations.id, id));
+    return integration;
+  }
+
+  async listIntegrations(provider?: string, type?: string, status?: string): Promise<Integration[]> {
+    let query = db.select().from(integrations);
+    
+    const conditions = [];
+    
+    if (provider) {
+      conditions.push(eq(integrations.provider, provider));
+    }
+    
+    if (type) {
+      conditions.push(eq(integrations.type, type));
+    }
+    
+    if (status) {
+      conditions.push(eq(integrations.status, status));
+    }
+    
+    if (conditions.length > 0) {
+      query = conditions.length === 1
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
+    
+    return query.orderBy(integrations.name);
+  }
+
+  async createIntegration(integrationData: InsertIntegration): Promise<Integration> {
+    const [integration] = await db.insert(integrations).values({
+      ...integrationData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return integration;
+  }
+
+  async updateIntegration(id: number, integrationData: Partial<InsertIntegration>): Promise<Integration | undefined> {
+    const [integration] = await db.update(integrations)
+      .set({
+        ...integrationData,
+        updatedAt: new Date()
+      })
+      .where(eq(integrations.id, id))
+      .returning();
+    return integration;
+  }
+
+  async deleteIntegration(id: number): Promise<boolean> {
+    // Primeiro, excluir todos os logs associados
+    await db.delete(integrationLogs).where(eq(integrationLogs.integrationId, id));
+    
+    // Em seguida, excluir a integração
+    const result = await db.delete(integrations).where(eq(integrations.id, id));
+    return !!result;
+  }
+
+  // Configurações (Administração): Logs de Integração
+  async getIntegrationLog(id: number): Promise<IntegrationLog | undefined> {
+    const [log] = await db.select().from(integrationLogs).where(eq(integrationLogs.id, id));
+    return log;
+  }
+
+  async listIntegrationLogs(integrationId: number, event?: string, status?: string, limit?: number): Promise<IntegrationLog[]> {
+    let query = db.select()
+      .from(integrationLogs)
+      .where(eq(integrationLogs.integrationId, integrationId));
+    
+    const additionalConditions = [];
+    
+    if (event) {
+      additionalConditions.push(eq(integrationLogs.event, event));
+    }
+    
+    if (status) {
+      additionalConditions.push(eq(integrationLogs.status, status));
+    }
+    
+    if (additionalConditions.length > 0) {
+      query = query.where(and(...additionalConditions));
+    }
+    
+    query = query.orderBy(desc(integrationLogs.performedAt));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return query;
+  }
+
+  async createIntegrationLog(logData: InsertIntegrationLog): Promise<IntegrationLog> {
+    const [log] = await db.insert(integrationLogs).values({
+      ...logData,
+      createdAt: new Date()
+    }).returning();
+    return log;
+  }
+
+  async deleteIntegrationLogs(integrationId: number, olderThan?: Date): Promise<boolean> {
+    let query = db.delete(integrationLogs)
+      .where(eq(integrationLogs.integrationId, integrationId));
+    
+    if (olderThan) {
+      query = query.where(lt(integrationLogs.performedAt, olderThan));
+    }
+    
+    const result = await query;
+    return !!result;
   }
 }
 
