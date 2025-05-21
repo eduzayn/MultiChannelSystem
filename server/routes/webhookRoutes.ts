@@ -13,28 +13,29 @@ export function registerWebhookRoutes(app: Router) {
         where: eq(messages.sender, "contact"),
         orderBy: [desc(messages.timestamp)],
         limit: 10,
-        with: {
-          conversation: {
-            columns: {
-              id: true,
-              name: true,
-              contactId: true
-            }
-          }
-        }
       });
+      
+      // Processar as mensagens para adicionar nome do contato
+      const result = await Promise.all(recentMessages.map(async (message) => {
+        // Buscar a conversa para esta mensagem
+        const conversation = await db.query.conversations.findFirst({
+          where: eq(conversations.id, message.conversationId)
+        });
+        
+        return {
+          id: message.id,
+          content: message.content,
+          type: message.type || "text",
+          conversationId: message.conversationId,
+          contactName: conversation ? conversation.name : "Desconhecido",
+          timestamp: message.timestamp,
+          metadata: message.metadata || {}
+        };
+      }));
       
       res.json({
         success: true,
-        messages: recentMessages.map(message => ({
-          id: message.id,
-          content: message.content,
-          type: message.type,
-          conversationId: message.conversationId,
-          contactName: message.conversation ? message.conversation.name : "Desconhecido",
-          timestamp: message.timestamp,
-          metadata: message.metadata || {}
-        }))
+        messages: result
       });
     } catch (error) {
       console.error("Erro ao buscar webhooks recentes:", error);
