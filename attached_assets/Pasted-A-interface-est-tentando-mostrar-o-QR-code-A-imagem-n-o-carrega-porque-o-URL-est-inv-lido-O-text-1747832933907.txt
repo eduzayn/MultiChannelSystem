@@ -1,0 +1,60 @@
+A interface está tentando mostrar o QR code
+A imagem não carrega porque o URL está inválido
+O texto de instrução "Escaneie com WhatsApp" aparece corretamente
+O problema está na forma como o QR code está sendo processado ou apresentado. Isso geralmente acontece quando:
+
+A API retorna o QR code em um formato que o sistema não consegue interpretar corretamente
+A string base64 está malformada ou incompleta
+O prefixo "data:image/png;base64," está faltando ou malformado
+Solução:
+Vamos modificar o componente que exibe o QR code para tratar melhor os diferentes formatos que a Z-API pode retornar:
+
+// Componente QRCodeDisplay.jsx
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode.react'; // Você pode precisar instalar esta biblioteca
+const QRCodeDisplay = ({ qrCodeData }) => {
+  // Determinar o tipo de dados do QR code
+  const [qrCodeType, setQrCodeType] = useState('unknown');
+  useEffect(() => {
+    if (!qrCodeData) {
+      setQrCodeType('empty');
+    } else if (qrCodeData.startsWith('data:image/')) {
+      setQrCodeType('dataurl');
+    } else if (qrCodeData.match(/^[A-Za-z0-9+/=]+$/)) {
+      // Parece ser uma string base64 sem o prefixo data:image
+      setQrCodeType('base64');
+    } else {
+      // Assumir que é texto para gerar QR code
+      setQrCodeType('text');
+    }
+  }, [qrCodeData]);
+  if (!qrCodeData) {
+    return <div>Aguardando QR Code...</div>;
+  }
+  switch (qrCodeType) {
+    case 'dataurl':
+      // URL de dados completo (data:image/png;base64,...)
+      return <img src={qrCodeData} alt="QR Code para WhatsApp" style={{ maxWidth: '100%' }} />;
+    
+    case 'base64':
+      // String base64 sem prefixo
+      return <img 
+        src={`data:image/png;base64,${qrCodeData}`} 
+        alt="QR Code para WhatsApp" 
+        style={{ maxWidth: '100%' }} 
+      />;
+    
+    case 'text':
+      // Texto para gerar QR code via biblioteca
+      return <QRCode value={qrCodeData} size={256} />;
+    
+    default:
+      // Fallback para API de QR code do Google
+      return <img 
+        src={`https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(qrCodeData)}`}
+        alt="QR Code para WhatsApp" 
+        style={{ maxWidth: '100%' }} 
+      />;
+  }
+};
+export default QRCodeDisplay;

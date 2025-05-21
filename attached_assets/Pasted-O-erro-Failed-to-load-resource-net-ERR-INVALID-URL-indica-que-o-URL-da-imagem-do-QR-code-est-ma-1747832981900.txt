@@ -1,0 +1,171 @@
+O erro "Failed to load resource: net::ERR_INVALID_URL" indica que o URL da imagem do QR code está malformado ou inválido.
+
+Analisando a imagem, vejo que:
+
+A interface está tentando mostrar o QR code
+A imagem não carrega porque o URL está inválido
+O texto de instrução "Escaneie com WhatsApp" aparece corretamente
+O problema está na forma como o QR code está sendo processado ou apresentado. Isso geralmente acontece quando:
+
+A API retorna o QR code em um formato que o sistema não consegue interpretar corretamente
+A string base64 está malformada ou incompleta
+O prefixo "data:image/png;base64," está faltando ou malformado
+Solução:
+Vamos modificar o componente que exibe o QR code para tratar melhor os diferentes formatos que a Z-API pode retornar:
+
+// Componente QRCodeDisplay.jsx
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode.react'; // Você pode precisar instalar esta biblioteca
+const QRCodeDisplay = ({ qrCodeData }) => {
+  // Determinar o tipo de dados do QR code
+  const [qrCodeType, setQrCodeType] = useState('unknown');
+  useEffect(() => {
+    if (!qrCodeData) {
+      setQrCodeType('empty');
+    } else if (qrCodeData.startsWith('data:image/')) {
+      setQrCodeType('dataurl');
+    } else if (qrCodeData.match(/^[A-Za-z0-9+/=]+$/)) {
+      // Parece ser uma string base64 sem o prefixo data:image
+      setQrCodeType('base64');
+    } else {
+      // Assumir que é texto para gerar QR code
+      setQrCodeType('text');
+    }
+  }, [qrCodeData]);
+  if (!qrCodeData) {
+    return <div>Aguardando QR Code...</div>;
+  }
+  switch (qrCodeType) {
+    case 'dataurl':
+      // URL de dados completo (data:image/png;base64,...)
+      return <img src={qrCodeData} alt="QR Code para WhatsApp" style={{ maxWidth: '100%' }} />;
+    
+    case 'base64':
+      // String base64 sem prefixo
+      return <img 
+        src={`data:image/png;base64,${qrCodeData}`} 
+        alt="QR Code para WhatsApp" 
+        style={{ maxWidth: '100%' }} 
+      />;
+    
+    case 'text':
+      // Texto para gerar QR code via biblioteca
+      return <QRCode value={qrCodeData} size={256} />;
+    
+    default:
+      // Fallback para API de QR code do Google
+      return <img 
+        src={`https://chart.googleapis.com/chart?cht=qr&chs=256x256&chl=${encodeURIComponent(qrCodeData)}`}
+        alt="QR Code para WhatsApp" 
+        style={{ maxWidth: '100%' }} 
+      />;
+  }
+};
+export default QRCodeDisplay;
+Agora, no seu componente que chama a API, modifique a parte que processa a resposta:
+
+// No componente que faz a chamada à API
+const fetchQRCode = async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get('/api/whatsapp/qrcode');
+    
+    if (response.data && response.data.qrCode) {
+      // Verifique e limpe a string do QR code se necessário
+      let qrCode = response.data.qrCode;
+      
+      // Log para depuração
+      console.log('QR Code recebido (primeiros 50 caracteres):', 
+                  qrCode.substring(0, 50) + '...');
+      
+      // Se for um objeto JSON, converta para string
+      if (typeof qrCode === 'object') {
+        qrCode = JSON.stringify(qrCode);
+      }
+      
+      setQrCodeData(qrCode);
+      setLoading(false);
+    } else {
+      setError('QR Code não disponível na resposta');
+      setLoading(false);
+    }
+  } catch (err) {
+    console.error('Erro ao obter QR code:', err);
+    setError('Falha ao obter QR Code. Tente novamente.');
+    setLoading(false);
+  }
+};
+No seu endpoint de backend, certifique-se de que a resposta está formatada corretamente:
+
+// No endpoint de backend
+app.get('/api/whatsapp/qrcode', async (req, res) => {
+  try {
+    // Lógica para obter o QR code da Z-API
+    const qrCodeResponse = await axios.get(
+      `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code`,
+      { 
+        headers: { 'Client-Token': clientToken },
+        responseType: 'arraybuffer'
+      }
+    );
+    
+    // Log para depuração
+    console.log(`Resposta QR Code recebida: ${qrCodeResponse.data.length} bytes`);
+    
+    try {
+      // Tente interpretar como texto/JSON primeiro
+      const textData = Buffer.from(qrCodeResponse.data).toString('utf-8');
+      
+      // Verifique se é JSON válido
+      try {
+        const jsonData = JSON.parse(textData);
+        console.log('Resposta QR code é JSON:', jsonData);
+        
+        if (jsonData.error) {
+          return res.status(400).json({
+            success: false,
+            error: jsonData.error
+          });
+        }
+        
+        if (jsonData.value) {
+          // Retorna o valor direto para gerar QR code no frontend
+          return res.json({
+            success: true,
+            qrCode: jsonData.value
+          });
+        }
+      } catch (jsonErr) {
+        // Não é JSON válido, então é provavelmente uma imagem
+        console.log('Resposta não é JSON válido, tratando como imagem');
+      }
+    } catch (textErr) {
+      console.log('Erro ao interpretar resposta como texto, tratando como binário');
+    }
+    
+    // Se chegou aqui, tratar como imagem binária
+    const base64Image = Buffer.from(qrCodeResponse.data).toString('base64');
+    
+    return res.json({
+      success: true,
+      qrCode: `data:image/png;base64,${base64Image}`
+    });
+  } catch (error) {
+    console.error('Erro ao obter QR code da Z-API:', error);
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Falha ao obter QR Code',
+      details: error.message
+    });
+  }
+});
+Se você não tem controle sobre o backend e está apenas integrando com a API, então primeiro é essencial testar os endpoints diretamente para ver o que está sendo retornado:
+
+Tente acessar diretamente:
+https://api.z-api.io/instances/SEU_INSTANCE_ID/token/SEU_TOKEN/qr-code
+Use uma ferramenta como o Postman para fazer a requisição com os headers corretos:
+GET https://api.z-api.io/instances/SEU_INSTANCE_ID/token/SEU_TOKEN/qr-code
+Headers:
+  Client-Token: SEU_CLIENT_TOKEN
+Isso vai ajudar a identificar exatamente qual é o formato da resposta e como melhor tratá-la.

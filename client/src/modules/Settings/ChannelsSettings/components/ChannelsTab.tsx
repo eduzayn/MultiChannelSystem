@@ -34,6 +34,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { QRCodeSVG } from "qrcode.react";
+import { QRCodeDisplay } from "@/components/qr-code-display";
 
 export const ChannelsTab = () => {
   // Estados principais
@@ -586,23 +587,7 @@ export const ChannelsTab = () => {
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
-                      {channelQrCodeData ? (
-                        // Sempre mostrar como SVG, que é mais confiável
-                        <div className="bg-white p-6 rounded-md flex items-center justify-center">
-                          <QRCodeSVG
-                            value={channelQrCodeData.startsWith('data:') ? 'https://wa.me/5511999999999' : channelQrCodeData}
-                            size={400}
-                            bgColor={"#ffffff"}
-                            fgColor={"#000000"}
-                            level={"L"}
-                            includeMargin={true}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-80 h-80 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
-                          <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
-                        </div>
-                      )}
+                      <QRCodeDisplay qrCodeData={channelQrCodeData} size={400} />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
