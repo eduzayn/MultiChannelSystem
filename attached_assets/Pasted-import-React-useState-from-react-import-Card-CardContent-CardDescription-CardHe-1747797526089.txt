@@ -1,0 +1,161 @@
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { 
+  IntegrationCard, 
+  IntegrationStatus 
+} from "./Integrations/IntegrationCard";
+import { AsaasIntegrationModal } from "./Integrations/AsaasIntegrationModal";
+import { OpenAIIntegrationModal } from "./Integrations/OpenAIIntegrationModal";
+import { ElevenLabsIntegrationModal } from "./Integrations/ElevenLabsIntegrationModal";
+import { PerplexityIntegrationModal } from "./Integrations/PerplexityIntegrationModal";
+
+// Mock data para integrações disponíveis
+const INTEGRATION_CATEGORIES = [
+  { id: "all", name: "Todas" },
+  { id: "payments", name: "Pagamentos" },
+  { id: "ai", name: "Inteligência Artificial" },
+  { id: "voice", name: "Voz" },
+  { id: "communication", name: "Comunicação" },
+  { id: "marketing", name: "Marketing" },
+  { id: "crm", name: "CRM" },
+  { id: "ecommerce", name: "E-commerce" },
+  { id: "analytics", name: "Analytics" },
+  { id: "other", name: "Outros" },
+];
+
+export const IntegrationsTab = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeModal, setActiveModal] = useState<string | null>(null);
+
+  // Mock de integrações - no futuro, isso viria de uma API
+  const integrations = [
+    {
+      id: "asaas",
+      name: "Asaas",
+      description: "Automatize a criação e o acompanhamento de cobranças para seus clientes",
+      logo: "/placeholder.svg",
+      status: "not_connected" as IntegrationStatus,
+      category: "payments"
+    },
+    {
+      id: "openai",
+      name: "OpenAI",
+      description: "Modelos de linguagem avançados para a Prof. Ana e outras funcionalidades de IA",
+      logo: "/placeholder.svg",
+      status: "not_connected" as IntegrationStatus,
+      category: "ai"
+    },
+    {
+      id: "perplexity",
+      name: "Perplexity AI",
+      description: "Busca e respostas inteligentes com acesso à internet em tempo real",
+      logo: "/placeholder.svg",
+      status: "not_connected" as IntegrationStatus,
+      category: "ai"
+    },
+    {
+      id: "elevenlabs",
+      name: "ElevenLabs",
+      description: "Síntese de voz avançada para Prof. Ana e mensagens de voz",
+      logo: "/placeholder.svg",
+      status: "not_connected" as IntegrationStatus,
+      category: "voice"
+    }
+  ];
+
+  // Filtragem de integrações por categoria e busca
+  const filteredIntegrations = integrations.filter(integration => {
+    const matchesCategory = activeCategory === "all" || integration.category === activeCategory;
+    const matchesSearch = integration.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          integration.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleIntegrationClick = (integrationId: string) => {
+    setActiveModal(integrationId);
+  };
+
+  const closeModal = () => {
+    setActiveModal(null);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Integrações</CardTitle>
+        <CardDescription>
+          Configure integrações com serviços externos para expandir as funcionalidades da sua plataforma
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {/* Barra de pesquisa */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar integrações..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          {/* Categorias/Filtros */}
+          <Tabs defaultValue="all" value={activeCategory} onValueChange={setActiveCategory}>
+            <TabsList className="mb-4 w-full justify-start overflow-x-auto">
+              {INTEGRATION_CATEGORIES.map(category => (
+                <TabsTrigger key={category.id} value={category.id}>
+                  {category.name}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {/* Lista de integrações (cards) */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredIntegrations.map(integration => (
+              <IntegrationCard
+                key={integration.id}
+                id={integration.id}
+                name={integration.name}
+                description={integration.description}
+                logo={integration.logo}
+                status={integration.status}
+                onActionClick={() => handleIntegrationClick(integration.id)}
+              />
+            ))}
+          </div>
+
+          {/* Modais de configuração */}
+          <AsaasIntegrationModal
+            isOpen={activeModal === "asaas"}
+            onClose={closeModal}
+          />
+          <OpenAIIntegrationModal
+            isOpen={activeModal === "openai"}
+            onClose={closeModal}
+          />
+          <PerplexityIntegrationModal
+            isOpen={activeModal === "perplexity"}
+            onClose={closeModal}
+          />
+          <ElevenLabsIntegrationModal
+            isOpen={activeModal === "elevenlabs"}
+            onClose={closeModal}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
