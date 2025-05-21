@@ -234,15 +234,58 @@ export const ZAPIIntegration = () => {
   
   // Salvar configurações do canal
   const saveChannelConfig = async () => {
-    if (!selectedChannelId) return;
-    
-    // Atualiza o canal existente com as novas credenciais
-    updateChannelMutation.mutate({ 
-      id: selectedChannelId, 
-      data: { 
-        configuration: credentials 
-      } 
-    });
+    setIsSubmitting(true);
+    try {
+      if (!selectedChannelId) {
+        // Criar novo canal se não existir
+        const channelData = {
+          name: `WhatsApp (${credentials.instanceId.substring(0, 8)})`,
+          type: "whatsapp",
+          isActive: true,
+          description: "Canal de WhatsApp via Z-API",
+          configuration: {
+            provider: "zapi",
+            instanceId: credentials.instanceId,
+            token: credentials.token,
+            clientToken: credentials.clientToken
+          }
+        };
+        
+        const response = await axios.post('/api/marketing-channels', channelData);
+        
+        toast({
+          title: 'Canal criado com sucesso!',
+          description: 'O canal WhatsApp foi configurado e está pronto para uso',
+          variant: 'default',
+        });
+        
+        // Recarregar a lista de canais
+        queryClient.invalidateQueries({ queryKey: ['/api/marketing-channels'] });
+        
+      } else {
+        // Atualiza o canal existente com as novas credenciais
+        updateChannelMutation.mutate({ 
+          id: selectedChannelId, 
+          data: { 
+            configuration: {
+              provider: "zapi",
+              instanceId: credentials.instanceId,
+              token: credentials.token,
+              clientToken: credentials.clientToken
+            }
+          } 
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro ao salvar canal:", error);
+      toast({
+        title: 'Erro ao salvar canal',
+        description: error.response?.data?.message || 'Ocorreu um erro ao salvar o canal',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   // Removida função de criar novo canal

@@ -1553,14 +1553,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/marketing-channels", async (req, res) => {
     try {
+      console.log("Criando canal de marketing:", req.body);
       const validatedData = insertMarketingChannelSchema.parse(req.body);
+      console.log("Dados validados:", validatedData);
       const channel = await storage.createMarketingChannel(validatedData);
       res.status(201).json(channel);
     } catch (error) {
+      console.error("Erro ao criar canal de marketing:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Dados de canal inválidos", errors: error.errors });
       }
-      res.status(500).json({ message: "Falha ao criar canal de marketing" });
+      res.status(500).json({ message: "Falha ao criar canal de marketing", error: error instanceof Error ? error.message : String(error) });
     }
   });
   
