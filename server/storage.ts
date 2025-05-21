@@ -250,9 +250,11 @@ export class DatabaseStorage implements IStorage {
     }).returning();
     
     // Atualizar o contador de segmentos (opcional, mas útil para performance)
+    const [currentSegment] = await db.select().from(audienceSegments).where(eq(audienceSegments.id, segmentId));
+    
     await db.update(audienceSegments)
       .set({
-        count: db.sql`${audienceSegments.count} + 1`,
+        count: (currentSegment?.count || 0) + 1,
         updatedAt: new Date()
       })
       .where(eq(audienceSegments.id, segmentId));
@@ -271,9 +273,11 @@ export class DatabaseStorage implements IStorage {
     
     if (result) {
       // Atualizar o contador de segmentos
+      const [currentSegment] = await db.select().from(audienceSegments).where(eq(audienceSegments.id, segmentId));
+      
       await db.update(audienceSegments)
         .set({
-          count: db.sql`${audienceSegments.count} - 1`,
+          count: Math.max(0, (currentSegment?.count || 0) - 1), // Garantir que o contador nunca fique negativo
           updatedAt: new Date()
         })
         .where(eq(audienceSegments.id, segmentId));
