@@ -16,6 +16,7 @@ import Goals from "@/pages/goals";
 import Campaigns from "@/pages/campaigns";
 import Automations from "@/pages/automations";
 import Reports from "@/pages/reports";
+import AISettings from "@/pages/settings-ai";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/campaigns/new" component={Campaigns} />
         <Route path="/automations" component={Automations} />
         <Route path="/reports" component={Reports} />
+        <Route path="/settings/ai" component={AISettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

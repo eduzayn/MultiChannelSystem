@@ -74,7 +74,7 @@ export const SettingsModule = ({ children }: SettingsModuleProps) => {
                       <span className="mr-2">🎯</span> Metas e Gamificação
                     </Link>
                   </Button>
-                  <Button variant="primary" className="w-full justify-start text-sm" asChild>
+                  <Button variant="default" className="w-full justify-start text-sm bg-primary text-primary-foreground" asChild>
                     <Link href="/settings/ai">
                       <span className="mr-2">🤖</span> IA - Prof. Ana
                     </Link>
