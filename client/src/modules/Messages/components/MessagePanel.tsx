@@ -5,7 +5,7 @@ import { MessageBubble, MessageProps } from "./MessageBubble";
 import { InputArea } from "./InputArea";
 import { ConversationItemProps } from "@/modules/Inbox/components/ConversationItem";
 import { useToast } from "@/hooks/use-toast";
-import { sendTextMessage, sendButtonMessage } from "@/services/zapiService";
+import { sendTextMessage, sendButtonMessage } from "@/services/messageService";
 import {
   DropdownMenu,
   DropdownMenuContent,
