@@ -26,7 +26,7 @@ import { Loader2, CheckCircle, XCircle, QrCode, ExternalLink, Copy, Phone } from
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { QRCodeSVG } from 'qrcode.react';
-import { QRCodeDisplay } from '@/components/QRCodeDisplay';
+import { SimpleQRCode } from '@/components/SimpleQRCode';
 
 interface ZAPICredentials {
   instanceId: string;
@@ -532,7 +532,7 @@ export const ZAPIIntegration = () => {
           {qrCodeData ? (
             <div className="flex flex-col items-center p-6 bg-white rounded-md gap-6">
               <div className="p-6 border-2 border-primary/10 bg-white rounded-lg shadow-lg">
-                <QRCodeDisplay qrCodeData={qrCodeData} size={350} />
+                <SimpleQRCode qrCodeData={qrCodeData} size={350} isImageQRCode={true} />
               </div>
               
               <div className="text-center max-w-2xl mt-2">
