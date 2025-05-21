@@ -273,3 +273,75 @@ export async function sendTextMessage(
     }
   }
 }
+
+/**
+ * Desconecta o WhatsApp da instância Z-API
+ * @param instanceId ID da instância Z-API
+ * @param token Token da instância Z-API
+ * @param clientToken Token de segurança da conta Z-API (Client-Token)
+ * @returns Resultado da operação de desconexão
+ */
+export async function disconnectZapi(
+  instanceId: string,
+  token: string,
+  clientToken: string
+): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  try {
+    console.log(`Desconectando WhatsApp da instância Z-API (${instanceId})...`);
+    
+    // Endpoint para desconectar o WhatsApp
+    const disconnectUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/disconnect`;
+    
+    const response = await axios.post(
+      disconnectUrl,
+      {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Client-Token": clientToken
+        },
+        validateStatus: function (status) {
+          // Aceitar qualquer status para poder tratar o erro adequadamente
+          return true;
+        }
+      }
+    );
+    
+    console.log(`Resposta da desconexão Z-API (Status ${response.status}):`, JSON.stringify(response.data));
+    
+    if (response.status === 200) {
+      return {
+        success: true,
+        message: "WhatsApp desconectado com sucesso."
+      };
+    } else {
+      let errorMessage = `Erro ${response.status}`;
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMessage += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage
+      };
+    }
+  } catch (error) {
+    console.error(`Erro ao desconectar WhatsApp da Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}

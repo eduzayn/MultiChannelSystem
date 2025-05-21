@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getZapiQRCode, testZapiConnection, sendTextMessage } from "../services/zapiService";
+import { getZapiQRCode, testZapiConnection, sendTextMessage, disconnectZapi } from "../services/zapiService";
 
 export function registerZapiRoutes(app: Router) {
   // Rota para obter o QR Code da Z-API
@@ -64,6 +64,29 @@ export function registerZapiRoutes(app: Router) {
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de envio de mensagem:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para desconectar WhatsApp da Z-API
+  app.post("/api/zapi/disconnect", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken } = req.body;
+      
+      if (!instanceId || !token) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID e Token são obrigatórios",
+        });
+      }
+      
+      const result = await disconnectZapi(instanceId, token, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de desconexão:", error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Erro interno do servidor",
