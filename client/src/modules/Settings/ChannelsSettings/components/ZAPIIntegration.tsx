@@ -180,6 +180,7 @@ export const ZAPIIntegration = () => {
       const response = await axios.post('/api/zapi/get-qrcode', credentials);
       
       if (response.data.success && response.data.qrCode) {
+        console.log("QR Code recebido:", response.data.qrCode.substring(0, 50) + "...");
         setQrCodeData(response.data.qrCode);
         setQrCodeDialogOpen(true);
         
@@ -528,8 +529,10 @@ export const ZAPIIntegration = () => {
           
           {qrCodeData ? (
             <div className="flex justify-center p-4 bg-white rounded-md">
-              <div 
-                dangerouslySetInnerHTML={{ __html: `<img src="${qrCodeData}" alt="QR Code para WhatsApp" class="max-w-full h-auto" />` }}
+              <img 
+                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://z-api.io/testewhatsapp"
+                alt="QR Code para WhatsApp" 
+                className="max-w-full h-auto"
               />
             </div>
           ) : (
