@@ -30,6 +30,7 @@ import NotificationsSettings from "@/pages/settings-notifications";
 import SecuritySettings from "@/pages/settings-security";
 import SubscriptionSettings from "@/pages/settings-subscription";
 import Settings from "@/pages/settings";
+import ZapiTestPage from "@/pages/ZapiTestPage";
 
 function Router() {
   return (
