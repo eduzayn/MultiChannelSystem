@@ -249,12 +249,18 @@ export class DatabaseStorage implements IStorage {
       metadata: insertMessage.metadata || {}
     }).returning();
     
+    // Primeiro buscar o valor atual de unreadCount
+    const [currentConversation] = await db.select().from(conversations)
+      .where(eq(conversations.id, insertMessage.conversationId));
+      
     // Update the conversation with the last message
     await db.update(conversations)
       .set({
         lastMessage: insertMessage.content,
         lastMessageAt: insertMessage.timestamp || new Date(),
-        unreadCount: insertMessage.sender === 'contact' ? db.raw('unread_count + 1') : db.raw('unread_count'),
+        unreadCount: insertMessage.sender === 'contact' 
+          ? (currentConversation.unreadCount || 0) + 1 
+          : (currentConversation.unreadCount || 0),
         updatedAt: new Date()
       })
       .where(eq(conversations.id, insertMessage.conversationId));
