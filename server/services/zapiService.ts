@@ -24,12 +24,39 @@ export async function getZapiQRCode(
     try {
       const imageUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code/image`;
       
+      console.log(`Chamando API Z-API: ${imageUrl}`);
+      
       const imageResponse = await axios.get(imageUrl, {
         headers: {
           "Client-Token": clientToken,
         },
         responseType: "arraybuffer",
+        validateStatus: function (status) {
+          // Aceitar qualquer status para poder tratar o erro adequadamente
+          return true;
+        }
       });
+      
+      // Se houver um erro na resposta, vamos passar o erro para o frontend
+      if (imageResponse.status !== 200) {
+        console.error(`Erro na resposta da Z-API: ${imageResponse.status}`);
+        
+        // Tenta converter a resposta para texto para obter a mensagem de erro
+        let errorMessage = "Erro ao obter QR code";
+        try {
+          const responseText = Buffer.from(imageResponse.data).toString('utf8');
+          console.log("Resposta de erro Z-API:", responseText);
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorData.message || "Erro desconhecido na API Z-API";
+        } catch (parseError) {
+          console.error("Erro ao analisar resposta de erro:", parseError);
+        }
+        
+        return {
+          success: false,
+          message: errorMessage,
+        };
+      }
       
       if (imageResponse.status === 200) {
         // Convert array buffer to base64

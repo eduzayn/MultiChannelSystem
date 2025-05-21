@@ -14,9 +14,30 @@ interface SimpleQRCodeProps {
 export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQRCodeProps) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isError, setIsError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   useEffect(() => {
     if (!qrCodeData) return;
+    
+    // Verificar se a resposta contém um erro da API
+    try {
+      // Tentativa de decodificar base64 e verificar se é um JSON de erro
+      if (/^[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
+        try {
+          const decodedData = atob(qrCodeData);
+          if (decodedData.startsWith('{"error"')) {
+            const errorObj = JSON.parse(decodedData);
+            setErrorMessage(`Erro Z-API: ${errorObj.error || errorObj.message || 'Erro desconhecido'}`);
+            setIsError(true);
+            return;
+          }
+        } catch (e) {
+          // Se não conseguir decodificar, continua o fluxo normal
+        }
+      }
+    } catch (e) {
+      // Ignora erros de parsing
+    }
     
     // Verificar se é uma imagem em base64
     if (isImageQRCode || qrCodeData.startsWith('data:image')) {
@@ -30,6 +51,7 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     }
     
     setIsError(false);
+    setErrorMessage(null);
   }, [qrCodeData, isImageQRCode]);
   
   // Se não há dados, mostra mensagem
@@ -37,6 +59,17 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     return (
       <div className="flex items-center justify-center w-full h-full p-4 border border-dashed rounded-lg">
         <p className="text-muted-foreground">QR Code não disponível</p>
+      </div>
+    );
+  }
+  
+  // Se há mensagem de erro, exibe-a
+  if (isError && errorMessage) {
+    return (
+      <div className="flex flex-col items-center text-center p-4 border border-red-300 bg-red-50 rounded-lg">
+        <p className="text-red-600 font-medium">Não foi possível obter o QR Code</p>
+        <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
+        <p className="text-sm text-gray-500 mt-4">Verifique suas credenciais da Z-API e tente novamente.</p>
       </div>
     );
   }
@@ -55,6 +88,7 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
           onError={() => {
             console.error("Erro ao carregar imagem QR code");
             setIsError(true);
+            setErrorMessage("Não foi possível exibir o QR Code como imagem");
           }}
         />
       </div>
