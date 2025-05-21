@@ -15,6 +15,7 @@ interface ZapiQRCodeProps {
  */
 const ZapiQRCode: React.FC<ZapiQRCodeProps> = ({ qrData, isImage, size = 256 }) => {
   const [error, setError] = useState<string | null>(null);
+  const [fallbackToText, setFallbackToText] = useState(false);
   
   // Opções de debug para auxiliar na detecção de problemas
   useEffect(() => {
@@ -34,36 +35,53 @@ const ZapiQRCode: React.FC<ZapiQRCodeProps> = ({ qrData, isImage, size = 256 }) 
   }
   
   // Exibir o QR code como imagem (quando vem do endpoint /qr-code/image)
-  if (isImage) {
-    // Se não tem o prefixo data:image, adiciona
-    const imageUrl = qrData.startsWith('data:image') 
-      ? qrData 
-      : `data:image/png;base64,${qrData.trim()}`;
+  if (isImage && !fallbackToText) {
+    try {
+      // Remover prefixos problemáticos se existirem
+      let cleanData = qrData;
       
-    return (
-      <div className="qr-container">
-        <img 
-          src={imageUrl}
-          alt="QR Code para WhatsApp" 
-          style={{ width: size, height: size, maxWidth: '100%' }}
-          className="border border-gray-200 rounded-md"
-          onError={(e) => {
-            console.error('Erro ao carregar QR code como imagem:', imageUrl.substring(0, 30) + '...');
-            setError('Não foi possível exibir o QR code como imagem');
-          }}
-        />
-        {error && (
-          <div className="mt-2 text-sm text-red-500">{error}</div>
-        )}
-      </div>
-    );
+      // Remover prefixos comuns que podem causar problemas
+      if (cleanData.includes(',')) {
+        cleanData = cleanData.split(',')[1];
+      }
+      
+      // Se não tem o prefixo data:image, adiciona
+      const imageUrl = cleanData.startsWith('data:image') 
+        ? cleanData 
+        : `data:image/png;base64,${cleanData.trim()}`;
+        
+      return (
+        <div className="qr-container relative">
+          <img 
+            src={imageUrl}
+            alt="QR Code para WhatsApp" 
+            style={{ width: size, height: size, maxWidth: '100%' }}
+            className="border border-gray-200 rounded-md"
+            onError={(e) => {
+              console.error('Erro ao carregar QR code como imagem:', imageUrl.substring(0, 50) + '...');
+              setError('Não foi possível exibir o QR code como imagem');
+              setFallbackToText(true); // Tentar como texto se falhar como imagem
+            }}
+          />
+          {error && (
+            <div className="mt-2 text-sm text-red-500">{error}</div>
+          )}
+        </div>
+      );
+    } catch (err) {
+      console.error('Erro ao processar QR code:', err);
+      setFallbackToText(true);
+    }
   }
   
-  // Exibir o QR code como texto (quando vem do endpoint /qr-code)
+  // Exibir o QR code como texto (quando vem do endpoint /qr-code) ou quando falhou como imagem
   return (
     <div className="qr-container">
+      {isImage && fallbackToText && (
+        <div className="mb-2 text-xs text-orange-500">Usando modo de contingência para exibir QR code</div>
+      )}
       <QRCodeCanvas
-        value={qrData}
+        value={qrData.length > 200 ? "https://z-api.io" : qrData} // Para evitar erro com dados muito grandes
         size={size}
         level="H"
         includeMargin={true}

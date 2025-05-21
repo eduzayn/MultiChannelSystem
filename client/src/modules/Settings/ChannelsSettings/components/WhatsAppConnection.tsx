@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import ZapiQRCode from "../../../../components/ZapiQRCode"; // Novo componente otimizado para ZApi
+import SimpleQRCode from "../../../../components/SimpleQRCode"; // Componente simples e direto para QR codes
 import { getZapiQRCode, ZapiCredentials, checkZapiConnectionStatus } from "../../../../services/zapiService";
 
 interface WhatsAppConnectionProps {
@@ -119,7 +119,7 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
       {connectionStatus === "authenticating" && qrCodeData && (
         <div className="w-full flex flex-col items-center justify-center">
           <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
-            <ZapiQRCode qrData={qrCodeData} isImage={isImageQR} size={250} />
+            <SimpleQRCode imageData={qrCodeData} size={250} />
           </div>
           <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
           <p className="text-xs text-muted-foreground mt-1 max-w-md text-center">
