@@ -528,10 +528,8 @@ export const ZAPIIntegration = () => {
           
           {qrCodeData ? (
             <div className="flex justify-center p-4 bg-white rounded-md">
-              <img 
-                src={qrCodeData}
-                alt="QR Code para WhatsApp" 
-                className="max-w-full h-auto"
+              <div 
+                dangerouslySetInnerHTML={{ __html: `<img src="${qrCodeData}" alt="QR Code para WhatsApp" class="max-w-full h-auto" />` }}
               />
             </div>
           ) : (
