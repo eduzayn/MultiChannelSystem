@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { registerZapiRoutes } from "./routes/zapiRoutes";
 import { ParsedQs } from "qs";
 
 // Estendendo o tipo de Request para incluir a propriedade session
@@ -2876,6 +2877,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Falha ao excluir logs de integração" });
     }
   });
+
+  // Registrar rotas de integração com Z-API (WhatsApp)
+  registerZapiRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
