@@ -2,26 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { 
-  Button, 
+  Button 
+} from '@/components/ui/button';
+import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardFooter, 
   CardHeader, 
-  CardTitle,
-  Label,
-  Input,
+  CardTitle
+} from '@/components/ui/card';
+import {
+  Label
+} from '@/components/ui/label';
+import {
+  Input
+} from '@/components/ui/input';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
+  SelectValue
+} from '@/components/ui/select';
+import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,
-  Switch
-} from '@/components/ui/';
+  TabsTrigger
+} from '@/components/ui/tabs';
 import { Loader2, CheckCircle, XCircle, QrCode, ExternalLink, Copy, Phone } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -50,17 +59,10 @@ export const ZAPIIntegration = () => {
   const [testResults, setTestResults] = useState<{ success: boolean; message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
-  const [newChannelDialogOpen, setNewChannelDialogOpen] = useState(false);
   const [credentials, setCredentials] = useState<ZAPICredentials>({
     instanceId: '',
     token: '',
     clientToken: ''
-  });
-  const [newChannel, setNewChannel] = useState({
-    name: 'Canal WhatsApp',
-    description: 'Canal para comunicação via WhatsApp usando Z-API',
-    type: 'whatsapp',
-    isActive: true
   });
   
   const queryClient = useQueryClient();
@@ -88,29 +90,7 @@ export const ZAPIIntegration = () => {
     }
   }, [selectedChannelId, channels]);
   
-  // Mutation para criar um novo canal
-  const createChannelMutation = useMutation({
-    mutationFn: async (channelData: any) => {
-      const response = await axios.post('/api/marketing-channels', channelData);
-      return response.data;
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Canal criado com sucesso',
-        description: 'Agora você pode configurar as credenciais do Z-API',
-        variant: 'default',
-      });
-      setNewChannelDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/marketing-channels/whatsapp'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Erro ao criar canal',
-        description: error.response?.data?.message || 'Ocorreu um erro inesperado',
-        variant: 'destructive',
-      });
-    }
-  });
+  // Removida a mutation para criar novo canal
   
   // Mutation para atualizar um canal existente
   const updateChannelMutation = useMutation({
@@ -264,13 +244,7 @@ export const ZAPIIntegration = () => {
     });
   };
   
-  // Criar novo canal
-  const handleCreateChannel = () => {
-    createChannelMutation.mutate({
-      ...newChannel,
-      configuration: null // Inicialmente sem configuração, será adicionada depois
-    });
-  };
+  // Removida função de criar novo canal
 
   // Renderização de componentes
   const renderTestResults = () => {
@@ -295,16 +269,11 @@ export const ZAPIIntegration = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-medium">Integração com Z-API (WhatsApp)</h3>
-          <p className="text-sm text-muted-foreground">
-            Configure a integração com Z-API para enviar e receber mensagens pelo WhatsApp.
-          </p>
-        </div>
-        <Button onClick={() => setNewChannelDialogOpen(true)}>
-          + Adicionar Canal WhatsApp
-        </Button>
+      <div>
+        <h3 className="text-lg font-medium">Integração com Z-API (WhatsApp)</h3>
+        <p className="text-sm text-muted-foreground">
+          Configure a integração com Z-API para enviar e receber mensagens pelo WhatsApp.
+        </p>
       </div>
 
       {isLoadingChannels ? (
@@ -316,14 +285,9 @@ export const ZAPIIntegration = () => {
           <CardHeader>
             <CardTitle>Nenhum canal configurado</CardTitle>
             <CardDescription>
-              Adicione um canal WhatsApp para começar a usar a integração com a Z-API.
+              Configure um canal WhatsApp para começar a usar a integração com a Z-API.
             </CardDescription>
           </CardHeader>
-          <CardFooter>
-            <Button onClick={() => setNewChannelDialogOpen(true)}>
-              + Adicionar Canal WhatsApp
-            </Button>
-          </CardFooter>
         </Card>
       ) : (
         <div className="space-y-6">
@@ -339,7 +303,7 @@ export const ZAPIIntegration = () => {
                 <Label htmlFor="channel-select">Selecione um canal</Label>
                 <Select
                   value={selectedChannelId?.toString() || ''}
-                  onValueChange={(value) => setSelectedChannelId(Number(value))}
+                  onValueChange={(value: string) => setSelectedChannelId(Number(value))}
                 >
                   <SelectTrigger id="channel-select">
                     <SelectValue placeholder="Selecione um canal" />
@@ -378,7 +342,7 @@ export const ZAPIIntegration = () => {
                       <Input
                         id="instance-id"
                         value={credentials.instanceId}
-                        onChange={(e) => setCredentials({...credentials, instanceId: e.target.value})}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCredentials({...credentials, instanceId: e.target.value})}
                         placeholder="Ex: 1A2B3C4D5E6F7G8H9I0J"
                       />
                       <p className="text-xs text-muted-foreground">
@@ -581,64 +545,7 @@ export const ZAPIIntegration = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Nova Canal Dialog */}
-      <Dialog open={newChannelDialogOpen} onOpenChange={setNewChannelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Canal WhatsApp</DialogTitle>
-            <DialogDescription>
-              Crie um novo canal para comunicação via WhatsApp usando Z-API
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="channel-name">Nome do Canal</Label>
-              <Input
-                id="channel-name"
-                value={newChannel.name}
-                onChange={(e) => setNewChannel({...newChannel, name: e.target.value})}
-                placeholder="Ex: WhatsApp Marketing"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="channel-description">Descrição (opcional)</Label>
-              <Input
-                id="channel-description"
-                value={newChannel.description || ''}
-                onChange={(e) => setNewChannel({...newChannel, description: e.target.value})}
-                placeholder="Ex: Canal para comunicação com clientes via WhatsApp"
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch
-                checked={newChannel.isActive}
-                onCheckedChange={(checked) => setNewChannel({...newChannel, isActive: checked})}
-                id="channel-active"
-              />
-              <Label htmlFor="channel-active">Ativo</Label>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setNewChannelDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleCreateChannel} disabled={createChannelMutation.isPending}>
-              {createChannelMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Criando...
-                </>
-              ) : (
-                'Criar Canal'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Caixa de diálogo para exibição de novo QR Code removida */}
     </div>
   );
 };
