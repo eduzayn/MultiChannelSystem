@@ -1554,6 +1554,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/marketing-channels", async (req, res) => {
     try {
       console.log("Criando canal de marketing:", req.body);
+      
+      // Verificar campos obrigatórios antes de validar com Zod
+      const { name, type } = req.body;
+      if (!name || !type) {
+        return res.status(400).json({ 
+          message: "Dados de canal inválidos", 
+          errors: [
+            !name ? "Nome do canal é obrigatório" : null,
+            !type ? "Tipo de canal é obrigatório" : null
+          ].filter(Boolean)
+        });
+      }
+      
       const validatedData = insertMarketingChannelSchema.parse(req.body);
       console.log("Dados validados:", validatedData);
       const channel = await storage.createMarketingChannel(validatedData);
@@ -1561,7 +1574,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao criar canal de marketing:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Dados de canal inválidos", errors: error.errors });
+        return res.status(400).json({ 
+          message: "Dados de canal inválidos", 
+          errors: error.errors.map(err => `${err.path.join('.')}: ${err.message}`)
+        });
       }
       res.status(500).json({ message: "Falha ao criar canal de marketing", error: error instanceof Error ? error.message : String(error) });
     }

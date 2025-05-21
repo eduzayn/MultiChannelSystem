@@ -247,7 +247,8 @@ export const ZAPIIntegration = () => {
             provider: "zapi",
             instanceId: credentials.instanceId,
             token: credentials.token,
-            clientToken: credentials.clientToken
+            clientToken: credentials.clientToken,
+            webhookUrl: `${window.location.origin}/api/zapi/webhook/1/1`
           }
         };
         
