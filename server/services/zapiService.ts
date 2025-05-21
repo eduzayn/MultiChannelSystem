@@ -16,37 +16,44 @@ export async function getZapiQRCode(
   qrCode?: string;
   message?: string;
   isImage?: boolean;
+  isConnected?: boolean;
 }> {
   try {
     console.log(`Obtendo QR Code para instância Z-API (${instanceId})...`);
     
-    // Obter o QR code via texto em vez de imagem
+    // Obter o QR code diretamente como bytes (via imagem)
     try {
-      // Usando o endpoint de QR code como texto, não como imagem
-      const qrCodeUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code`;
+      // Usando o endpoint QR code/image para obter os bytes da imagem
+      const imageUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code/image`;
       
-      console.log(`Chamando API Z-API para QR code: ${qrCodeUrl}`);
+      console.log(`Chamando API Z-API para obter QR code como bytes: ${imageUrl}`);
       
-      const qrCodeResponse = await axios.get(qrCodeUrl, {
+      const imageResponse = await axios.get(imageUrl, {
         headers: {
           "Client-Token": clientToken,
         },
+        responseType: 'arraybuffer', // Crucial para receber como bytes
         validateStatus: function (status) {
           // Aceitar qualquer status para poder tratar o erro adequadamente
           return true;
         }
       });
       
-      console.log(`Resposta da Z-API QR code (Status ${qrCodeResponse.status}):`, typeof qrCodeResponse.data);
+      console.log(`Resposta da Z-API QR code (Status ${imageResponse.status})`);
       
       // Se houver um erro na resposta, vamos passar o erro para o frontend
-      if (qrCodeResponse.status !== 200) {
-        console.error(`Erro na resposta da Z-API: ${qrCodeResponse.status}`);
+      if (imageResponse.status !== 200) {
+        console.error(`Erro na resposta da Z-API: ${imageResponse.status}`);
         
         // Tenta obter a mensagem de erro
         let errorMessage = "Erro ao obter QR code";
-        if (qrCodeResponse.data && typeof qrCodeResponse.data === 'object') {
-          errorMessage = qrCodeResponse.data.error || qrCodeResponse.data.message || "Erro desconhecido na API Z-API";
+        try {
+          const errorText = Buffer.from(imageResponse.data).toString('utf8');
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.message || "Erro desconhecido na API Z-API";
+          console.log("Mensagem de erro:", errorMessage);
+        } catch (e) {
+          console.error("Erro ao processar mensagem de erro:", e);
         }
         
         return {
@@ -55,31 +62,47 @@ export async function getZapiQRCode(
         };
       }
       
-      if (qrCodeResponse.status === 200) {
-        // Se resposta contém a mensagem de que já está conectado
-        if (qrCodeResponse.data && qrCodeResponse.data.connected === true) {
-          return {
-            success: false,
-            message: "WhatsApp já está conectado. Não é necessário QR code.",
-            isConnected: true
-          };
-        }
-        
-        // Verifique se a resposta tem o formato esperado 
-        if (qrCodeResponse.data && qrCodeResponse.data.value) {
-          console.log("QR code obtido com sucesso");
+      if (imageResponse.status === 200) {
+        try {
+          // Verificar se a resposta é um JSON (pode ser uma mensagem de erro ou status)
+          try {
+            const responseText = Buffer.from(imageResponse.data).toString('utf8');
+            const jsonData = JSON.parse(responseText);
+            
+            // Se é um objeto JSON, pode ser um status/erro
+            if (jsonData && jsonData.connected === true) {
+              return {
+                success: false,
+                message: "WhatsApp já está conectado. Não é necessário QR code."
+              };
+            }
+            
+            if (jsonData && jsonData.error) {
+              return {
+                success: false,
+                message: jsonData.error || "Erro desconhecido na API Z-API"
+              };
+            }
+          } catch (e) {
+            // Não é JSON, provavelmente são bytes da imagem - isso é bom!
+          }
+          
+          // Se chegou aqui, é uma imagem válida
+          // Convertemos os bytes para base64
+          const base64Image = Buffer.from(imageResponse.data).toString('base64');
+          
+          console.log("QR code obtido com sucesso (bytes convertidos para base64)");
           
           return {
             success: true,
-            qrCode: qrCodeResponse.data.value,
-            isImage: false // É um texto QR code, não uma imagem
+            qrCode: base64Image,
+            isImage: true // É uma imagem em base64
           };
-        } else {
-          console.log("Resposta da Z-API não contém QR code no formato esperado:", JSON.stringify(qrCodeResponse.data).substring(0, 100) + "...");
-          
+        } catch (processingError) {
+          console.error("Erro ao processar resposta do QR code:", processingError);
           return {
             success: false,
-            message: "QR code não encontrado na resposta da Z-API"
+            message: "Erro ao processar imagem do QR Code"
           };
         }
       }
