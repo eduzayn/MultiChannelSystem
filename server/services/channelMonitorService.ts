@@ -170,9 +170,10 @@ class ChannelMonitorService {
           // Atualizar status no banco de dados
           await db.update(marketingChannels)
             .set({ 
-              connected: false,
+              isConnected: false,
               lastStatusChange: new Date(),
-              lastErrorMessage: errorMessage
+              lastErrorMessage: errorMessage,
+              lastCheck: new Date()
             })
             .where(eq(marketingChannels.id, channel.id));
           

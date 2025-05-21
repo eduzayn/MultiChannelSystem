@@ -36,6 +36,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { SimpleQRCode } from '@/components/SimpleQRCode';
+import { WhatsAppStatusBadge } from '@/components/channel/WhatsAppStatusBadge';
 
 interface ZAPICredentials {
   instanceId: string;
