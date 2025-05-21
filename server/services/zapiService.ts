@@ -17,14 +17,28 @@ export async function getZapiQRCode(
   message?: string;
   isImage?: boolean;
   isConnected?: boolean;
+  details?: any; // Adicionado campo details para informações extras
+  connected?: boolean; // Campo para compatibilidade com respostas anteriores
 }> {
   try {
-    console.log(`Obtendo QR Code para instância Z-API (${instanceId})...`);
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      return {
+        success: false,
+        message: "Instance ID e Token são obrigatórios para gerar QR code"
+      };
+    }
+
+    // Limpar os parâmetros
+    const cleanInstanceId = instanceId.trim();
+    const cleanToken = token.trim();
+    
+    console.log(`Obtendo QR Code para instância Z-API (${cleanInstanceId})...`);
     
     // Obter o QR code diretamente como bytes (via imagem)
     try {
       // Usando o endpoint QR code/image para obter os bytes da imagem
-      const imageUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code/image`;
+      const imageUrl = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/qr-code/image`;
       
       console.log(`Chamando API Z-API para obter QR code como bytes: ${imageUrl}`);
       
@@ -115,7 +129,8 @@ export async function getZapiQRCode(
                     success: true,
                     qrCode: jsonData.value,
                     isImage: true,
-                    details: { encapsulated: true }
+                    connected: false,
+                    isConnected: false
                   };
                 }
               }
@@ -210,12 +225,25 @@ export async function testZapiConnection(
   details?: any;
 }> {
   try {
-    console.log(`Testando conexão com instância Z-API (${instanceId})...`);
-    console.log(`Usando token: ${token}`);
-    console.log(`Usando client-token: ${clientToken}`);
+    // Validação e limpeza dos parâmetros
+    if (!instanceId || !token) {
+      return {
+        success: false,
+        message: "Instance ID e Token são obrigatórios"
+      };
+    }
+    
+    // Limpar os parâmetros - remover espaços e caracteres indesejados
+    const cleanInstanceId = instanceId.trim();
+    const cleanToken = token.trim();
+    const cleanClientToken = clientToken?.trim();
+    
+    console.log(`Testando conexão com instância Z-API (${cleanInstanceId})...`);
+    console.log(`Usando token: ${cleanToken}`);
+    if (cleanClientToken) console.log(`Usando client-token: ${cleanClientToken}`);
     
     // Verifica o status da conexão via endpoint de status da Z-API
-    const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/status`;
+    const statusUrl = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/status`;
     
     console.log(`Fazendo requisição para: ${statusUrl}`);
     
