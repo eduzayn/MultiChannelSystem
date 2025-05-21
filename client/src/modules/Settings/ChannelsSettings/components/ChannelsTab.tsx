@@ -574,7 +574,7 @@ export const ChannelsTab = () => {
           
           {showQRCode && (
             <div className="mt-4 border rounded-lg p-6 flex flex-col items-center">
-              <div className="w-48 h-48 relative">
+              <div className="w-72 h-72 relative">
                 {qrCodeStatus === "waiting" && (
                   <div className="w-full h-full flex items-center justify-center">
                     <div className="text-center">
@@ -611,7 +611,7 @@ export const ChannelsTab = () => {
                         {channelQrCodeData && (
                           <QRCodeSVG
                             value={channelQrCodeData}
-                            size={144}
+                            size={256}
                             bgColor={"#ffffff"}
                             fgColor={"#000000"}
                             level={"L"}
