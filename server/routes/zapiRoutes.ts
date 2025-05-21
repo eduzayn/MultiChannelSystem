@@ -60,7 +60,7 @@ export function registerZapiRoutes(app: Router) {
         });
       }
       
-      const result = await sendTextMessage(instanceId, token, clientToken, phone, message);
+      const result = await sendTextMessage(instanceId, token, phone, message, clientToken);
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de envio de mensagem:", error);
