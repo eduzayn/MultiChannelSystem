@@ -1,6 +1,188 @@
 import axios from "axios";
 
 /**
+ * Obtém a lista de contatos da Z-API
+ * @param instanceId ID da instância Z-API
+ * @param token Token da instância Z-API
+ * @param clientToken Token de segurança da conta Z-API (Client-Token)
+ * @returns Lista de contatos do WhatsApp
+ */
+export async function getZapiContacts(
+  instanceId: string,
+  token: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  contacts?: any[];
+  message?: string;
+}> {
+  try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      return {
+        success: false,
+        message: "Instance ID e Token são obrigatórios para buscar contatos"
+      };
+    }
+
+    // Limpar os parâmetros
+    const cleanInstanceId = instanceId.trim();
+    const cleanToken = token.trim();
+    
+    console.log(`Obtendo contatos da instância Z-API (${cleanInstanceId})...`);
+    
+    const url = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/contacts`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    
+    if (clientToken?.trim()) {
+      headers["Client-Token"] = clientToken.trim();
+    }
+    
+    const response = await axios.get(url, {
+      headers,
+      validateStatus: function (status) {
+        // Aceitar qualquer status para tratar erros adequadamente
+        return true;
+      }
+    });
+    
+    console.log(`Resposta da Z-API contatos (Status ${response.status})`);
+    
+    if (response.status !== 200) {
+      console.error(`Erro na resposta da Z-API: ${response.status}`);
+      
+      let errorMessage = "Erro ao obter contatos";
+      if (response.data?.error || response.data?.message) {
+        errorMessage = response.data.error || response.data.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+    
+    // Se a resposta for bem-sucedida, retornamos os contatos
+    const contacts = Array.isArray(response.data) ? response.data : 
+                    response.data?.contacts || response.data?.response || [];
+    
+    console.log(`Contatos obtidos com sucesso: ${contacts.length} contatos`);
+    
+    return {
+      success: true,
+      contacts: contacts
+    };
+  } catch (error) {
+    console.error(`Erro ao obter contatos Z-API:`, error);
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status || ''}: ${error.response?.data?.error || error.message}`,
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido",
+      };
+    }
+  }
+}
+
+/**
+ * Obtém os metadados de um contato específico
+ * @param instanceId ID da instância Z-API
+ * @param token Token da instância Z-API
+ * @param phone Número do telefone no formato internacional (ex: 5537998694620)
+ * @param clientToken Token de segurança da conta Z-API (opcional)
+ * @returns Metadados do contato 
+ */
+export async function getZapiContactInfo(
+  instanceId: string,
+  token: string,
+  phone: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  contact?: any;
+  message?: string;
+}> {
+  try {
+    // Validar parâmetros
+    if (!instanceId || !token || !phone) {
+      return {
+        success: false,
+        message: "Instance ID, Token e Phone são obrigatórios para buscar informações do contato"
+      };
+    }
+    
+    // Limpar os parâmetros
+    const cleanInstanceId = instanceId.trim();
+    const cleanToken = token.trim();
+    const cleanPhone = phone.trim();
+    
+    console.log(`Obtendo metadados do contato ${cleanPhone} da instância Z-API (${cleanInstanceId})...`);
+    
+    const url = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/phone/${cleanPhone}`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    
+    if (clientToken?.trim()) {
+      headers["Client-Token"] = clientToken.trim();
+    }
+    
+    const response = await axios.get(url, {
+      headers,
+      validateStatus: function (status) {
+        // Aceitar qualquer status para tratar erros adequadamente
+        return true;
+      }
+    });
+    
+    console.log(`Resposta da Z-API metadados de contato (Status ${response.status})`);
+    
+    if (response.status !== 200) {
+      console.error(`Erro na resposta da Z-API: ${response.status}`);
+      
+      let errorMessage = "Erro ao obter metadados do contato";
+      if (response.data?.error || response.data?.message) {
+        errorMessage = response.data.error || response.data.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+    
+    // Se a resposta for bem-sucedida, retornamos os metadados do contato
+    return {
+      success: true,
+      contact: response.data
+    };
+  } catch (error) {
+    console.error(`Erro ao obter metadados do contato Z-API:`, error);
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status || ''}: ${error.response?.data?.error || error.message}`,
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido",
+      };
+    }
+  }
+}
+
+/**
  * Obtém o QR Code da Z-API para conexão do WhatsApp
  * @param instanceId ID da instância da Z-API
  * @param token Token da instância da Z-API
