@@ -59,20 +59,33 @@ const SimpleQRCode: React.FC<SimpleQRCodeProps> = ({
     );
   }
 
-  // Verifica se o imageData já é uma URL de dados completa
+  // Verifica e formata o imageData para exibição
   let imageSrc = '';
   if (imageData) {
-    console.log("Processando imageData. Primeiros caracteres:", imageData.substring(0, 50));
+    console.log("Recebido imageData do tipo:", typeof imageData);
+    console.log("Tamanho do imageData:", imageData.length);
+    console.log("Primeiros 30 caracteres:", imageData.substring(0, 30));
+    console.log("Últimos 30 caracteres:", imageData.substring(imageData.length - 30));
     
-    if (imageData.startsWith('data:')) {
+    // Limpa qualquer prefixo ou caractere indesejado
+    let cleanedData = imageData;
+    
+    // Se começar com aspas, remove
+    if (cleanedData.startsWith('"') && cleanedData.endsWith('"')) {
+      cleanedData = cleanedData.substring(1, cleanedData.length - 1);
+    }
+    
+    // Verifica e aplica o formato correto
+    if (cleanedData.startsWith('data:image')) {
       // Já é uma URL de dados completa
-      imageSrc = imageData;
-    } else if (imageData.startsWith('http')) {
+      imageSrc = cleanedData;
+    } else if (cleanedData.startsWith('http')) {
       // É uma URL externa
-      imageSrc = imageData;
+      imageSrc = cleanedData;
     } else {
       // Assume que é um base64 sem prefixo e adiciona o prefixo adequado
-      imageSrc = `data:image/png;base64,${imageData}`;
+      imageSrc = `data:image/png;base64,${cleanedData}`;
+      console.log("Formatado como imagem base64");
     }
   } else {
     console.warn("imageData é null ou undefined");
