@@ -42,7 +42,7 @@ export interface SocketServiceInterface {
 
 // Classe que gerencia a comunicação por socket
 class SocketService implements SocketServiceInterface {
-  private io: Server<DefaultEventsMap, DefaultEventsMap> | null = null;
+  private io: Server | null = null;
   private connectedClients: Map<string, Socket> = new Map();
 
   init(httpServer: HTTPServer): void {

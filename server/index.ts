@@ -59,10 +59,18 @@ app.use(session({
     await initializeDatabase();
     log("Banco de dados inicializado com sucesso");
   } catch (error) {
-    log("Erro ao inicializar o banco de dados:", error);
+    if (error instanceof Error) {
+      log("Erro ao inicializar o banco de dados: " + error.message);
+    } else {
+      log("Erro desconhecido ao inicializar o banco de dados");
+    }
   }
   
+  // Registrar rotas e obter o servidor HTTP
   const server = await registerRoutes(app);
+  
+  // Inicializar o serviço de Socket.IO com o servidor HTTP
+  socketService.init(server);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
