@@ -581,11 +581,24 @@ export const ChannelsTab = () => {
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg">
                       {channelQrCodeData ? (
-                        <img 
-                          src={`data:image/png;base64,${channelQrCodeData}`} 
-                          alt="QR Code para WhatsApp" 
-                          className="w-36 h-36"
-                        />
+                        // Verifica se já começa com "data:image" (base64 completo)
+                        channelQrCodeData.startsWith('data:image') ? (
+                          <img 
+                            src={channelQrCodeData} 
+                            alt="QR Code para WhatsApp" 
+                            className="w-36 h-36"
+                          />
+                        ) : (
+                          // Caso contrário, usa a string como valor para gerar um QR code
+                          <QRCodeSVG
+                            value={channelQrCodeData}
+                            size={144}
+                            bgColor={"#ffffff"}
+                            fgColor={"#000000"}
+                            level={"L"}
+                            includeMargin={true}
+                          />
+                        )
                       ) : (
                         <QRCodeSVG
                           value="https://wa.me/5511987654321?code=123ABC456DEF"
