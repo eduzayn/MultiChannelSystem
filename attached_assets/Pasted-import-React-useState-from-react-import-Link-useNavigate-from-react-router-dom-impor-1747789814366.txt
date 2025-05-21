@@ -1,0 +1,1153 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Building2,
+  Search,
+  Filter,
+  PlusCircle,
+  Edit,
+  Trash2,
+  MoreHorizontal,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Tags
+} from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+
+// Mock data for companies
+const mockCompanies = [
+  {
+    id: '1',
+    name: 'Tech Inovations',
+    website: 'https://techinovations.com',
+    phone: '+55 11 9999-8888',
+    industry: 'Tecnologia',
+    owner: 'João Silva',
+    contactsCount: 5,
+    dealsCount: 3,
+    dealsValue: 75000,
+    lastActivity: '2023-05-15',
+    status: 'Cliente Ativo',
+    city: 'São Paulo',
+    state: 'SP',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '2',
+    name: 'Manufatura Brasil',
+    website: 'https://manufaturabrasil.com.br',
+    phone: '+55 11 7777-6666',
+    industry: 'Manufatura',
+    owner: 'Maria Souza',
+    contactsCount: 8,
+    dealsCount: 2,
+    dealsValue: 120000,
+    lastActivity: '2023-05-10',
+    status: 'Prospect',
+    city: 'Joinville',
+    state: 'SC',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '3',
+    name: 'Varejo Futuro',
+    website: 'https://varejofuturo.com.br',
+    phone: '+55 21 5555-4444',
+    industry: 'Varejo',
+    owner: 'Carlos Mendes',
+    contactsCount: 3,
+    dealsCount: 1,
+    dealsValue: 45000,
+    lastActivity: '2023-05-05',
+    status: 'Lead Qualificado',
+    city: 'Rio de Janeiro',
+    state: 'RJ',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '4',
+    name: 'Financeiro Global',
+    website: 'https://financeiroglobal.com',
+    phone: '+55 11 3333-2222',
+    industry: 'Serviços Financeiros',
+    owner: 'Ana Costa',
+    contactsCount: 7,
+    dealsCount: 4,
+    dealsValue: 250000,
+    lastActivity: '2023-05-02',
+    status: 'Cliente Ativo',
+    city: 'São Paulo',
+    state: 'SP',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '5',
+    name: 'Saúde Integral',
+    website: 'https://saudeintegral.com.br',
+    phone: '+55 41 2222-1111',
+    industry: 'Saúde',
+    owner: 'Roberto Alves',
+    contactsCount: 4,
+    dealsCount: 0,
+    dealsValue: 0,
+    lastActivity: '2023-04-28',
+    status: 'Prospect',
+    city: 'Curitiba',
+    state: 'PR',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '6',
+    name: 'Construção & Cia',
+    website: 'https://construcaoecia.com.br',
+    phone: '+55 31 8888-7777',
+    industry: 'Construção',
+    owner: 'Fernanda Lima',
+    contactsCount: 6,
+    dealsCount: 2,
+    dealsValue: 180000,
+    lastActivity: '2023-04-25',
+    status: 'Cliente Ativo',
+    city: 'Belo Horizonte',
+    state: 'MG',
+    logo: 'https://via.placeholder.com/40',
+  },
+  {
+    id: '7',
+    name: 'Edu Tecnologia',
+    website: 'https://edutec.com.br',
+    phone: '+55 51 4444-3333',
+    industry: 'Educação',
+    owner: 'Paulo Martins',
+    contactsCount: 9,
+    dealsCount: 3,
+    dealsValue: 95000,
+    lastActivity: '2023-04-22',
+    status: 'Lead Qualificado',
+    city: 'Porto Alegre',
+    state: 'RS',
+    logo: 'https://via.placeholder.com/40',
+  },
+];
+
+// Mock contacts for company details
+const mockContacts = [
+  {
+    id: '1',
+    name: 'Amanda Silva',
+    title: 'CEO',
+    email: 'amanda@techinovations.com',
+    phone: '+55 11 99876-5432',
+    role: 'Decisor',
+  },
+  {
+    id: '2',
+    name: 'Rafael Gomes',
+    title: 'CFO',
+    email: 'rafael@techinovations.com',
+    phone: '+55 11 98765-4321',
+    role: 'Influenciador',
+  },
+  {
+    id: '3',
+    name: 'Carla Mendonça',
+    title: 'CTO',
+    email: 'carla@techinovations.com',
+    phone: '+55 11 97654-3210',
+    role: 'Usuário Chave',
+  }
+];
+
+// Mock deals for company details
+const mockDeals = [
+  {
+    id: '1',
+    name: 'Implementação Sistema ERP',
+    value: 50000,
+    stage: 'Proposta',
+    expectedCloseDate: '2023-06-15',
+    owner: 'João Silva',
+    status: 'Aberto',
+  },
+  {
+    id: '2',
+    name: 'Upgrade Infraestrutura',
+    value: 25000,
+    stage: 'Negociação',
+    expectedCloseDate: '2023-07-01',
+    owner: 'Maria Souza',
+    status: 'Aberto',
+  }
+];
+
+// Mock activities for company details
+const mockActivities = [
+  {
+    id: '1',
+    type: 'email',
+    title: 'Email enviado: Proposta Comercial',
+    date: '2023-05-14T14:30:00',
+    user: 'João Silva',
+    contact: 'Amanda Silva',
+    content: 'Enviada proposta de implementação do sistema ERP.'
+  },
+  {
+    id: '2',
+    type: 'call',
+    title: 'Ligação: Follow-up da proposta',
+    date: '2023-05-12T10:15:00',
+    user: 'João Silva',
+    contact: 'Rafael Gomes',
+    content: 'Discutidos detalhes de implementação e cronograma.'
+  },
+  {
+    id: '3',
+    type: 'meeting',
+    title: 'Reunião: Apresentação técnica',
+    date: '2023-05-05T09:00:00',
+    user: 'Carla Mendonça',
+    contact: 'Maria Souza',
+    content: 'Apresentados aspectos técnicos e requisitos de infraestrutura.'
+  }
+];
+
+// Status options for filtering
+const statusOptions = [
+  'Todos',
+  'Prospect',
+  'Lead Qualificado',
+  'Cliente Ativo',
+  'Ex-Cliente',
+  'Parceiro Estratégico'
+];
+
+// Industry options for filtering
+const industryOptions = [
+  'Todos',
+  'Tecnologia',
+  'Manufatura',
+  'Varejo',
+  'Serviços Financeiros',
+  'Saúde',
+  'Construção',
+  'Educação'
+];
+
+const CompaniesPage = () => {
+  // State for companies data and UI state
+  const [companies, setCompanies] = useState(mockCompanies);
+  const [filteredCompanies, setFilteredCompanies] = useState(mockCompanies);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('Todos');
+  const [selectedIndustry, setSelectedIndustry] = useState('Todos');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState(null);
+  const [isNewCompanyDialogOpen, setIsNewCompanyDialogOpen] = useState(false);
+  const [isEditCompanyDialogOpen, setIsEditCompanyDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDetailOpen, setIsViewDetailOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5);
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Filter companies based on search and filters
+  React.useEffect(() => {
+    let result = [...companies];
+    
+    if (searchTerm) {
+      result = result.filter(company => 
+        company.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        company.website.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.industry.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.city.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    if (selectedStatus !== 'Todos') {
+      result = result.filter(company => company.status === selectedStatus);
+    }
+    
+    if (selectedIndustry !== 'Todos') {
+      result = result.filter(company => company.industry === selectedIndustry);
+    }
+    
+    setFilteredCompanies(result);
+    setCurrentPage(1);
+  }, [searchTerm, selectedStatus, selectedIndustry, companies]);
+
+  // Handle company actions (view, edit, delete)
+  const handleViewCompany = (company) => {
+    setSelectedCompany(company);
+    setIsViewDetailOpen(true);
+  };
+
+  const handleEditCompany = (company) => {
+    setSelectedCompany(company);
+    setIsEditCompanyDialogOpen(true);
+  };
+
+  const handleDeleteConfirmation = (company) => {
+    setSelectedCompany(company);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCompany = () => {
+    const updatedCompanies = companies.filter(c => c.id !== selectedCompany.id);
+    setCompanies(updatedCompanies);
+    setIsDeleteDialogOpen(false);
+    
+    toast({
+      title: "Empresa excluída",
+      description: `${selectedCompany.name} foi removida com sucesso.`,
+      duration: 3000,
+    });
+  };
+
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredCompanies.slice(indexOfFirstItem, indexOfLastItem);
+  
+  const totalPages = Math.ceil(filteredCompanies.length / itemsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Format currency
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(value);
+  };
+
+  // Format date
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('pt-BR').format(date);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Page Header */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Empresas</h1>
+          <p className="text-muted-foreground">
+            Gerencie as contas corporativas da sua organização
+          </p>
+        </div>
+        <Button onClick={() => setIsNewCompanyDialogOpen(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Nova Empresa
+        </Button>
+      </div>
+      
+      {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <input
+            type="search"
+            placeholder="Buscar empresas..."
+            className="pl-8 w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => setShowFilters(!showFilters)}
+          className="sm:w-auto w-full"
+        >
+          <Filter className="mr-2 h-4 w-4" />
+          Filtros
+        </Button>
+      </div>
+      
+      {/* Filter options */}
+      {showFilters && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-md bg-muted/10">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Status</label>
+            <select 
+              className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              {statusOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">Setor</label>
+            <select 
+              className="w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+              value={selectedIndustry}
+              onChange={(e) => setSelectedIndustry(e.target.value)}
+            >
+              {industryOptions.map(option => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2 flex items-end">
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedStatus('Todos');
+                setSelectedIndustry('Todos');
+              }}
+              className="text-sm"
+            >
+              Limpar Filtros
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Companies Table */}
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Empresa</TableHead>
+              <TableHead className="hidden md:table-cell">Setor</TableHead>
+              <TableHead className="hidden md:table-cell">Contatos</TableHead>
+              <TableHead className="hidden lg:table-cell">Negócios</TableHead>
+              <TableHead className="hidden lg:table-cell">Status</TableHead>
+              <TableHead className="hidden xl:table-cell">Proprietário</TableHead>
+              <TableHead className="hidden xl:table-cell">Última Atividade</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {currentItems.length > 0 ? (
+              currentItems.map((company) => (
+                <TableRow key={company.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center space-x-3">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        {company.logo ? (
+                          <img src={company.logo} alt={company.name} className="h-8 w-8 rounded-full" />
+                        ) : (
+                          <Building2 className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium">{company.name}</div>
+                        <div className="text-xs text-muted-foreground">{company.website}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{company.industry}</TableCell>
+                  <TableCell className="hidden md:table-cell">{company.contactsCount}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {company.dealsCount > 0 ? (
+                      <div>
+                        <div>{company.dealsCount}</div>
+                        <div className="text-xs text-muted-foreground">{formatCurrency(company.dealsValue)}</div>
+                      </div>
+                    ) : (
+                      <span>-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      company.status === 'Cliente Ativo' ? 'bg-green-100 text-green-800' : 
+                      company.status === 'Prospect' ? 'bg-blue-100 text-blue-800' : 
+                      company.status === 'Lead Qualificado' ? 'bg-purple-100 text-purple-800' : 
+                      company.status === 'Ex-Cliente' ? 'bg-red-100 text-red-800' : 
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {company.status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">{company.owner}</TableCell>
+                  <TableCell className="hidden xl:table-cell">{formatDate(company.lastActivity)}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Ações</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewCompany(company)}>
+                          Visualizar Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditCompany(company)}>
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteConfirmation(company)}>
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-6">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Building2 className="h-10 w-10 mb-2" />
+                    <h3 className="text-lg font-medium">Nenhuma empresa encontrada</h3>
+                    <p>Tente ajustar seus filtros ou criar uma nova empresa.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Pagination */}
+      {filteredCompanies.length > 0 && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Mostrando {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredCompanies.length)} de {filteredCompanies.length}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-sm">
+              Página {currentPage} de {totalPages || 1}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Company Detail View */}
+      {selectedCompany && (
+        <Dialog open={isViewDetailOpen} onOpenChange={setIsViewDetailOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <div className="flex items-center space-x-4">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  {selectedCompany.logo ? (
+                    <img src={selectedCompany.logo} alt={selectedCompany.name} className="h-12 w-12 rounded-full" />
+                  ) : (
+                    <Building2 className="h-6 w-6" />
+                  )}
+                </div>
+                <div>
+                  <DialogTitle className="text-xl">{selectedCompany.name}</DialogTitle>
+                  <DialogDescription>
+                    <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                      {selectedCompany.website}
+                    </a>
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            {/* Tabs navigation */}
+            <div className="flex border-b">
+              <button
+                className={`px-4 py-2 font-medium text-sm ${activeTab === 'overview' ? 'border-b-2 border-primary' : ''}`}
+                onClick={() => setActiveTab('overview')}
+              >
+                Visão Geral
+              </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${activeTab === 'contacts' ? 'border-b-2 border-primary' : ''}`}
+                onClick={() => setActiveTab('contacts')}
+              >
+                Contatos ({mockContacts.length})
+              </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${activeTab === 'deals' ? 'border-b-2 border-primary' : ''}`}
+                onClick={() => setActiveTab('deals')}
+              >
+                Negócios ({mockDeals.length})
+              </button>
+              <button
+                className={`px-4 py-2 font-medium text-sm ${activeTab === 'timeline' ? 'border-b-2 border-primary' : ''}`}
+                onClick={() => setActiveTab('timeline')}
+              >
+                Timeline
+              </button>
+            </div>
+            
+            {/* Tab content */}
+            <div className="py-4">
+              {/* Overview tab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Informações Principais</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Razão Social</div>
+                          <div className="text-sm">{selectedCompany.name}</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">CNPJ</div>
+                          <div className="text-sm">00.000.000/0001-00</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Website</div>
+                          <div className="text-sm">
+                            <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                              {selectedCompany.website}
+                            </a>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Setor de Atuação</div>
+                          <div className="text-sm">{selectedCompany.industry}</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Porte da Empresa</div>
+                          <div className="text-sm">Médio (100-500 funcionários)</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Status</div>
+                          <div className="text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              selectedCompany.status === 'Cliente Ativo' ? 'bg-green-100 text-green-800' : 
+                              selectedCompany.status === 'Prospect' ? 'bg-blue-100 text-blue-800' : 
+                              selectedCompany.status === 'Lead Qualificado' ? 'bg-purple-100 text-purple-800' : 
+                              selectedCompany.status === 'Ex-Cliente' ? 'bg-red-100 text-red-800' : 
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedCompany.status}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-base">Informações de Contato</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Telefone Principal</div>
+                          <div className="text-sm">{selectedCompany.phone}</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Email Geral</div>
+                          <div className="text-sm">contato@{selectedCompany.website.split('//')[1]}</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Endereço</div>
+                          <div className="text-sm">Av. Paulista, 1000 - {selectedCompany.city}, {selectedCompany.state}</div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-1">
+                          <div className="text-sm font-medium">Proprietário da Conta</div>
+                          <div className="text-sm">{selectedCompany.owner}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-base font-medium">Descrição da Empresa</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedCompany.name} é uma empresa do setor de {selectedCompany.industry} localizada em {selectedCompany.city}, {selectedCompany.state}. 
+                      A empresa atua no mercado brasileiro desde 2010, fornecendo soluções inovadoras para seus clientes.
+                    </p>
+                    
+                    <div>
+                      <h3 className="text-base font-medium mb-2">Tags</h3>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          {selectedCompany.industry}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          {selectedCompany.city}
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                          Potencial-Alto
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Contacts tab */}
+              {activeTab === 'contacts' && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base font-medium">Contatos Associados</h3>
+                    <Button size="sm">+ Adicionar Contato</Button>
+                  </div>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead className="hidden md:table-cell">Cargo</TableHead>
+                          <TableHead className="hidden md:table-cell">Email</TableHead>
+                          <TableHead className="hidden lg:table-cell">Telefone</TableHead>
+                          <TableHead className="hidden lg:table-cell">Papel na Conta</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mockContacts.map((contact) => (
+                          <TableRow key={contact.id}>
+                            <TableCell className="font-medium">{contact.name}</TableCell>
+                            <TableCell className="hidden md:table-cell">{contact.title}</TableCell>
+                            <TableCell className="hidden md:table-cell">{contact.email}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{contact.phone}</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                contact.role === 'Decisor' ? 'bg-red-100 text-red-800' : 
+                                contact.role === 'Influenciador' ? 'bg-blue-100 text-blue-800' : 
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {contact.role}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+              
+              {/* Deals tab */}
+              {activeTab === 'deals' && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base font-medium">Negócios/Oportunidades</h3>
+                    <Button size="sm">+ Criar Negócio</Button>
+                  </div>
+                  
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome do Negócio</TableHead>
+                          <TableHead className="hidden md:table-cell">Valor</TableHead>
+                          <TableHead className="hidden md:table-cell">Etapa</TableHead>
+                          <TableHead className="hidden lg:table-cell">Data Prevista</TableHead>
+                          <TableHead className="hidden lg:table-cell">Proprietário</TableHead>
+                          <TableHead className="hidden lg:table-cell">Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mockDeals.map((deal) => (
+                          <TableRow key={deal.id}>
+                            <TableCell className="font-medium">{deal.name}</TableCell>
+                            <TableCell className="hidden md:table-cell">{formatCurrency(deal.value)}</TableCell>
+                            <TableCell className="hidden md:table-cell">{deal.stage}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{formatDate(deal.expectedCloseDate)}</TableCell>
+                            <TableCell className="hidden lg:table-cell">{deal.owner}</TableCell>
+                            <TableCell className="hidden lg:table-cell">
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                deal.status === 'Ganho' ? 'bg-green-100 text-green-800' : 
+                                deal.status === 'Perdido' ? 'bg-red-100 text-red-800' : 
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {deal.status}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+              
+              {/* Timeline tab */}
+              {activeTab === 'timeline' && (
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-base font-medium">Timeline de Atividades</h3>
+                    <Button size="sm">+ Registrar Atividade</Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {mockActivities.map((activity) => (
+                      <div key={activity.id} className="flex gap-4 p-4 border rounded-lg">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                          {activity.type === 'email' ? (
+                            <i className="h-4 w-4">✉️</i>
+                          ) : activity.type === 'call' ? (
+                            <i className="h-4 w-4">📞</i>
+                          ) : (
+                            <i className="h-4 w-4">📅</i>
+                          )}
+                        </div>
+                        <div className="space-y-1 flex-1">
+                          <div className="flex justify-between">
+                            <h4 className="text-sm font-medium">{activity.title}</h4>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(activity.date)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{activity.content}</p>
+                          <div className="text-xs">
+                            <span className="font-medium">{activity.user}</span> 
+                            <span className="text-muted-foreground"> com </span> 
+                            <span className="font-medium">{activity.contact}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline"
+                onClick={() => setIsViewDetailOpen(false)}
+              >
+                Fechar
+              </Button>
+              <Button onClick={() => {
+                setIsViewDetailOpen(false);
+                handleEditCompany(selectedCompany);
+              }}>
+                <Edit className="mr-2 h-4 w-4" />
+                Editar Empresa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* New/Edit Company Dialog */}
+      <Dialog 
+        open={isNewCompanyDialogOpen || isEditCompanyDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsNewCompanyDialogOpen(false);
+            setIsEditCompanyDialogOpen(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{isEditCompanyDialogOpen ? 'Editar Empresa' : 'Nova Empresa'}</DialogTitle>
+            <DialogDescription>
+              {isEditCompanyDialogOpen
+                ? 'Edite as informações da empresa.'
+                : 'Preencha os dados para criar uma nova empresa.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            {/* Basic Info Section */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Informações Básicas</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="name">Nome da Empresa <span className="text-red-500">*</span></label>
+                  <input 
+                    id="name"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="Nome da Empresa"
+                    defaultValue={selectedCompany?.name || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="formalization">Razão Social</label>
+                  <input 
+                    id="formalization"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="Razão Social"
+                    defaultValue={selectedCompany?.name ? `${selectedCompany.name} LTDA` : ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="cnpj">CNPJ</label>
+                  <input 
+                    id="cnpj"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="00.000.000/0001-00"
+                    defaultValue="00.000.000/0001-00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="website">Website</label>
+                  <input 
+                    id="website"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="https://exemplo.com"
+                    defaultValue={selectedCompany?.website || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="industry">Setor de Atuação</label>
+                  <select 
+                    id="industry"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    defaultValue={selectedCompany?.industry || ''}
+                  >
+                    <option value="">Selecione o Setor</option>
+                    {industryOptions.filter(opt => opt !== 'Todos').map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="status">Status</label>
+                  <select 
+                    id="status"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    defaultValue={selectedCompany?.status || ''}
+                  >
+                    <option value="">Selecione o Status</option>
+                    {statusOptions.filter(opt => opt !== 'Todos').map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="phone">Telefone Principal</label>
+                  <input 
+                    id="phone"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="(00) 0000-0000"
+                    defaultValue={selectedCompany?.phone || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="email">Email Geral</label>
+                  <input 
+                    id="email"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="contato@exemplo.com"
+                    defaultValue={selectedCompany ? `contato@${selectedCompany.website.split('//')[1]}` : ''}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Address Section */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Endereço</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium" htmlFor="address">Logradouro</label>
+                  <input 
+                    id="address"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="Av, Rua, etc."
+                    defaultValue="Av. Paulista, 1000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="city">Cidade</label>
+                  <input 
+                    id="city"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="Cidade"
+                    defaultValue={selectedCompany?.city || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="state">Estado</label>
+                  <input 
+                    id="state"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    placeholder="UF"
+                    defaultValue={selectedCompany?.state || ''}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Additional Info */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Informações Adicionais</h4>
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="description">Descrição da Empresa</label>
+                  <textarea 
+                    id="description"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm min-h-[100px]"
+                    placeholder="Descreva a empresa..."
+                    defaultValue={selectedCompany 
+                      ? `${selectedCompany.name} é uma empresa do setor de ${selectedCompany.industry} localizada em ${selectedCompany.city}, ${selectedCompany.state}.` 
+                      : ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="tags">Tags</label>
+                  <div className="flex items-center border rounded-md px-3 py-2 bg-background">
+                    <Tags className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <input 
+                      id="tags"
+                      className="flex-1 outline-none text-sm bg-transparent"
+                      placeholder="Adicione tags separadas por vírgula"
+                      defaultValue={selectedCompany?.industry || ''}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="owner">Proprietário da Conta</label>
+                  <select 
+                    id="owner"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm"
+                    defaultValue={selectedCompany?.owner || ''}
+                  >
+                    <option value="">Selecione o Proprietário</option>
+                    <option value="João Silva">João Silva</option>
+                    <option value="Maria Souza">Maria Souza</option>
+                    <option value="Carlos Mendes">Carlos Mendes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsNewCompanyDialogOpen(false);
+              setIsEditCompanyDialogOpen(false);
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              if (isEditCompanyDialogOpen) {
+                // Logic for editing company
+                toast({
+                  title: "Empresa atualizada",
+                  description: "Informações atualizadas com sucesso.",
+                  duration: 3000,
+                });
+              } else {
+                // Logic for adding new company
+                const newCompany = {
+                  id: String(companies.length + 1),
+                  name: "Nova Empresa",
+                  website: "https://novaempresa.com.br",
+                  phone: "+55 11 1234-5678",
+                  industry: "Tecnologia",
+                  owner: "João Silva",
+                  contactsCount: 0,
+                  dealsCount: 0,
+                  dealsValue: 0,
+                  lastActivity: new Date().toISOString().split('T')[0],
+                  status: "Prospect",
+                  city: "São Paulo",
+                  state: "SP",
+                  logo: "https://via.placeholder.com/40",
+                };
+                
+                setCompanies([...companies, newCompany]);
+                toast({
+                  title: "Empresa criada",
+                  description: "Nova empresa adicionada com sucesso.",
+                  duration: 3000,
+                });
+              }
+              
+              setIsNewCompanyDialogOpen(false);
+              setIsEditCompanyDialogOpen(false);
+            }}>
+              {isEditCompanyDialogOpen ? 'Salvar Alterações' : 'Criar Empresa'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir Empresa</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir {selectedCompany?.name}? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              Excluir esta empresa também remove todo o histórico de atividades associado a ela.
+              Contatos e negócios associados não serão excluídos, mas perderão sua associação com esta empresa.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteCompany}>
+              Confirmar Exclusão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default CompaniesPage;
