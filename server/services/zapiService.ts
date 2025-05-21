@@ -43,9 +43,12 @@ export async function getZapiQRCode(
       console.log(`Chamando API Z-API para obter QR code como bytes: ${imageUrl}`);
       
       // Preparando headers com ou sem Client-Token (opcional)
-      const headers: Record<string, string> = {};
-      if (clientToken) {
-        headers["Client-Token"] = clientToken;
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json"
+      };
+      
+      if (clientToken?.trim()) {
+        headers["Client-Token"] = clientToken.trim();
       }
       
       const imageResponse = await axios.get(imageUrl, {
@@ -248,9 +251,12 @@ export async function testZapiConnection(
     console.log(`Fazendo requisição para: ${statusUrl}`);
     
     // Preparando headers com ou sem Client-Token (opcional)
-    const headers: Record<string, string> = {};
-    if (clientToken) {
-      headers["Client-Token"] = clientToken;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    
+    if (cleanClientToken) {
+      headers["Client-Token"] = cleanClientToken;
     }
     
     const response = await axios.get(statusUrl, {
