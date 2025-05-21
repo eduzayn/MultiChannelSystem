@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface QRCodeDisplayProps {
   qrCodeData: string | null;
@@ -45,7 +45,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData }) => {
     
     case 'text':
       // Texto para gerar QR code via biblioteca
-      return <QRCode value={qrCodeData} size={256} />;
+      return <QRCodeSVG value={qrCodeData} size={256} />;
     
     default:
       // Fallback para API de QR code do Google
