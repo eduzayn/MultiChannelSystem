@@ -19,6 +19,7 @@ import Reports from "@/pages/reports";
 import AISettings from "@/pages/settings-ai";
 import ChannelsSettings from "@/pages/settings-channels";
 import CRMSettings from "@/pages/settings-crm";
+import IntegrationsSettings from "@/pages/settings-integrations";
 
 function Router() {
   return (
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/settings/ai" component={AISettings} />
         <Route path="/settings/channels" component={ChannelsSettings} />
         <Route path="/settings/crm" component={CRMSettings} />
+        <Route path="/settings/integrations" component={IntegrationsSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
