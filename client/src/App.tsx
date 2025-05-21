@@ -14,6 +14,7 @@ import Deals from "@/pages/deals";
 import ProfAna from "@/pages/profana";
 import Goals from "@/pages/goals";
 import Campaigns from "@/pages/campaigns";
+import Automations from "@/pages/automations";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/goals" component={Goals} />
         <Route path="/campaigns" component={Campaigns} />
         <Route path="/campaigns/new" component={Campaigns} />
+        <Route path="/automations" component={Automations} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
