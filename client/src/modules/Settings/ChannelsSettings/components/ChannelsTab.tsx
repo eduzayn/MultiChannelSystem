@@ -34,7 +34,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { QRCodeSVG } from "qrcode.react";
-import { QRCodeDisplay } from "@/components/qr-code-display";
+import QRCodeDisplay from "@/components/QRCodeDisplay";
 
 export const ChannelsTab = () => {
   // Estados principais
@@ -587,7 +587,7 @@ export const ChannelsTab = () => {
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
-                      <QRCodeDisplay qrCodeData={channelQrCodeData} size={400} />
+                      <QRCodeDisplay qrCodeData={channelQrCodeData} isImage={true} />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
