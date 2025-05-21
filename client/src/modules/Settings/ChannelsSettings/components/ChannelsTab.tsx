@@ -603,7 +603,6 @@ export const ChannelsTab = () => {
                           <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
                         </div>
                       )}
-                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
