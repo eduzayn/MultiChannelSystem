@@ -6,7 +6,7 @@ interface QRCodeDisplayProps {
   size?: number;
 }
 
-export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size = 300 }) => {
+export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size = 350 }) => {
   // Determinar o tipo de dados do QR code
   const [qrCodeType, setQrCodeType] = useState<'empty' | 'dataurl' | 'base64' | 'text' | 'unknown'>('unknown');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -42,7 +42,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size =
   if ((qrCodeType === 'dataurl' || qrCodeType === 'base64') && imageSrc) {
     return (
       <div className="flex flex-col items-center">
-        <div className="bg-white p-4 rounded-md shadow-sm">
+        <div className="bg-white p-6 rounded-md shadow-md border border-gray-100">
           <img 
             src={imageSrc} 
             alt="QR Code para WhatsApp" 
@@ -61,7 +61,7 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size =
   // Em todos os outros casos, incluindo texto ou quando a imagem falha,
   // usamos a biblioteca QRCode para gerar um QR Code a partir do texto
   return (
-    <div className="bg-white p-4 rounded-md shadow-sm">
+    <div className="bg-white p-6 rounded-md shadow-md border border-gray-100">
       <QRCodeSVG 
         value={qrCodeData} 
         size={size}
