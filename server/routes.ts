@@ -2412,6 +2412,470 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Falha ao atualizar métrica de performance" });
     }
   });
+  
+  // ===== Módulo de Configurações (Administração) =====
+  
+  // Logs de Auditoria
+  app.get("/api/audit-logs", async (req, res) => {
+    try {
+      const options = {
+        userId: req.query.userId ? Number(req.query.userId) : undefined,
+        action: req.query.action as string | undefined,
+        entityType: req.query.entityType as string | undefined,
+        entityId: req.query.entityId ? Number(req.query.entityId) : undefined,
+        fromDate: req.query.fromDate ? new Date(req.query.fromDate as string) : undefined,
+        toDate: req.query.toDate ? new Date(req.query.toDate as string) : undefined,
+        limit: req.query.limit ? Number(req.query.limit) : undefined,
+      };
+      
+      const logs = await storage.listAuditLogs(options);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar logs de auditoria" });
+    }
+  });
+
+  app.get("/api/audit-logs/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de log inválido" });
+      }
+      
+      const log = await storage.getAuditLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log de auditoria não encontrado" });
+      }
+      
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar log de auditoria" });
+    }
+  });
+
+  app.post("/api/audit-logs", async (req, res) => {
+    try {
+      const validatedData = insertAuditLogSchema.parse(req.body);
+      const log = await storage.createAuditLog(validatedData);
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de log inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar log de auditoria" });
+    }
+  });
+
+  // Histórico de Configurações
+  app.get("/api/setting-history", async (req, res) => {
+    try {
+      const settingId = req.query.settingId ? Number(req.query.settingId) : undefined;
+      const category = req.query.category as string | undefined;
+      const key = req.query.key as string | undefined;
+      
+      const historyItems = await storage.listSettingHistory(settingId, category, key);
+      res.json(historyItems);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar histórico de configurações" });
+    }
+  });
+
+  app.get("/api/setting-history/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de histórico inválido" });
+      }
+      
+      const historyItem = await storage.getSettingHistory(id);
+      if (!historyItem) {
+        return res.status(404).json({ message: "Item de histórico não encontrado" });
+      }
+      
+      res.json(historyItem);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar item de histórico" });
+    }
+  });
+
+  app.post("/api/setting-history", async (req, res) => {
+    try {
+      const validatedData = insertSettingHistorySchema.parse(req.body);
+      const historyItem = await storage.createSettingHistory(validatedData);
+      res.status(201).json(historyItem);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de histórico inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar item de histórico" });
+    }
+  });
+
+  // Notificações Administrativas
+  app.get("/api/admin-notifications", async (req, res) => {
+    try {
+      const options = {
+        isGlobal: req.query.isGlobal === 'true' ? true : 
+                 (req.query.isGlobal === 'false' ? false : undefined),
+        userId: req.query.userId ? Number(req.query.userId) : undefined,
+        role: req.query.role as string | undefined,
+        active: req.query.active === 'true' ? true : undefined,
+        type: req.query.type as string | undefined,
+        priority: req.query.priority as string | undefined,
+      };
+      
+      const notifications = await storage.listAdminNotifications(options);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar notificações administrativas" });
+    }
+  });
+
+  app.get("/api/admin-notifications/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de notificação inválido" });
+      }
+      
+      const notification = await storage.getAdminNotification(id);
+      if (!notification) {
+        return res.status(404).json({ message: "Notificação administrativa não encontrada" });
+      }
+      
+      res.json(notification);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar notificação administrativa" });
+    }
+  });
+
+  app.post("/api/admin-notifications", async (req, res) => {
+    try {
+      const validatedData = insertAdminNotificationSchema.parse(req.body);
+      const notification = await storage.createAdminNotification(validatedData);
+      res.status(201).json(notification);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de notificação inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar notificação administrativa" });
+    }
+  });
+
+  app.put("/api/admin-notifications/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de notificação inválido" });
+      }
+      
+      const validatedData = insertAdminNotificationSchema.partial().parse(req.body);
+      const notification = await storage.updateAdminNotification(id, validatedData);
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notificação administrativa não encontrada" });
+      }
+      
+      res.json(notification);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de notificação inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar notificação administrativa" });
+    }
+  });
+
+  app.delete("/api/admin-notifications/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de notificação inválido" });
+      }
+      
+      const deleted = await storage.deleteAdminNotification(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Notificação administrativa não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir notificação administrativa" });
+    }
+  });
+
+  // Reconhecimento de Notificações
+  app.post("/api/notification-acknowledgements", async (req, res) => {
+    try {
+      const { notificationId, userId } = req.body;
+      if (!notificationId || !userId) {
+        return res.status(400).json({ message: "notificationId e userId são obrigatórios" });
+      }
+      
+      const acknowledgement = await storage.acknowledgeNotification(
+        Number(notificationId), 
+        Number(userId)
+      );
+      res.status(201).json(acknowledgement);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao reconhecer notificação" });
+    }
+  });
+
+  app.get("/api/notification-acknowledgements/user/:userId", async (req, res) => {
+    try {
+      const userId = Number(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      const notificationIds = req.query.notificationIds 
+        ? (req.query.notificationIds as string).split(',').map(id => Number(id)) 
+        : undefined;
+      
+      const acknowledgements = await storage.getUserNotificationAcknowledgements(userId, notificationIds);
+      res.json(acknowledgements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar reconhecimentos de notificações" });
+    }
+  });
+
+  // Políticas de Segurança
+  app.get("/api/security-policies", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const isActive = req.query.isActive === 'true' ? true :
+                      (req.query.isActive === 'false' ? false : undefined);
+      
+      const policies = await storage.listSecurityPolicies(type, isActive);
+      res.json(policies);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar políticas de segurança" });
+    }
+  });
+
+  app.get("/api/security-policies/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de política inválido" });
+      }
+      
+      const policy = await storage.getSecurityPolicy(id);
+      if (!policy) {
+        return res.status(404).json({ message: "Política de segurança não encontrada" });
+      }
+      
+      res.json(policy);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar política de segurança" });
+    }
+  });
+
+  app.post("/api/security-policies", async (req, res) => {
+    try {
+      const validatedData = insertSecurityPolicySchema.parse(req.body);
+      const policy = await storage.createSecurityPolicy(validatedData);
+      res.status(201).json(policy);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de política inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar política de segurança" });
+    }
+  });
+
+  app.put("/api/security-policies/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de política inválido" });
+      }
+      
+      const validatedData = insertSecurityPolicySchema.partial().parse(req.body);
+      const policy = await storage.updateSecurityPolicy(id, validatedData);
+      
+      if (!policy) {
+        return res.status(404).json({ message: "Política de segurança não encontrada" });
+      }
+      
+      res.json(policy);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de política inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar política de segurança" });
+    }
+  });
+
+  app.delete("/api/security-policies/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de política inválido" });
+      }
+      
+      const deleted = await storage.deleteSecurityPolicy(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Política de segurança não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir política de segurança" });
+    }
+  });
+
+  // Integrações
+  app.get("/api/integrations", async (req, res) => {
+    try {
+      const provider = req.query.provider as string | undefined;
+      const type = req.query.type as string | undefined;
+      const status = req.query.status as string | undefined;
+      
+      const integrations = await storage.listIntegrations(provider, type, status);
+      res.json(integrations);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar integrações" });
+    }
+  });
+
+  app.get("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de integração inválido" });
+      }
+      
+      const integration = await storage.getIntegration(id);
+      if (!integration) {
+        return res.status(404).json({ message: "Integração não encontrada" });
+      }
+      
+      res.json(integration);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar integração" });
+    }
+  });
+
+  app.post("/api/integrations", async (req, res) => {
+    try {
+      const validatedData = insertIntegrationSchema.parse(req.body);
+      const integration = await storage.createIntegration(validatedData);
+      res.status(201).json(integration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de integração inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar integração" });
+    }
+  });
+
+  app.put("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de integração inválido" });
+      }
+      
+      const validatedData = insertIntegrationSchema.partial().parse(req.body);
+      const integration = await storage.updateIntegration(id, validatedData);
+      
+      if (!integration) {
+        return res.status(404).json({ message: "Integração não encontrada" });
+      }
+      
+      res.json(integration);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de integração inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar integração" });
+    }
+  });
+
+  app.delete("/api/integrations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de integração inválido" });
+      }
+      
+      const deleted = await storage.deleteIntegration(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Integração não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir integração" });
+    }
+  });
+
+  // Logs de Integração
+  app.get("/api/integrations/:integrationId/logs", async (req, res) => {
+    try {
+      const integrationId = Number(req.params.integrationId);
+      if (isNaN(integrationId)) {
+        return res.status(400).json({ message: "ID de integração inválido" });
+      }
+      
+      const event = req.query.event as string | undefined;
+      const status = req.query.status as string | undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      
+      const logs = await storage.listIntegrationLogs(integrationId, event, status, limit);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar logs de integração" });
+    }
+  });
+
+  app.get("/api/integration-logs/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de log inválido" });
+      }
+      
+      const log = await storage.getIntegrationLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log de integração não encontrado" });
+      }
+      
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar log de integração" });
+    }
+  });
+
+  app.post("/api/integration-logs", async (req, res) => {
+    try {
+      const validatedData = insertIntegrationLogSchema.parse(req.body);
+      const log = await storage.createIntegrationLog(validatedData);
+      res.status(201).json(log);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de log inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar log de integração" });
+    }
+  });
+
+  app.delete("/api/integrations/:integrationId/logs", async (req, res) => {
+    try {
+      const integrationId = Number(req.params.integrationId);
+      if (isNaN(integrationId)) {
+        return res.status(400).json({ message: "ID de integração inválido" });
+      }
+      
+      const olderThan = req.query.olderThan ? new Date(req.query.olderThan as string) : undefined;
+      
+      const success = await storage.deleteIntegrationLogs(integrationId, olderThan);
+      res.status(success ? 204 : 404).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir logs de integração" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
