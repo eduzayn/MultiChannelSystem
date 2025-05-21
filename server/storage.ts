@@ -17,13 +17,66 @@ import {
   goals, type Goal, type InsertGoal,
   achievements, type Achievement, type InsertAchievement,
   userAchievements, type UserAchievement, type InsertUserAchievement,
-  settings, type Setting, type InsertSetting
+  settings, type Setting, type InsertSetting,
+  // Marketing & Engagement imports
+  audienceSegments, type AudienceSegment, type InsertAudienceSegment,
+  segmentMembers, type SegmentMember, type InsertSegmentMember,
+  emailTemplates, type EmailTemplate, type InsertEmailTemplate,
+  marketingChannels, type MarketingChannel, type InsertMarketingChannel,
+  contactForms, type ContactForm, type InsertContactForm,
+  formSubmissions, type FormSubmission, type InsertFormSubmission,
+  engagementMetrics, type EngagementMetric, type InsertEngagementMetric
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, or, and, isNull } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
+  // Marketing & Engagement: Audience Segments
+  getAudienceSegment(id: number): Promise<AudienceSegment | undefined>;
+  listAudienceSegments(): Promise<AudienceSegment[]>;
+  createAudienceSegment(segment: InsertAudienceSegment): Promise<AudienceSegment>;
+  updateAudienceSegment(id: number, segment: Partial<InsertAudienceSegment>): Promise<AudienceSegment | undefined>;
+  deleteAudienceSegment(id: number): Promise<boolean>;
+  
+  // Marketing & Engagement: Segment Members
+  addContactToSegment(segmentId: number, contactId: number): Promise<SegmentMember>;
+  removeContactFromSegment(segmentId: number, contactId: number): Promise<boolean>;
+  listSegmentMembers(segmentId: number): Promise<SegmentMember[]>;
+  
+  // Marketing & Engagement: Email Templates
+  getEmailTemplate(id: number): Promise<EmailTemplate | undefined>;
+  listEmailTemplates(category?: string): Promise<EmailTemplate[]>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, template: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined>;
+  deleteEmailTemplate(id: number): Promise<boolean>;
+  
+  // Marketing & Engagement: Marketing Channels
+  getMarketingChannel(id: number): Promise<MarketingChannel | undefined>;
+  listMarketingChannels(type?: string): Promise<MarketingChannel[]>;
+  createMarketingChannel(channel: InsertMarketingChannel): Promise<MarketingChannel>;
+  updateMarketingChannel(id: number, channel: Partial<InsertMarketingChannel>): Promise<MarketingChannel | undefined>;
+  deleteMarketingChannel(id: number): Promise<boolean>;
+  
+  // Marketing & Engagement: Contact Forms
+  getContactForm(id: number): Promise<ContactForm | undefined>;
+  listContactForms(): Promise<ContactForm[]>;
+  createContactForm(form: InsertContactForm): Promise<ContactForm>;
+  updateContactForm(id: number, form: Partial<InsertContactForm>): Promise<ContactForm | undefined>;
+  deleteContactForm(id: number): Promise<boolean>;
+  
+  // Marketing & Engagement: Form Submissions
+  getFormSubmission(id: number): Promise<FormSubmission | undefined>;
+  listFormSubmissions(formId?: number): Promise<FormSubmission[]>;
+  createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
+  updateFormSubmissionStatus(id: number, status: string): Promise<FormSubmission | undefined>;
+  
+  // Marketing & Engagement: Engagement Metrics
+  recordEngagement(metric: InsertEngagementMetric): Promise<EngagementMetric>;
+  getContactEngagements(contactId: number): Promise<EngagementMetric[]>;
+  getEventTypeEngagements(eventType: string): Promise<EngagementMetric[]>;
+  getSourceEngagements(sourceType: string, sourceId?: number): Promise<EngagementMetric[]>;
+  
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -154,6 +207,285 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Marketing & Engagement: Audience Segments
+  async getAudienceSegment(id: number): Promise<AudienceSegment | undefined> {
+    const [segment] = await db.select().from(audienceSegments).where(eq(audienceSegments.id, id));
+    return segment;
+  }
+  
+  async listAudienceSegments(): Promise<AudienceSegment[]> {
+    return await db.select().from(audienceSegments);
+  }
+  
+  async createAudienceSegment(insertSegment: InsertAudienceSegment): Promise<AudienceSegment> {
+    const [segment] = await db.insert(audienceSegments).values({
+      ...insertSegment,
+      description: insertSegment.description || null,
+    }).returning();
+    return segment;
+  }
+  
+  async updateAudienceSegment(id: number, segmentData: Partial<InsertAudienceSegment>): Promise<AudienceSegment | undefined> {
+    const [segment] = await db.update(audienceSegments)
+      .set({
+        ...segmentData,
+        updatedAt: new Date()
+      })
+      .where(eq(audienceSegments.id, id))
+      .returning();
+    return segment;
+  }
+  
+  async deleteAudienceSegment(id: number): Promise<boolean> {
+    const result = await db.delete(audienceSegments).where(eq(audienceSegments.id, id));
+    return !!result;
+  }
+
+  // Marketing & Engagement: Segment Members
+  async addContactToSegment(segmentId: number, contactId: number): Promise<SegmentMember> {
+    const [segmentMember] = await db.insert(segmentMembers).values({
+      segmentId,
+      contactId,
+      addedAt: new Date()
+    }).returning();
+    
+    // Atualizar o contador de segmentos (opcional, mas útil para performance)
+    await db.update(audienceSegments)
+      .set({
+        count: db.sql`${audienceSegments.count} + 1`,
+        updatedAt: new Date()
+      })
+      .where(eq(audienceSegments.id, segmentId));
+    
+    return segmentMember;
+  }
+  
+  async removeContactFromSegment(segmentId: number, contactId: number): Promise<boolean> {
+    const result = await db.delete(segmentMembers)
+      .where(
+        and(
+          eq(segmentMembers.segmentId, segmentId),
+          eq(segmentMembers.contactId, contactId)
+        )
+      );
+    
+    if (result) {
+      // Atualizar o contador de segmentos
+      await db.update(audienceSegments)
+        .set({
+          count: db.sql`${audienceSegments.count} - 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(audienceSegments.id, segmentId));
+    }
+    
+    return !!result;
+  }
+  
+  async listSegmentMembers(segmentId: number): Promise<SegmentMember[]> {
+    return await db.select()
+      .from(segmentMembers)
+      .where(eq(segmentMembers.segmentId, segmentId));
+  }
+
+  // Marketing & Engagement: Email Templates
+  async getEmailTemplate(id: number): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select().from(emailTemplates).where(eq(emailTemplates.id, id));
+    return template;
+  }
+  
+  async listEmailTemplates(category?: string): Promise<EmailTemplate[]> {
+    if (category) {
+      return await db.select()
+        .from(emailTemplates)
+        .where(eq(emailTemplates.category, category));
+    }
+    return await db.select().from(emailTemplates);
+  }
+  
+  async createEmailTemplate(insertTemplate: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [template] = await db.insert(emailTemplates).values({
+      ...insertTemplate,
+      description: insertTemplate.description || null,
+      design: insertTemplate.design || null,
+      category: insertTemplate.category || null
+    }).returning();
+    return template;
+  }
+  
+  async updateEmailTemplate(id: number, templateData: Partial<InsertEmailTemplate>): Promise<EmailTemplate | undefined> {
+    const [template] = await db.update(emailTemplates)
+      .set({
+        ...templateData,
+        updatedAt: new Date()
+      })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    return template;
+  }
+  
+  async deleteEmailTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
+    return !!result;
+  }
+
+  // Marketing & Engagement: Marketing Channels
+  async getMarketingChannel(id: number): Promise<MarketingChannel | undefined> {
+    const [channel] = await db.select().from(marketingChannels).where(eq(marketingChannels.id, id));
+    return channel;
+  }
+  
+  async listMarketingChannels(type?: string): Promise<MarketingChannel[]> {
+    if (type) {
+      return await db.select()
+        .from(marketingChannels)
+        .where(eq(marketingChannels.type, type));
+    }
+    return await db.select().from(marketingChannels);
+  }
+  
+  async createMarketingChannel(insertChannel: InsertMarketingChannel): Promise<MarketingChannel> {
+    const [channel] = await db.insert(marketingChannels).values({
+      ...insertChannel,
+      description: insertChannel.description || null,
+      configuration: insertChannel.configuration || null
+    }).returning();
+    return channel;
+  }
+  
+  async updateMarketingChannel(id: number, channelData: Partial<InsertMarketingChannel>): Promise<MarketingChannel | undefined> {
+    const [channel] = await db.update(marketingChannels)
+      .set({
+        ...channelData,
+        updatedAt: new Date()
+      })
+      .where(eq(marketingChannels.id, id))
+      .returning();
+    return channel;
+  }
+  
+  async deleteMarketingChannel(id: number): Promise<boolean> {
+    const result = await db.delete(marketingChannels).where(eq(marketingChannels.id, id));
+    return !!result;
+  }
+
+  // Marketing & Engagement: Contact Forms
+  async getContactForm(id: number): Promise<ContactForm | undefined> {
+    const [form] = await db.select().from(contactForms).where(eq(contactForms.id, id));
+    return form;
+  }
+  
+  async listContactForms(): Promise<ContactForm[]> {
+    return await db.select().from(contactForms);
+  }
+  
+  async createContactForm(insertForm: InsertContactForm): Promise<ContactForm> {
+    const [form] = await db.insert(contactForms).values({
+      ...insertForm,
+      description: insertForm.description || null,
+      successMessage: insertForm.successMessage || null,
+      notificationEmails: insertForm.notificationEmails || null,
+      redirectUrl: insertForm.redirectUrl || null
+    }).returning();
+    return form;
+  }
+  
+  async updateContactForm(id: number, formData: Partial<InsertContactForm>): Promise<ContactForm | undefined> {
+    const [form] = await db.update(contactForms)
+      .set({
+        ...formData,
+        updatedAt: new Date()
+      })
+      .where(eq(contactForms.id, id))
+      .returning();
+    return form;
+  }
+  
+  async deleteContactForm(id: number): Promise<boolean> {
+    const result = await db.delete(contactForms).where(eq(contactForms.id, id));
+    return !!result;
+  }
+
+  // Marketing & Engagement: Form Submissions
+  async getFormSubmission(id: number): Promise<FormSubmission | undefined> {
+    const [submission] = await db.select().from(formSubmissions).where(eq(formSubmissions.id, id));
+    return submission;
+  }
+  
+  async listFormSubmissions(formId?: number): Promise<FormSubmission[]> {
+    if (formId) {
+      return await db.select()
+        .from(formSubmissions)
+        .where(eq(formSubmissions.formId, formId))
+        .orderBy(desc(formSubmissions.createdAt));
+    }
+    return await db.select()
+      .from(formSubmissions)
+      .orderBy(desc(formSubmissions.createdAt));
+  }
+  
+  async createFormSubmission(insertSubmission: InsertFormSubmission): Promise<FormSubmission> {
+    const [submission] = await db.insert(formSubmissions).values({
+      ...insertSubmission,
+      contactId: insertSubmission.contactId || null,
+      ipAddress: insertSubmission.ipAddress || null,
+      userAgent: insertSubmission.userAgent || null,
+      referrer: insertSubmission.referrer || null
+    }).returning();
+    return submission;
+  }
+  
+  async updateFormSubmissionStatus(id: number, status: string): Promise<FormSubmission | undefined> {
+    const [submission] = await db.update(formSubmissions)
+      .set({ status })
+      .where(eq(formSubmissions.id, id))
+      .returning();
+    return submission;
+  }
+
+  // Marketing & Engagement: Engagement Metrics
+  async recordEngagement(insertMetric: InsertEngagementMetric): Promise<EngagementMetric> {
+    const [metric] = await db.insert(engagementMetrics).values({
+      ...insertMetric,
+      source: insertMetric.source || null,
+      sourceId: insertMetric.sourceId || null,
+      sourceType: insertMetric.sourceType || null,
+      metadata: insertMetric.metadata || null
+    }).returning();
+    return metric;
+  }
+  
+  async getContactEngagements(contactId: number): Promise<EngagementMetric[]> {
+    return await db.select()
+      .from(engagementMetrics)
+      .where(eq(engagementMetrics.contactId, contactId))
+      .orderBy(desc(engagementMetrics.occurredAt));
+  }
+  
+  async getEventTypeEngagements(eventType: string): Promise<EngagementMetric[]> {
+    return await db.select()
+      .from(engagementMetrics)
+      .where(eq(engagementMetrics.eventType, eventType))
+      .orderBy(desc(engagementMetrics.occurredAt));
+  }
+  
+  async getSourceEngagements(sourceType: string, sourceId?: number): Promise<EngagementMetric[]> {
+    if (sourceId) {
+      return await db.select()
+        .from(engagementMetrics)
+        .where(
+          and(
+            eq(engagementMetrics.sourceType, sourceType),
+            eq(engagementMetrics.sourceId, sourceId)
+          )
+        )
+        .orderBy(desc(engagementMetrics.occurredAt));
+    }
+    return await db.select()
+      .from(engagementMetrics)
+      .where(eq(engagementMetrics.sourceType, sourceType))
+      .orderBy(desc(engagementMetrics.occurredAt));
+  }
   // User operations
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));

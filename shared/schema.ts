@@ -470,7 +470,167 @@ export const insertSettingSchema = createInsertSchema(settings).pick({
   value: true,
 });
 
-// Export types for all new tables
+// Audience Segments table
+export const audienceSegments = pgTable("audience_segments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  criteria: jsonb("criteria").notNull(), // Rules for segment inclusion
+  count: integer("count").default(0), // Cached count of contacts in this segment
+  isStatic: boolean("is_static").default(false), // Static segments have fixed members, dynamic are rule-based
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAudienceSegmentSchema = createInsertSchema(audienceSegments).pick({
+  name: true,
+  description: true,
+  criteria: true,
+  isStatic: true,
+  createdBy: true,
+});
+
+// Segment Members table (only used for static segments)
+export const segmentMembers = pgTable("segment_members", {
+  id: serial("id").primaryKey(),
+  segmentId: integer("segment_id").references(() => audienceSegments.id).notNull(),
+  contactId: integer("contact_id").references(() => contacts.id).notNull(),
+  addedAt: timestamp("added_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    segmentMemberUnique: unique().on(table.segmentId, table.contactId),
+  }
+});
+
+export const insertSegmentMemberSchema = createInsertSchema(segmentMembers).pick({
+  segmentId: true,
+  contactId: true,
+  addedAt: true,
+});
+
+// Email Templates table
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  design: jsonb("design"), // Design data (colors, fonts, layout)
+  category: text("category"), // transactional, marketing, notification
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).pick({
+  name: true,
+  description: true,
+  subject: true,
+  body: true,
+  design: true,
+  category: true,
+  isActive: true,
+  createdBy: true,
+});
+
+// Marketing Channels table
+export const marketingChannels = pgTable("marketing_channels", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // email, sms, whatsapp, push, social, etc
+  configuration: jsonb("configuration"), // Channel-specific configuration
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMarketingChannelSchema = createInsertSchema(marketingChannels).pick({
+  name: true,
+  description: true,
+  type: true,
+  configuration: true,
+  isActive: true,
+  createdBy: true,
+});
+
+// Contact Forms table
+export const contactForms = pgTable("contact_forms", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  fields: jsonb("fields").notNull(), // Form fields definition
+  successMessage: text("success_message"),
+  notificationEmails: jsonb("notification_emails"), // Emails to notify on submission
+  redirectUrl: text("redirect_url"),
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertContactFormSchema = createInsertSchema(contactForms).pick({
+  name: true,
+  description: true,
+  fields: true,
+  successMessage: true,
+  notificationEmails: true,
+  redirectUrl: true,
+  isActive: true,
+  createdBy: true,
+});
+
+// Form Submissions table
+export const formSubmissions = pgTable("form_submissions", {
+  id: serial("id").primaryKey(),
+  formId: integer("form_id").references(() => contactForms.id).notNull(),
+  data: jsonb("data").notNull(), // Submitted form data
+  contactId: integer("contact_id").references(() => contacts.id), // May be linked to a contact
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  status: text("status").default("new"), // new, processed, converted, spam
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).pick({
+  formId: true,
+  data: true,
+  contactId: true,
+  ipAddress: true,
+  userAgent: true,
+  referrer: true,
+  status: true,
+});
+
+// Engagement Metrics table
+export const engagementMetrics = pgTable("engagement_metrics", {
+  id: serial("id").primaryKey(),
+  contactId: integer("contact_id").references(() => contacts.id).notNull(),
+  eventType: text("event_type").notNull(), // email_open, email_click, page_view, form_submit, etc
+  source: text("source"), // which campaign, automation, page, etc
+  sourceId: integer("source_id"), // ID of the source
+  sourceType: text("source_type"), // Type of the source (campaign, email, page, etc)
+  metadata: jsonb("metadata"), // Additional event data
+  occurredAt: timestamp("occurred_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertEngagementMetricSchema = createInsertSchema(engagementMetrics).pick({
+  contactId: true,
+  eventType: true,
+  source: true,
+  sourceId: true,
+  sourceType: true,
+  metadata: true,
+  occurredAt: true,
+});
+
+// Export types for all tables
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type Team = typeof teams.$inferSelect;
 
@@ -488,6 +648,28 @@ export type CampaignResult = typeof campaignResults.$inferSelect;
 
 export type InsertAutomation = z.infer<typeof insertAutomationSchema>;
 export type Automation = typeof automations.$inferSelect;
+
+// Export types for marketing and engagement tables
+export type InsertAudienceSegment = z.infer<typeof insertAudienceSegmentSchema>;
+export type AudienceSegment = typeof audienceSegments.$inferSelect;
+
+export type InsertSegmentMember = z.infer<typeof insertSegmentMemberSchema>;
+export type SegmentMember = typeof segmentMembers.$inferSelect;
+
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+
+export type InsertMarketingChannel = z.infer<typeof insertMarketingChannelSchema>;
+export type MarketingChannel = typeof marketingChannels.$inferSelect;
+
+export type InsertContactForm = z.infer<typeof insertContactFormSchema>;
+export type ContactForm = typeof contactForms.$inferSelect;
+
+export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;
+export type FormSubmission = typeof formSubmissions.$inferSelect;
+
+export type InsertEngagementMetric = z.infer<typeof insertEngagementMetricSchema>;
+export type EngagementMetric = typeof engagementMetrics.$inferSelect;
 
 export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
 export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
