@@ -4,6 +4,8 @@ import { Info, Phone, Video, CheckCheck, Share2 } from "lucide-react";
 import { MessageBubble, MessageProps } from "./MessageBubble";
 import { InputArea } from "./InputArea";
 import { ConversationItemProps } from "@/modules/Inbox/components/ConversationItem";
+import { useToast } from "@/hooks/use-toast";
+import { sendTextMessage, sendButtonMessage } from "@/services/zapiService";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,20 +110,31 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   const [messages, setMessages] = useState<MessageProps[]>(initialMessages);
   const [conversationStatus, setConversationStatus] = useState<string>("open");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Rolagem para o final da lista de mensagens quando novas mensagens são adicionadas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Extrai o número de telefone formatado da conversa (assumindo que é o identifier)
+  const extractPhoneNumber = () => {
+    // Se não for WhatsApp, retorna null
+    if (conversation.channel !== 'whatsapp') return null;
+    
+    // Assumindo que o identifier é o número do telefone
+    // Remove caracteres não numéricos (espaços, parênteses, traços, etc.)
+    return conversation.identifier?.replace(/\D/g, '');
+  };
+
   // Função para enviar nova mensagem
-  const handleSendMessage = (content: string, attachmentType?: string, attachmentData?: any) => {
+  const handleSendMessage = async (content: string, attachmentType?: string, attachmentData?: any) => {
     const newMessage: MessageProps = {
       id: `msg-${Date.now()}`,
       content,
       timestamp: new Date(),
       sender: "user",
-      status: "sent",
+      status: "sending", // Começamos com "sending" para indicar que está em andamento
     };
 
     // Se houver um anexo, adiciona ao objeto de mensagem
@@ -139,9 +152,108 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
     
     setMessages([...messages, newMessage]);
     
-    // Simular resposta automática após alguns segundos (apenas para demo)
+    // Se a conversa for do WhatsApp e tivermos uma integração Z-API configurada,
+    // envie realmente a mensagem via API
+    if (conversation.channel === 'whatsapp') {
+      const phoneNumber = extractPhoneNumber();
+      
+      if (phoneNumber) {
+        try {
+          // Assumindo que temos o channelId 
+          // Na vida real, precisaríamos obter isso do banco de dados ou do objeto de conversa
+          const channelId = 1; // Este valor deveria vir de uma configuração ou do objeto de conversa
+          
+          // Tenta enviar a mensagem para o número do telefone
+          let result;
+          
+          if (attachmentType === 'interactive' && newMessage.interactiveData?.type === 'button') {
+            // Envio de mensagem com botões
+            result = await sendButtonMessage({
+              channelId,
+              to: phoneNumber,
+              title: '', // Título vazio para mensagens simples com botões
+              message: content,
+              footer: '',
+              buttons: newMessage.interactiveData.options?.map(option => ({ buttonText: option })) || []
+            });
+          } else {
+            // Envio de mensagem de texto simples
+            result = await sendTextMessage({
+              channelId,
+              to: phoneNumber,
+              message: content
+            });
+          }
+          
+          if (result.success) {
+            // Atualize o status da mensagem para "sent" e guarde o messageId
+            setMessages((prevMessages) => 
+              prevMessages.map(msg => 
+                msg.id === newMessage.id 
+                  ? { ...msg, status: "sent" as const, messageId: result.messageId } 
+                  : msg
+              )
+            );
+            
+            // Simula o status "delivered" após um pequeno tempo (apenas para demo)
+            setTimeout(() => {
+              setMessages((prevMessages) => 
+                prevMessages.map(msg => 
+                  msg.id === newMessage.id 
+                    ? { ...msg, status: "delivered" as const } 
+                    : msg
+                )
+              );
+            }, 1500);
+          } else {
+            // Se falhou, mostra um erro
+            toast({
+              title: "Erro ao enviar mensagem",
+              description: result.message || "Não foi possível enviar a mensagem. Tente novamente.",
+              variant: "destructive"
+            });
+            
+            // Atualiza o status da mensagem para indicar erro
+            setMessages((prevMessages) => 
+              prevMessages.map(msg => 
+                msg.id === newMessage.id 
+                  ? { ...msg, status: "error" as const } 
+                  : msg
+              )
+            );
+          }
+        } catch (error) {
+          console.error("Erro ao enviar mensagem:", error);
+          
+          toast({
+            title: "Erro ao enviar mensagem",
+            description: "Ocorreu um erro ao tentar enviar a mensagem.",
+            variant: "destructive"
+          });
+          
+          // Atualiza o status da mensagem para indicar erro
+          setMessages((prevMessages) => 
+            prevMessages.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: "error" as const } 
+                : msg
+            )
+          );
+        }
+      } else {
+        // Quando não temos o número de telefone, cai no modo de simulação
+        simulateMessageDelivery(newMessage);
+      }
+    } else {
+      // Para outros canais que não o WhatsApp, apenas simulamos a entrega
+      simulateMessageDelivery(newMessage);
+    }
+  };
+  
+  // Função para simular entrega e resposta (apenas para demo)
+  const simulateMessageDelivery = (newMessage: MessageProps) => {
+    // Simular status "delivered" após alguns segundos
     setTimeout(() => {
-      // Atualizar status da mensagem enviada para "delivered"
       setMessages((prevMessages) => 
         prevMessages.map(msg => 
           msg.id === newMessage.id 

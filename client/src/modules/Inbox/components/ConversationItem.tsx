@@ -11,6 +11,7 @@ export interface ConversationItemProps {
   timestamp: Date;
   unreadCount: number;
   channel: 'whatsapp' | 'instagram' | 'facebook' | 'email';
+  identifier?: string; // Número de telefone, nome de usuário, email, etc.
   isActive?: boolean;
   onClick?: () => void;
 }

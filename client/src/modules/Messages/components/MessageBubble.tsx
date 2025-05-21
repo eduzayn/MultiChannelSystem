@@ -9,7 +9,8 @@ export interface MessageProps {
   content: string;
   timestamp: Date;
   sender: 'user' | 'contact' | 'system';
-  status?: 'sent' | 'delivered' | 'read' | 'error';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+  messageId?: string; // ID da mensagem no sistema externo (Z-API)
   avatar?: string;
   type?: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'interactive';
   caption?: string;
@@ -39,6 +40,13 @@ export const MessageBubble = ({
   const renderStatus = () => {
     if (isUser) {
       switch (status) {
+        case 'sending':
+          return (
+            <span className="flex items-center">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-1 animate-pulse"></span>
+              <span className="text-xs text-muted-foreground">Enviando</span>
+            </span>
+          );
         case 'sent':
           return <Check className="h-3.5 w-3.5 text-muted-foreground" />;
         case 'delivered':
