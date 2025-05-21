@@ -20,7 +20,7 @@ export async function getZapiQRCode(
   try {
     console.log(`Obtendo QR Code para instância Z-API (${instanceId})...`);
     
-    // Primeiro tentamos obter diretamente a imagem do QR code
+    // Vamos obter diretamente a imagem do QR code da Z-API real
     try {
       const imageUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code/image`;
       
@@ -35,7 +35,7 @@ export async function getZapiQRCode(
         // Convert array buffer to base64
         const base64Image = Buffer.from(imageResponse.data, "binary").toString("base64");
         
-        console.log("Retornando QR code como imagem base64 para o frontend");
+        console.log("QR code obtido como imagem da Z-API");
         console.log("Com a flag isImage: true");
         
         return {
@@ -46,6 +46,7 @@ export async function getZapiQRCode(
       }
     } catch (imageError) {
       console.log("Não foi possível obter o QR code como imagem, tentando obter como texto...");
+      console.error("Erro ao obter QR code como imagem:", imageError);
       
       // Se falhar, tentamos obter os bytes do QR code
       try {
@@ -71,6 +72,7 @@ export async function getZapiQRCode(
           isImage: false,
         };
       } catch (textError) {
+        console.error("Erro ao obter QR code como texto:", textError);
         throw new Error("Não foi possível obter o QR Code em nenhum formato");
       }
     }
