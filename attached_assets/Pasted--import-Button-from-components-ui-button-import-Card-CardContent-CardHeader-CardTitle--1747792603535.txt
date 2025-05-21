@@ -1,0 +1,179 @@
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Users, CalendarDays, BarChart2, Activity } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { automations } from "../data/mockAutomations";
+
+const AutomationStats = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  
+  // Find the automation by id (would be an API call in a real app)
+  const automation = automations.find(a => a.id === id) || {
+    id: "unknown",
+    name: "Automação não encontrada",
+    description: "",
+    status: "error",
+    triggerName: "",
+    triggerType: "contact",
+    activeEntities: 0,
+    completedEntities: 0,
+    createdAt: "",
+    updatedAt: "",
+    createdBy: ""
+  };
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate("/automations")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {automation.name}
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={automation.status === "active" ? "default" : 
+                     automation.status === "error" ? "destructive" : "outline"}>
+                {automation.status === "active" ? "Ativo" : 
+                 automation.status === "draft" ? "Rascunho" :
+                 automation.status === "paused" ? "Pausado" :
+                 automation.status === "error" ? "Erro" : automation.status}
+              </Badge>
+              <span className="text-sm text-muted-foreground">Última atualização: {new Date(automation.updatedAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate(`/automations/editor/${id}`)}>
+            Editar Automação
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Contatos Ativos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{automation.activeEntities}</span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Contatos Concluídos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">{automation.completedEntities}</span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <BarChart2 className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">
+                {automation.conversionRate ? `${(automation.conversionRate * 100).toFixed(1)}%` : "N/A"}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Tempo em Execução</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <span className="text-2xl font-bold">30 dias</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="actions">Performance por Ação</TabsTrigger>
+          <TabsTrigger value="entities">Contatos por Etapa</TabsTrigger>
+          <TabsTrigger value="flow">Visualização do Fluxo</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="overview" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Desempenho ao Longo do Tempo</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Gráfico de performance seria exibido aqui</p>
+                <Badge>Em desenvolvimento</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="actions" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance por Ação</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Detalhes de performance para cada ação seria exibido aqui</p>
+                <Badge>Em desenvolvimento</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="entities" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Contatos por Etapa</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Distribuição de contatos por etapa seria exibido aqui</p>
+                <Badge>Em desenvolvimento</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="flow" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Visualização do Fluxo</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-muted-foreground mb-2">Visualização com as métricas por nó seria exibida aqui</p>
+                <Badge>Em desenvolvimento</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export default AutomationStats
