@@ -1,0 +1,164 @@
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Save, Play } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
+
+const AutomationEditor = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const isNewAutomation = id === "new";
+
+  const [automationName, setAutomationName] = useState(isNewAutomation ? "" : "Automação Exemplo");
+  const [automationDescription, setAutomationDescription] = useState(isNewAutomation ? "" : "Descrição da automação exemplo");
+
+  const handleSave = (asDraft = true) => {
+    if (!automationName.trim()) {
+      toast({
+        title: "Nome obrigatório",
+        description: "Por favor, dê um nome à sua automação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: asDraft ? "Rascunho salvo" : "Automação ativada",
+      description: asDraft 
+        ? "Sua automação foi salva como rascunho."
+        : "Sua automação foi ativada e começará a executar em breve."
+    });
+  };
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" onClick={() => navigate("/automations")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isNewAutomation ? "Nova Automação" : "Editar Automação"}
+            </h1>
+            {!isNewAutomation && (
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="outline">Rascunho</Badge>
+                <span className="text-sm text-muted-foreground">Criado em 20/05/2023</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => handleSave(true)}>
+            <Save className="h-4 w-4 mr-2" />
+            Salvar Rascunho
+          </Button>
+          <Button onClick={() => handleSave(false)}>
+            <Play className="h-4 w-4 mr-2" />
+            Salvar e Ativar
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-3">
+          <Card className="p-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome da Automação</Label>
+                <Input
+                  id="name"
+                  value={automationName}
+                  onChange={(e) => setAutomationName(e.target.value)}
+                  placeholder="Ex: Boas-vindas a Novos Leads"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description">Descrição (opcional)</Label>
+                <Input
+                  id="description"
+                  value={automationDescription}
+                  onChange={(e) => setAutomationDescription(e.target.value)}
+                  placeholder="Ex: Sequência de 4 emails para novos contatos"
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+        
+        <div className="md:col-span-3">
+          <Tabs defaultValue="canvas">
+            <TabsList>
+              <TabsTrigger value="canvas">Canvas do Fluxo</TabsTrigger>
+              <TabsTrigger value="settings">Configurações</TabsTrigger>
+              <TabsTrigger value="stats">Estatísticas</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="canvas" className="mt-4">
+              <Card className="h-[600px] flex items-center justify-center">
+                <div className="text-center">
+                  <h3 className="font-medium text-lg">Editor Visual de Automação</h3>
+                  <p className="text-muted-foreground mb-4">
+                    O canvas de designer visual será integrado aqui
+                  </p>
+                  <Badge>Em desenvolvimento</Badge>
+                </div>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="settings" className="mt-4">
+              <Card className="p-6">
+                <h3 className="font-medium text-lg mb-4">Configurações da Automação</h3>
+                
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Reentrada</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Controle se e quando um contato pode passar novamente por esta automação.
+                    </p>
+                    {/* Settings UI would go here */}
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Horário de Execução</h4>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Defina quando as ações desta automação podem ser executadas.
+                    </p>
+                    {/* Settings UI would go here */}
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="stats">
+              <div className="p-20 text-center text-muted-foreground">
+                As estatísticas ficam disponíveis depois que a automação é ativada.
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="logs">
+              <div className="p-20 text-center text-muted-foreground">
+                Os logs ficam disponíveis depois que a automação é ativada.
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AutomationEditor;
