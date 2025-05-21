@@ -365,116 +365,127 @@ export default function ContactsPage() {
       {/* Lista de contatos */}
       <div className="rounded-md border overflow-hidden">
         {/* Cabeçalho da tabela */}
-        <div className="bg-muted/50 p-3 flex items-center justify-between border-b">
-          <div className="flex items-center gap-2">
-            <Checkbox 
-              id="select-all"
-              checked={filteredContacts.length > 0 && selectedContacts.length === filteredContacts.length}
-              onCheckedChange={toggleSelectAll}
-            />
-            <label htmlFor="select-all" className="text-sm font-medium">
-              {selectedContacts.length > 0 
-                ? `${selectedContacts.length} selecionado${selectedContacts.length > 1 ? 's' : ''}` 
-                : 'Selecionar todos'}
-            </label>
-          </div>
-          
-          {selectedContacts.length > 0 && (
-            <div className="flex items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8">
-                    Ações em massa
-                    <ChevronDown className="h-4 w-4 ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    Adicionar tags
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    Remover tags
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    Alterar proprietário
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
-                    Excluir contatos
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
-        
-        {/* Contatos */}
-        <div className="divide-y">
-          {filteredContacts.length > 0 ? (
-            filteredContacts.map(contact => (
-              <div key={contact.id} className="p-3 flex items-center hover:bg-accent/10 cursor-pointer" onClick={() => openContactDetail(contact.id)}>
-                <div className="flex items-center gap-3 flex-1">
-                  <Checkbox 
-                    id={`contact-${contact.id}`}
-                    checked={selectedContacts.includes(contact.id)}
-                    onCheckedChange={() => toggleSelectContact(contact.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <div className="mb-1">
-                        <h3 className="font-medium text-sm">{contact.name}</h3>
-                        <div className="flex gap-1 text-xs text-muted-foreground">
-                          <span>{contact.email}</span>
-                          <span>•</span>
-                          <span>{contact.phone}</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <Badge 
-                          variant="outline" 
-                          className={`mb-1 text-xs ${contact.type === "Cliente" 
-                            ? "bg-green-50 text-green-700 border-green-200" 
-                            : "bg-blue-50 text-blue-700 border-blue-200"}`}
-                        >
-                          {contact.type}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          Última atividade: {formatLastActivity(contact.lastActivity)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <div className="flex flex-wrap gap-1">
-                        {contact.tags.map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs py-0">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {contact.company}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">Nenhum contato encontrado.</p>
-              {searchQuery && (
-                <Button 
-                  variant="link" 
-                  className="mt-1" 
-                  onClick={() => setSearchQuery("")}
+        <table className="w-full">
+          <thead>
+            <tr className="bg-muted/50 border-b">
+              <th className="py-3 px-4 text-left w-[40px]">
+                <Checkbox 
+                  id="select-all"
+                  checked={filteredContacts.length > 0 && selectedContacts.length === filteredContacts.length}
+                  onCheckedChange={toggleSelectAll}
+                />
+              </th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Nome</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Email</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Telefone</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Empresa</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Tipo</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">
+                Última<br />Atividade
+              </th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Proprietário</th>
+              <th className="py-3 px-4 text-left font-medium text-sm">Tags</th>
+              <th className="py-3 px-4 text-center font-medium text-sm">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredContacts.length > 0 ? (
+              filteredContacts.map(contact => (
+                <tr 
+                  key={contact.id} 
+                  className="border-b hover:bg-accent/10 cursor-pointer"
+                  onClick={() => openContactDetail(contact.id)}
                 >
-                  Limpar busca
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
+                  <td className="py-3 px-4">
+                    <Checkbox 
+                      id={`contact-${contact.id}`}
+                      checked={selectedContacts.includes(contact.id)}
+                      onCheckedChange={() => toggleSelectContact(contact.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center bg-primary/10 rounded-full w-8 h-8 text-primary font-medium">
+                        {contact.name.charAt(0)}
+                      </div>
+                      <div className="font-medium">{contact.name}</div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-sm">{contact.email}</td>
+                  <td className="py-3 px-4 text-sm">{contact.phone}</td>
+                  <td className="py-3 px-4 text-sm">{contact.company}</td>
+                  <td className="py-3 px-4">
+                    <Badge 
+                      variant="outline" 
+                      className={
+                        contact.type === "Cliente" 
+                          ? "bg-green-50 text-green-700 border-green-200"
+                          : "bg-blue-50 text-blue-700 border-blue-200"
+                      }
+                    >
+                      {contact.type}
+                    </Badge>
+                  </td>
+                  <td className="py-3 px-4 text-sm">
+                    {formatLastActivity(contact.lastActivity)}
+                  </td>
+                  <td className="py-3 px-4 text-sm">{contact.owner}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex flex-wrap gap-1">
+                      {contact.tags.map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs py-0">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="py-2 px-4 text-right">
+                    <div className="flex justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openContactDetail(contact.id);
+                        }}
+                      >
+                        Ver
+                      </Button>
+                      <Button 
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditContact(contact);
+                        }}
+                      >
+                        Editar
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={10} className="py-12 text-center">
+                  <p className="text-muted-foreground">Nenhum contato encontrado.</p>
+                  {searchQuery && (
+                    <Button 
+                      variant="link" 
+                      className="mt-1" 
+                      onClick={() => setSearchQuery("")}
+                    >
+                      Limpar busca
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Dialog para detalhes do contato */}
