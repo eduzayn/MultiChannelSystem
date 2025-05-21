@@ -67,27 +67,29 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
     staleTime: 0 // Sempre considerar os dados obsoletos para forçar refetch
   });
   
-  // Adicionar polling mais agressivo para tempo real
+  // Verificar se há novas mensagens a cada segundo
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      refetch();
-    }, 1500); // Polling a cada 1.5 segundos para garantir atualizações quase em tempo real
-    
-    // Verificação adicional no início
+    // Refetch imediato quando o componente montar ou a conversa mudar
     refetch();
     
-    return () => clearInterval(intervalId);
-  }, [refetch, conversation.id]); // Incluir conversation.id para recriar o intervalo quando mudar a conversa
+    const intervalId = setInterval(() => {
+      console.log("Buscando novas mensagens para conversa:", conversation.id);
+      refetch();
+    }, 1000); // Polling mais frequente para melhor resposta em tempo real
+    
+    return () => {
+      console.log("Limpando intervalo de polling para conversa:", conversation.id);
+      clearInterval(intervalId);
+    };
+  }, [refetch, conversation.id]);
   
   // Atualizar mensagens quando os dados são buscados
   useEffect(() => {
-    if (fetchedMessages && fetchedMessages.length > 0) {
-      setMessagesList(fetchedMessages);
-    } else if (!isLoading && fetchedMessages && fetchedMessages.length === 0) {
-      // Se não houver mensagens, mostrar uma mensagem de boas-vindas
-      setMessagesList([defaultWelcomeMessage]);
+    if (fetchedMessages) {
+      console.log("Atualizando messagesList com:", fetchedMessages);
+      setMessagesList(fetchedMessages.length > 0 ? fetchedMessages : [defaultWelcomeMessage]);
     }
-  }, [fetchedMessages, isLoading]);
+  }, [fetchedMessages]);
 
   // Rolagem para o final da lista de mensagens quando novas mensagens são adicionadas
   useEffect(() => {
