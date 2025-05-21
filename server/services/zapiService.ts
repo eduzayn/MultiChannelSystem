@@ -10,7 +10,7 @@ import axios from "axios";
 export async function getZapiQRCode(
   instanceId: string,
   token: string,
-  clientToken: string,
+  clientToken?: string,
 ): Promise<{
   success: boolean;
   qrCode?: string;
@@ -28,10 +28,14 @@ export async function getZapiQRCode(
       
       console.log(`Chamando API Z-API para obter QR code como bytes: ${imageUrl}`);
       
+      // Preparando headers com ou sem Client-Token (opcional)
+      const headers: Record<string, string> = {};
+      if (clientToken) {
+        headers["Client-Token"] = clientToken;
+      }
+      
       const imageResponse = await axios.get(imageUrl, {
-        headers: {
-          "Client-Token": clientToken,
-        },
+        headers,
         responseType: 'arraybuffer', // Crucial para receber como bytes
         validateStatus: function (status) {
           // Aceitar qualquer status para poder tratar o erro adequadamente
@@ -114,10 +118,14 @@ export async function getZapiQRCode(
       try {
         const bytesUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/qr-code`;
         
+        // Preparando headers com ou sem Client-Token (opcional)
+        const headers: Record<string, string> = {};
+        if (clientToken) {
+          headers["Client-Token"] = clientToken;
+        }
+        
         const textResponse = await axios.get(bytesUrl, {
-          headers: {
-            "Client-Token": clientToken,
-          },
+          headers
         });
         
         console.log(
@@ -166,7 +174,7 @@ export async function getZapiQRCode(
 export async function testZapiConnection(
   instanceId: string,
   token: string,
-  clientToken: string,
+  clientToken?: string,
 ): Promise<{
   success: boolean;
   message: string;
@@ -183,10 +191,14 @@ export async function testZapiConnection(
     
     console.log(`Fazendo requisição para: ${statusUrl}`);
     
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {};
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
     const response = await axios.get(statusUrl, {
-      headers: {
-        "Client-Token": clientToken,
-      },
+      headers,
       validateStatus: function (status) {
         // Aceitar qualquer status para poder tratar o erro adequadamente
         return true;
@@ -263,9 +275,9 @@ export async function testZapiConnection(
 export async function sendTextMessage(
   instanceId: string,
   token: string,
-  clientToken: string,
   phone: string,
-  message: string
+  message: string,
+  clientToken?: string
 ): Promise<{
   success: boolean;
   messageId?: string;
@@ -274,6 +286,14 @@ export async function sendTextMessage(
   try {
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
     
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
     const response = await axios.post(
       url,
       {
@@ -281,10 +301,7 @@ export async function sendTextMessage(
         message
       },
       {
-        headers: {
-          "Content-Type": "application/json",
-          "Client-Token": clientToken
-        }
+        headers
       }
     );
     
@@ -319,7 +336,7 @@ export async function sendTextMessage(
 export async function disconnectZapi(
   instanceId: string,
   token: string,
-  clientToken: string
+  clientToken?: string
 ): Promise<{
   success: boolean;
   message: string;
@@ -330,14 +347,19 @@ export async function disconnectZapi(
     // Endpoint para desconectar o WhatsApp
     const disconnectUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/disconnect`;
     
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
     const response = await axios.post(
       disconnectUrl,
       {},
       {
-        headers: {
-          "Content-Type": "application/json",
-          "Client-Token": clientToken
-        },
+        headers,
         validateStatus: function (status) {
           // Aceitar qualquer status para poder tratar o erro adequadamente
           return true;
