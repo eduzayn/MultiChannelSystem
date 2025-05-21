@@ -304,119 +304,146 @@ export function registerZapiRoutes(app: Router) {
         });
       }
       
+      console.log(`Chamando Z-API para buscar contatos com ID: ${instanceId}`);
       const result = await getZapiContacts(instanceId, token, clientToken);
       
-      if (result.success && result.contacts) {
-        // Se obtiver os contatos com sucesso, sincronizar com o banco de dados
-        try {
-          const { db } = await import('../db');
-          const { contacts } = await import('../../shared/schema');
-          const { eq } = await import('drizzle-orm');
-          
-          console.log(`Sincronizando ${result.contacts.length} contatos do WhatsApp com o banco de dados...`);
-          
-          // Para cada contato recebido da Z-API
-          for (const zapiContact of result.contacts) {
+      // Verificar se a chamada à API foi bem-sucedida
+      if (!result.success) {
+        console.error(`Erro ao buscar contatos da Z-API: ${result.message}`);
+        return res.status(400).json({
+          success: false,
+          message: result.message || "Erro ao importar contatos do WhatsApp."
+        });
+      }
+      
+      // Verificar se temos contatos para importar
+      if (!result.contacts || !Array.isArray(result.contacts) || result.contacts.length === 0) {
+        console.log("Nenhum contato retornado pela Z-API");
+        return res.json({
+          success: true,
+          message: "Nenhum contato encontrado para importar.",
+          contacts: []
+        });
+      }
+      
+      console.log(`Recebidos ${result.contacts.length} contatos da Z-API`);
+      
+      // Se obtiver os contatos com sucesso, sincronizar com o banco de dados
+      try {
+        const { db } = await import('../db');
+        const { contacts } = await import('../../shared/schema');
+        const { eq } = await import('drizzle-orm');
+        
+        console.log(`Sincronizando ${result.contacts.length} contatos do WhatsApp com o banco de dados...`);
+        
+        let importedCount = 0;
+        let updatedCount = 0;
+        let errorCount = 0;
+        
+        // Para cada contato recebido da Z-API
+        for (const zapiContact of result.contacts) {
+          try {
             // Formatar o número de telefone (remover caracteres não numéricos)
-            let phone = zapiContact.phone || zapiContact.id?.replace(/\D/g, "") || "";
+            let phone = '';
+            
+            if (zapiContact.phone) {
+              phone = zapiContact.phone.replace(/\D/g, "");
+            } else if (zapiContact.id) {
+              phone = zapiContact.id.replace(/\D/g, "").replace("@c.us", "");
+            }
+            
+            // Verificar se temos um número de telefone válido
+            if (!phone) {
+              console.log(`Contato sem número de telefone válido, ignorando: ${JSON.stringify(zapiContact)}`);
+              continue;
+            }
             
             // Remover o "@c.us" que a Z-API adiciona nos IDs
             phone = phone.replace("@c.us", "");
             
-            // Verificar se o contato já existe no banco de dados
+            // Verificar se já existe um contato com este número
             const existingContact = await db.query.contacts.findFirst({
               where: eq(contacts.phone, phone)
             });
             
+            // Obter o nome do contato
+            const name = zapiContact.name || 
+                        zapiContact.pushname || 
+                        zapiContact.formattedName || 
+                        `WhatsApp ${phone}`;
+            
             // Se o contato não existe, inserir no banco de dados
-            if (!existingContact && phone) {
-              // A Z-API pode retornar "name" ou "pushname" como nome do contato
-              const name = zapiContact.name || 
-                          zapiContact.pushname || 
-                          zapiContact.formattedName || 
-                          `WhatsApp ${phone}`;
-              
+            if (!existingContact) {
               await db.insert(contacts)
                 .values({
-                  name,
-                  phone,
+                  name: name,
+                  phone: phone,
                   email: "",
                   notes: "Contato importado automaticamente do WhatsApp",
                   metadata: {
                     zapiData: zapiContact,
-                    source: "zapi-sync"
-                  }
-                })
-                .onConflictDoUpdate({
-                  target: contacts.phone,
-                  set: {
-                    name,
-                    metadata: {
-                      zapiData: zapiContact,
-                      source: "zapi-sync"
-                    }
+                    source: "zapi-sync",
+                    lastSync: new Date().toISOString()
                   }
                 });
               
+              importedCount++;
               console.log(`Contato "${name}" (${phone}) importado do WhatsApp`);
             } 
             // Se o contato já existe, atualizar os dados
-            else if (existingContact && phone) {
-              const name = zapiContact.name || 
-                          zapiContact.pushname || 
-                          zapiContact.formattedName || 
-                          existingContact.name;
-              
-              // Preparar os metadados para atualização
-              let updatedMetadata: Record<string, any> = {};
-              
-              // Se já existir metadata, converter para objeto e mesclar
-              if (existingContact.metadata) {
-                try {
-                  // Se for string, tentar parsear como JSON
-                  if (typeof existingContact.metadata === 'string') {
-                    updatedMetadata = JSON.parse(existingContact.metadata);
-                  } 
-                  // Se for objeto, usar diretamente
-                  else if (typeof existingContact.metadata === 'object') {
-                    updatedMetadata = { ...existingContact.metadata as Record<string, any> };
-                  }
-                } catch (e) {
-                  console.error("Erro ao processar metadata existente:", e);
-                }
-              }
-              
-              // Adicionar os novos dados como propriedades do objeto
-              updatedMetadata = {
-                ...updatedMetadata,
+            else {
+              // Criar objeto de metadados
+              const updatedMetadata = {
                 zapiData: zapiContact,
-                lastSync: new Date().toISOString(),
-                source: "zapi-sync"
+                source: "zapi-sync",
+                lastSync: new Date().toISOString()
               };
               
               await db.update(contacts)
                 .set({
-                  name,
+                  name: name,
                   metadata: updatedMetadata
                 })
                 .where(eq(contacts.id, existingContact.id));
               
+              updatedCount++;
               console.log(`Contato "${name}" (${phone}) atualizado`);
             }
+          } catch (contactError) {
+            errorCount++;
+            console.error(`Erro ao processar contato: ${JSON.stringify(zapiContact)}`, contactError);
           }
-          
-          console.log(`Sincronização de contatos do WhatsApp concluída!`);
-        } catch (dbError) {
-          console.error("Erro ao sincronizar contatos com o banco de dados:", dbError);
         }
+        
+        console.log(`Sincronização de contatos do WhatsApp concluída!`);
+        console.log(`Importados: ${importedCount}, Atualizados: ${updatedCount}, Erros: ${errorCount}`);
+        
+        return res.json({
+          success: true,
+          message: `Contatos do WhatsApp sincronizados com sucesso! (${importedCount} novos, ${updatedCount} atualizados)`,
+          contacts: result.contacts,
+          stats: {
+            imported: importedCount,
+            updated: updatedCount,
+            errors: errorCount,
+            total: result.contacts.length
+          }
+        });
+        
+      } catch (dbError) {
+        console.error("Erro ao sincronizar contatos com o banco de dados:", dbError);
+        return res.status(500).json({
+          success: false,
+          message: "Erro ao salvar contatos no banco de dados: " + (dbError instanceof Error ? dbError.message : "Erro desconhecido"),
+        });
       }
       
-      res.json(result);
     } catch (error) {
       console.error("Erro na rota de obtenção de contatos:", error);
-      res.status(500).json({
+      return res.status(500).json({
         success: false,
-        message: error instanceof Error ? error.message : "Erro interno do servidor",
+        message: "Não foi possível importar os contatos do WhatsApp.",
+        error: error instanceof Error ? error.message : "Erro interno do servidor",
       });
     }
   });
