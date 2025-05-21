@@ -155,19 +155,24 @@ export async function getZapiQRCode(
     }
     
     // Chamada real à API Z-API
+    // Conforme documentação da Z-API: https://developer.z-api.io/instance/qrcode
     const response = await axios.get(
-      `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/image`,
+      `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code`,
       { 
         headers: getHeadersWithToken(clientToken),
-        responseType: 'text' // A resposta é uma string Base64
+        responseType: 'json'
       }
     );
     
     console.log("Resposta Z-API (QR Code):", response.data ? "QR Code obtido com sucesso" : "Sem QR Code");
     
+    // A resposta da Z-API contém o QR Code no formato correto na propriedade 'value'
+    // Formato esperado: { value: "data:image/png;base64,..." }
+    const qrCodeData = response.data?.value || response.data;
+    
     return {
       success: true,
-      qrCode: response.data
+      qrCode: qrCodeData
     };
   } catch (error) {
     console.error(`Erro ao obter QR Code Z-API:`, error);
