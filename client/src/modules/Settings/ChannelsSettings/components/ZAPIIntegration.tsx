@@ -25,7 +25,8 @@ import {
 import { Loader2, CheckCircle, XCircle, QrCode, ExternalLink, Copy, Phone } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { QRCodeModal } from '@/components/QRCodeModal';
+import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeDisplay } from '@/components/QRCodeDisplay';
 
 interface ZAPICredentials {
   instanceId: string;
@@ -518,9 +519,9 @@ export const ZAPIIntegration = () => {
         </div>
       )}
       
-      {/* QR Code Dialog */}
+      {/* QR Code Dialog - Com layout aprimorado para melhor visualização */}
       <Dialog open={qrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Conecte seu WhatsApp</DialogTitle>
             <DialogDescription>
@@ -529,36 +530,47 @@ export const ZAPIIntegration = () => {
           </DialogHeader>
           
           {qrCodeData ? (
-            <div className="flex flex-col items-center p-4 bg-white rounded-md gap-4">
-              <div className="w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md relative">
-                <QRCodeDisplay qrCodeData={qrCodeData} size={300} />
+            <div className="flex flex-col items-center p-6 bg-white rounded-md gap-6">
+              <div className="p-6 border-2 border-primary/10 bg-white rounded-lg shadow-lg">
+                <QRCodeSVG 
+                  value={qrCodeData} 
+                  size={350}
+                  bgColor={"#ffffff"}
+                  fgColor={"#000000"}
+                  level={"L"}
+                  includeMargin={true}
+                />
               </div>
               
-              <div className="text-center mt-4">
+              <div className="text-center max-w-2xl mt-2">
                 <h3 className="text-lg font-semibold mb-2">Ou insira o código manualmente</h3>
-                <div className="bg-gray-100 p-3 rounded-md font-mono text-center break-all">
-                  {qrCodeData}
+                <div className="bg-gray-50 p-4 rounded-md font-mono text-sm text-center break-all max-w-full border border-gray-200">
+                  {qrCodeData?.substring(0, 200)}
+                  {qrCodeData && qrCodeData.length > 200 ? '...' : ''}
                 </div>
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-sm text-muted-foreground mt-3">
                   No WhatsApp, vá em Configurações &gt; Dispositivos Conectados &gt; Parear usando código
                 </p>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center p-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex justify-center p-16">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
             </div>
           )}
           
-          <p className="text-center text-sm text-muted-foreground">
-            1. Abra o WhatsApp no seu celular<br />
-            2. Toque em Mais opções ⋮ ou Configurações ⚙️<br />
-            3. Toque em Aparelhos conectados<br />
-            4. Toque em Conectar um aparelho<br />
-            5. Escaneie este QR Code
-          </p>
+          <div className="bg-muted/40 rounded-lg p-4 mt-2">
+            <p className="text-center text-sm text-muted-foreground space-y-1">
+              <div className="font-medium mb-2">Como conectar:</div>
+              1. Abra o WhatsApp no seu celular<br />
+              2. Toque em Mais opções ⋮ ou Configurações ⚙️<br />
+              3. Toque em Aparelhos conectados<br />
+              4. Toque em Conectar um aparelho<br />
+              5. Escaneie este QR Code
+            </p>
+          </div>
           
-          <DialogFooter>
+          <DialogFooter className="gap-2 mt-2">
             <Button variant="outline" onClick={() => setQrCodeDialogOpen(false)}>
               Fechar
             </Button>
