@@ -137,19 +137,19 @@ export function Sidebar() {
             <SidebarSection title="Marketing e Engajamento">
               <SidebarItem 
                 icon={<Megaphone />} 
-                href="/marketing/campaigns" 
+                href="/campaigns" 
                 label="Campanhas de Marketing"
                 submenu={[
-                  { label: 'Email', href: '/marketing/campaigns/email' },
-                  { label: 'WhatsApp', href: '/marketing/campaigns/whatsapp' },
+                  { label: 'Nova Campanha', href: '/campaigns/new' },
+                  { label: 'Lista de Campanhas', href: '/campaigns' },
                 ]}
               />
               <SidebarItem 
                 icon={<Bot />} 
-                href="/marketing/automations" 
+                href="/automations" 
                 label="Automações (Workflows)"
                 submenu={[
-                  { label: 'Jornadas Automatizadas', href: '/marketing/automations/journeys' },
+                  { label: 'Todas as Automações', href: '/automations' },
                 ]}
               />
             </SidebarSection>
