@@ -155,26 +155,45 @@ export async function getZapiQRCode(
     }
     
     // Chamada real à API Z-API
-    // Endpoint para obter o QR Code em formato de texto (código)
-    // Referência: https://developer.z-api.io/instance/qrcode
-    const response = await axios.get(
-      `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/text`,
-      { 
-        headers: getHeadersWithToken(clientToken),
-        responseType: 'json'
-      }
-    );
-    
-    console.log("Resposta Z-API (QR Code):", response.data ? "QR Code obtido com sucesso" : "Sem QR Code");
-    
-    // A resposta da Z-API contém o QR Code no formato correto na propriedade 'value'
-    // Formato esperado: { value: "data:image/png;base64,..." }
-    const qrCodeData = response.data?.value || response.data;
-    
-    return {
-      success: true,
-      qrCode: qrCodeData
-    };
+    // Primeiro tenta obter o QR Code como imagem, se falhar, obtém como texto
+    try {
+      // Tenta obter o QR Code como imagem
+      const response = await axios.get(
+        `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code`,
+        { 
+          headers: getHeadersWithToken(clientToken),
+          responseType: 'arraybuffer'
+        }
+      );
+      
+      // Converte o buffer da imagem para base64
+      const base64Image = Buffer.from(response.data).toString('base64');
+      return {
+        success: true,
+        qrCode: `data:image/png;base64,${base64Image}`
+      };
+    } catch (qrError) {
+      // Se falhar na obtenção da imagem, tenta obter o texto
+      console.log("Falha ao obter QR Code como imagem, tentando obter como texto...");
+      
+      const textResponse = await axios.get(
+        `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/text`,
+        { 
+          headers: getHeadersWithToken(clientToken),
+          responseType: 'json'
+        }
+      );
+      
+      console.log("Resposta Z-API (QR Code texto):", textResponse.data ? "QR Code obtido com sucesso" : "Sem QR Code");
+      
+      // A resposta da Z-API contém o QR Code no formato correto na propriedade 'value'
+      const qrCodeData = textResponse.data?.value || textResponse.data;
+      
+      return {
+        success: true,
+        qrCode: qrCodeData
+      };
+    }
   } catch (error) {
     console.error(`Erro ao obter QR Code Z-API:`, error);
     if (axios.isAxiosError(error)) {
