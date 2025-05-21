@@ -599,87 +599,69 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
       </ScrollArea>
       
       {/* Campo de entrada de mensagem */}
-      <div className="border-t p-3">
-        <form onSubmit={handleSendMessage} className="relative">
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              {/* Sugestões de IA */}
-              <div className="mb-2 flex items-center gap-1 overflow-x-auto pb-1">
-                {aiSuggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    className="flex items-center whitespace-nowrap rounded-full border px-3 py-1 text-xs"
-                    onClick={() => setNewMessage(suggestion)}
-                    type="button"
-                  >
-                    <span>{suggestion}</span>
-                  </button>
-                ))}
-              </div>
-              
-              <Textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem..."
-                className="max-h-32"
-                rows={1}
-              />
+      <div className="border-t">
+        <div className="p-3">
+          <div className="flex flex-col">
+            {/* Sugestões */}
+            <div className="mb-2 flex gap-2 overflow-x-auto">
+              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                Poderia detalhar mais sobre a...
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                Vou verificar e te retorno em...
+              </Button>
+              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                Entendido, obrigado pela atual...
+              </Button>
             </div>
             
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Paperclip className="h-4 w-4" />
+            {/* Campo de texto e botões */}
+            <form onSubmit={handleSendMessage} className="flex">
+              <div className="flex w-full items-end rounded-md border">
+                <div className="flex-1 p-2">
+                  <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={`Mensagem para #${channelId ? channels[channelId]?.name : 'canal'}`}
+                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
+                  />
+                </div>
+                
+                <div className="flex items-center p-2 gap-0.5">
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
+                    <Smile className="h-5 w-5" />
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>Anexar arquivo</TooltipContent>
-              </Tooltip>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <Smile className="h-4 w-4" />
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
+                    <Paperclip className="h-5 w-5" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" align="end" alignOffset={0}>
-                  <div className="grid grid-cols-5 gap-2">
-                    {emojis.map((emoji, index) => (
-                      <button
-                        key={index}
-                        className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted"
-                        onClick={() => setNewMessage(prev => prev + emoji)}
-                        type="button"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
+                    <Mic className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
               
-              <Button 
-                type="button" 
-                size="icon" 
-                variant={isRecording ? "destructive" : "ghost"}
-                className="h-9 w-9"
-                onClick={() => setIsRecording(!isRecording)}
-              >
-                {isRecording ? <X className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              <Button type="submit" className="ml-2 rounded-full h-10 w-10 p-0" disabled={!newMessage.trim()}>
+                <Send className="h-5 w-5" />
               </Button>
-              
-              <Button 
-                type="submit" 
-                size="icon" 
-                disabled={!newMessage.trim() && !isRecording}
-                className="h-9 w-9"
-              >
-                <Send className="h-4 w-4" />
+            </form>
+          </div>
+          
+          {/* Rodapé com informações adicionais */}
+          <div className="flex justify-between items-center mt-2">
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                Sugestões da IA
               </Button>
             </div>
+            
+            <div className="flex items-center text-xs text-muted-foreground gap-1">
+              <span>Pressione</span>
+              <kbd className="px-1.5 py-0.5 border rounded text-xs">Enter</kbd>
+              <span>para enviar</span>
+            </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
