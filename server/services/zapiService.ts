@@ -93,9 +93,37 @@ export async function getZapiQRCode(
           
           // Se chegou aqui, é uma imagem válida
           // Convertemos os bytes para base64 COM prefixo data:image/png;base64,
-          const base64Image = `data:image/png;base64,${Buffer.from(imageResponse.data).toString('base64')}`;
+          const base64Data = Buffer.from(imageResponse.data).toString('base64');
+          const base64Image = `data:image/png;base64,${base64Data}`;
           
           console.log("QR code obtido com sucesso (bytes convertidos para base64 com prefixo)");
+          
+          // Verificar se o QR code pode estar sendo retornado encapsulado (erro comum da Z-API)
+          try {
+            // Verificar se os primeiros bytes parecem ser JSON
+            const firstChars = base64Data.substring(0, 20).toLowerCase();
+            if (firstChars.includes('eyj') || firstChars.includes('{"v')) {
+              // Pode ser JSON encapsulado, tenta decodificar
+              const decodedData = Buffer.from(base64Data, 'base64').toString('utf-8');
+              if (decodedData.startsWith('{') && decodedData.includes('value')) {
+                // É um JSON com campo value
+                const jsonData = JSON.parse(decodedData);
+                if (jsonData.value && typeof jsonData.value === 'string' && 
+                    (jsonData.value.startsWith('data:image') || jsonData.value.startsWith('http'))) {
+                  console.log("QR code encapsulado detectado, extraindo valor real");
+                  return {
+                    success: true,
+                    qrCode: jsonData.value,
+                    isImage: true,
+                    details: { encapsulated: true }
+                  };
+                }
+              }
+            }
+          } catch (e) {
+            // Se falhar a tentativa de desencapsular, continuamos com a abordagem original
+            console.log("Tentativa de desencapsular QR code falhou:", e);
+          }
           
           return {
             success: true,

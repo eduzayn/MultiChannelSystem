@@ -311,7 +311,13 @@ export function ChannelWizardV2({ open, onOpenChange, onChannelAdded }: AddChann
       const response = await axios.post('/api/zapi/get-qrcode', zapiCredentials);
       
       if (response.data.success && response.data.qrCode) {
-        console.log("QR Code recebido:", response.data.qrCode.substring(0, 50) + "...");
+        // Log apenas os primeiros caracteres para debug
+        console.log("QR Code recebido:", 
+          response.data.qrCode.substring(0, 50) + 
+          "... (comprimento total: " + response.data.qrCode.length + ")"
+        );
+        
+        // Armazenar o QR code e atualizar o status
         setQrCodeData(response.data.qrCode);
         setQrCodeStatus('waiting');
         
@@ -323,9 +329,12 @@ export function ChannelWizardV2({ open, onOpenChange, onChannelAdded }: AddChann
         
         // Start polling connection status
         startPollingConnectionStatus(zapiCredentials);
-      } else if (response.data.connected) {
+      } else if (response.data.connected || 
+                (response.data.details && response.data.details.connected === true)) {
         // WhatsApp is already connected
         setQrCodeStatus('connected');
+        setQrCodeData(null); // Limpar QR code quando conectado
+        
         toast({
           title: 'WhatsApp conectado',
           description: 'Esta instância já está conectada ao WhatsApp.',
@@ -353,31 +362,64 @@ export function ChannelWizardV2({ open, onOpenChange, onChannelAdded }: AddChann
   
   // Poll connection status
   const startPollingConnectionStatus = (credentials: ZAPICredentials) => {
-    // Check status initially after 10 seconds
-    setTimeout(async () => {
+    // Variável para controlar quando parar o polling
+    let shouldContinuePolling = true;
+    let pollCount = 0;
+    const maxPolls = 30; // Máximo de tentativas (5 minutos, 10s cada)
+    
+    // Função que executa a verificação
+    const checkStatus = async () => {
+      if (!shouldContinuePolling || pollCount >= maxPolls) {
+        console.log("Polling de status encerrado", 
+          !shouldContinuePolling ? "manualmente" : "após máximo de tentativas");
+        return;
+      }
+      
+      pollCount++;
+      console.log(`Verificando status de conexão (tentativa ${pollCount}/${maxPolls})...`);
+      
       try {
         const response = await axios.post('/api/zapi/test-connection', credentials);
         
-        if (response.data.success) {
+        // Log da resposta completa para debug
+        console.log("Resposta de verificação de status:", response.data);
+        
+        // Verificar se está conectado de várias formas possíveis
+        const isConnected = 
+          (response.data.success && response.data.status === 'connected') ||
+          (response.data.details && response.data.details.connected === true);
+        
+        if (isConnected) {
           setQrCodeStatus('connected');
+          setQrCodeData(null); // Limpar o QR code quando conectado
+          
           toast({
             title: 'WhatsApp conectado!',
             description: 'Seu WhatsApp foi conectado com sucesso à Z-API.',
             variant: 'default',
           });
           
-          // Stop polling
+          // Parar o polling
+          shouldContinuePolling = false;
           return;
         } else {
-          // Continue polling every 10 seconds
-          setTimeout(() => startPollingConnectionStatus(credentials), 10000);
+          // Continuar verificando a cada 10 segundos
+          setTimeout(checkStatus, 10000);
         }
       } catch (error) {
         console.error("Erro ao verificar status de conexão:", error);
-        // Continue polling despite errors
-        setTimeout(() => startPollingConnectionStatus(credentials), 10000);
+        // Continuar verificando apesar dos erros
+        setTimeout(checkStatus, 10000);
       }
-    }, 10000);
+    };
+    
+    // Iniciar verificação após 10 segundos
+    setTimeout(checkStatus, 10000);
+    
+    // Retornar função para cancelar o polling se necessário
+    return () => {
+      shouldContinuePolling = false;
+    };
   };
   
   // Test Email Connection

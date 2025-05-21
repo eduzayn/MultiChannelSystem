@@ -103,15 +103,48 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
   // Caso a imagem falhe ou seja um texto QR code, verificamos se é um base64 longo
   // Se for base64 muito longo, usamos diretamente como uma imagem
   if (qrCodeData.length > 1000 || qrCodeData.startsWith('data:image')) {
+    console.log("Usando imagem direta para QR Code, comprimento:", qrCodeData.length);
+    // Verificar se há um "value" dentro do base64 (que pode estar sendo enviado incorretamente)
+    let finalQrUrl = qrCodeData;
+    
+    // Se a imagem começa com data:image, mas contém "value", pode ser um objeto JSON serializado
+    if (qrCodeData.startsWith('data:image') && qrCodeData.includes('"value"')) {
+      try {
+        // Tenta obter o valor real do QR code que pode estar encapsulado
+        // Este é um caso especial onde a Z-API pode estar retornando um JSON dentro do base64
+        const encodedJson = qrCodeData.split('base64,')[1];
+        if (encodedJson) {
+          const decodedJson = atob(encodedJson);
+          const jsonData = JSON.parse(decodedJson);
+          if (jsonData && jsonData.value) {
+            finalQrUrl = jsonData.value;
+            console.log("Extraído valor encapsulado do QR code");
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao tentar extrair valor encapsulado:", e);
+        // Continua usando a URL original em caso de erro
+      }
+    }
+    
     return (
       <div className="flex flex-col items-center">
         <img 
-          src={qrCodeData.startsWith('data:image') ? qrCodeData : `data:image/png;base64,${qrCodeData}`}
+          src={finalQrUrl.startsWith('data:image') ? finalQrUrl : `data:image/png;base64,${finalQrUrl}`}
           alt="QR Code para WhatsApp" 
           width={size}
           height={size}
           style={{ maxWidth: '100%', height: 'auto' }}
           className="rounded-md"
+          onError={(e) => {
+            console.error("Erro ao carregar QR code como imagem:", e);
+            e.currentTarget.style.display = 'none';
+            // Mostrar uma mensagem de erro
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'p-4 bg-red-50 rounded-md text-red-700 text-center';
+            errorDiv.innerHTML = 'Não foi possível carregar o QR code. Por favor, tente novamente.';
+            e.currentTarget.parentNode?.appendChild(errorDiv);
+          }}
         />
       </div>
     );
