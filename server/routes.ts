@@ -28,6 +28,15 @@ import {
   insertInvoiceSchema,
   insertGoalSchema,
   insertAchievementSchema,
+  // Análise & Performance imports
+  insertKpiSchema,
+  insertKpiValueSchema,
+  insertDashboardSchema,
+  insertDashboardWidgetSchema,
+  insertReportSchema,
+  insertReportResultSchema,
+  insertUserActivitySchema,
+  insertTeamPerformanceMetricSchema,
   insertUserAchievementSchema,
   insertSettingSchema,
   // Marketing & Engagement schemas

@@ -1356,14 +1356,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listKpiValues(kpiId: number, periodType?: string, limit?: number): Promise<KpiValue[]> {
-    let query = db.select().from(kpiValues).where(eq(kpiValues.kpiId, kpiId));
+    // Iniciar com a condição base de kpiId
+    let conditions = [eq(kpiValues.kpiId, kpiId)];
     
+    // Adicionar condição de periodType se fornecido
     if (periodType) {
-      query = query.where(eq(kpiValues.periodType, periodType));
+      conditions.push(eq(kpiValues.periodType, periodType));
     }
     
+    // Construir a query com todas as condições
+    let query = db.select().from(kpiValues).where(and(...conditions));
+    
+    // Aplicar ordenação
     query = query.orderBy(desc(kpiValues.dateTo));
     
+    // Aplicar limite se fornecido
     if (limit) {
       query = query.limit(limit);
     }
@@ -1588,23 +1595,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listUserActivities(userId?: number, activityType?: string, limit?: number): Promise<UserActivity[]> {
+    // Iniciar a consulta básica
     let query = db.select().from(userActivities);
     
+    // Construir condições de filtragem
+    const conditions = [];
     if (userId) {
-      query = query.where(eq(userActivities.userId, userId));
+      conditions.push(eq(userActivities.userId, userId));
     }
     
     if (activityType) {
-      query = query.where(eq(userActivities.activityType, activityType));
+      conditions.push(eq(userActivities.activityType, activityType));
     }
     
-    query = query.orderBy(desc(userActivities.performedAt));
+    // Aplicar filtros se houver condições
+    if (conditions.length > 0) {
+      query = conditions.length === 1 
+        ? query.where(conditions[0])
+        : query.where(and(...conditions));
+    }
     
+    // Aplicar ordenação
+    const orderedQuery = query.orderBy(desc(userActivities.performedAt));
+    
+    // Aplicar limite se fornecido
     if (limit) {
-      query = query.limit(limit);
+      return orderedQuery.limit(limit);
     }
     
-    return query;
+    return orderedQuery;
   }
 
   async createUserActivity(activityData: InsertUserActivity): Promise<UserActivity> {
@@ -1622,13 +1641,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listTeamPerformanceMetrics(teamId: number, period?: string): Promise<TeamPerformanceMetric[]> {
-    let query = db.select().from(teamPerformanceMetrics)
-      .where(eq(teamPerformanceMetrics.teamId, teamId));
+    // Iniciar com a condição base de teamId
+    let conditions = [eq(teamPerformanceMetrics.teamId, teamId)];
     
+    // Adicionar condição de período se fornecido
     if (period) {
-      query = query.where(eq(teamPerformanceMetrics.period, period));
+      conditions.push(eq(teamPerformanceMetrics.period, period));
     }
     
+    // Construir a query com todas as condições
+    let query = db.select().from(teamPerformanceMetrics).where(and(...conditions));
+    
+    // Aplicar ordenação
     return query.orderBy(desc(teamPerformanceMetrics.dateTo));
   }
 
