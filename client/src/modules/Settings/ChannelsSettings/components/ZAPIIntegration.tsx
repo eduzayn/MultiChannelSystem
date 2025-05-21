@@ -355,7 +355,7 @@ export const ZAPIIntegration = () => {
                       <Input
                         id="token"
                         value={credentials.token}
-                        onChange={(e) => setCredentials({...credentials, token: e.target.value})}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCredentials({...credentials, token: e.target.value})}
                         placeholder="Ex: abcde12345-abcde12345-abcde12345"
                       />
                       <p className="text-xs text-muted-foreground">
@@ -368,7 +368,7 @@ export const ZAPIIntegration = () => {
                       <Input
                         id="client-token"
                         value={credentials.clientToken}
-                        onChange={(e) => setCredentials({...credentials, clientToken: e.target.value})}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCredentials({...credentials, clientToken: e.target.value})}
                         placeholder="Ex: 1a2b3c4d5e6f7g8h9i0j"
                       />
                       <p className="text-xs text-muted-foreground">
