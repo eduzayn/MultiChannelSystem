@@ -1,0 +1,80 @@
+import React, { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ActivitySquare, Brain, FileText, Info, MapPin, Monitor, Settings } from "lucide-react";
+
+import { OverviewTab } from "./AI/OverviewTab";
+import { PersonalityTab } from "./AI/PersonalityTab";
+import { KnowledgeTab } from "./AI/KnowledgeTab";
+import { IntegrationsTab } from "./AI/IntegrationsTab";
+import { ContextRulesTab } from "./AI/ContextRulesTab";
+import { MonitoringTab } from "./AI/MonitoringTab";
+
+export const AiTab = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>IA - Prof. Ana</CardTitle>
+        <CardDescription>
+          Configure a base de conhecimento e comportamento da IA
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-4 w-full justify-start overflow-x-auto">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              <span>Visão Geral</span>
+            </TabsTrigger>
+            <TabsTrigger value="personality" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              <span>Personalidade</span>
+            </TabsTrigger>
+            <TabsTrigger value="knowledge" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span>Fontes de Conhecimento</span>
+            </TabsTrigger>
+            <TabsTrigger value="integrations" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>Integrações</span>
+            </TabsTrigger>
+            <TabsTrigger value="rules" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>Contextos e Regras</span>
+            </TabsTrigger>
+            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+              <Monitor className="h-4 w-4" />
+              <span>Monitoramento</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview">
+            <OverviewTab />
+          </TabsContent>
+          
+          <TabsContent value="personality">
+            <PersonalityTab />
+          </TabsContent>
+          
+          <TabsContent value="knowledge">
+            <KnowledgeTab />
+          </TabsContent>
+          
+          <TabsContent value="integrations">
+            <IntegrationsTab />
+          </TabsContent>
+          
+          <TabsContent value="rules">
+            <ContextRulesTab />
+          </TabsContent>
+          
+          <TabsContent value="monitoring">
+            <MonitoringTab />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+};

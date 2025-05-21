@@ -65,6 +65,11 @@ export const SettingsModule = ({ children }: SettingsModuleProps) => {
                 <p className="text-sm font-medium mb-2">Módulos & Ferramentas</p>
                 <nav className="space-y-1">
                   <Button variant="ghost" className="w-full justify-start text-sm" asChild>
+                    <Link href="/settings/users">
+                      <span className="mr-2">👥</span> Usuários e Equipes
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start text-sm" asChild>
                     <Link href="/settings/crm">
                       <span className="mr-2">💼</span> CRM
                     </Link>

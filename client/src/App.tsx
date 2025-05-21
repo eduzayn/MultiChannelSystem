@@ -21,6 +21,7 @@ import ChannelsSettings from "@/pages/settings-channels";
 import CRMSettings from "@/pages/settings-crm";
 import IntegrationsSettings from "@/pages/settings-integrations";
 import MarketingSettings from "@/pages/settings-marketing";
+import UsersSettings from "@/pages/settings-users";
 
 function Router() {
   return (
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/settings/crm" component={CRMSettings} />
         <Route path="/settings/integrations" component={IntegrationsSettings} />
         <Route path="/settings/marketing" component={MarketingSettings} />
+        <Route path="/settings/users" component={UsersSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
