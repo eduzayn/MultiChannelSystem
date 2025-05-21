@@ -1,51 +1,510 @@
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Search, Plus, Filter, X, ChevronDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ContactDetail from "@/modules/Contacts/components/ContactDetail";
+import { ContactForm } from "@/modules/Contacts/components/ContactForm";
 
-export default function Contacts() {
+// Dados de exemplo para os contatos
+const MOCK_CONTACTS = [
+  { 
+    id: 1, 
+    name: "Maria Santos", 
+    email: "maria.santos@email.com", 
+    phone: "+55 11 91234-5678", 
+    type: "Cliente",
+    company: "ABC Tecnologia",
+    lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(2023, 5, 15),
+    tags: ["VIP", "Suporte Premium"],
+    owner: "João da Silva"
+  },
+  { 
+    id: 2, 
+    name: "João Pereira", 
+    email: "joao.pereira@email.com", 
+    phone: "+55 11 98765-4321", 
+    type: "Lead",
+    company: "XYZ Marketing",
+    lastActivity: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(2023, 8, 22),
+    tags: ["Novo", "Prospecto"],
+    owner: "Ana Oliveira"
+  },
+  { 
+    id: 3, 
+    name: "Ana Oliveira", 
+    email: "ana.oliveira@email.com", 
+    phone: "+55 11 99876-5432", 
+    type: "Cliente",
+    company: "LMN Consultoria",
+    lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(2022, 11, 10),
+    tags: ["VIP", "Parceiro"],
+    owner: "Carlos Gomes"
+  },
+  { 
+    id: 4, 
+    name: "Carlos Silva", 
+    email: "carlos.silva@email.com", 
+    phone: "+55 11 95432-1098", 
+    type: "Cliente",
+    company: "PQR Soluções",
+    lastActivity: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(2023, 2, 5),
+    tags: ["Ativo"],
+    owner: "João da Silva"
+  },
+  { 
+    id: 5, 
+    name: "Beatriz Lima", 
+    email: "beatriz.lima@email.com", 
+    phone: "+55 11 93210-9876", 
+    type: "Lead",
+    company: "STU Sistemas",
+    lastActivity: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+    createdAt: new Date(2023, 9, 30),
+    tags: ["Potencial", "E-commerce"],
+    owner: "Ana Oliveira"
+  },
+];
+
+export default function ContactsPage() {
+  // Estado para o termo de busca
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Estado para os filtros
+  const [activeFilters, setActiveFilters] = useState({
+    type: [] as string[],
+    tags: [] as string[],
+    owner: [] as string[]
+  });
+  
+  // Estado para controlar a seleção de contatos para ações em massa
+  const [selectedContacts, setSelectedContacts] = useState<number[]>([]);
+  
+  // Estado para controlar a exibição do modal de detalhes do contato
+  const [contactDetailOpen, setContactDetailOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
+  
+  // Estado para controlar a exibição do modal de criação/edição de contato
+  const [contactFormOpen, setContactFormOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<any>(null);
+  
+  // Estado para controlar a exibição do popover de filtros
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const selectedContact = selectedContactId 
+    ? MOCK_CONTACTS.find(contact => contact.id === selectedContactId) 
+    : null;
+  
+  // Filtrar contatos com base na busca e nos filtros ativos
+  const filteredContacts = MOCK_CONTACTS.filter(contact => {
+    // Filtro da busca
+    const matchesSearch = 
+      contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      contact.phone.includes(searchQuery) ||
+      contact.company.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Filtros de tipo
+    const matchesType = activeFilters.type.length === 0 || 
+      activeFilters.type.includes(contact.type);
+    
+    // Filtros de tags
+    const matchesTags = activeFilters.tags.length === 0 || 
+      contact.tags.some(tag => activeFilters.tags.includes(tag));
+    
+    // Filtros de proprietário
+    const matchesOwner = activeFilters.owner.length === 0 || 
+      activeFilters.owner.includes(contact.owner);
+    
+    return matchesSearch && matchesType && matchesTags && matchesOwner;
+  });
+
+  // Toggle de seleção para todos os contatos (checkbox do cabeçalho)
+  const toggleSelectAll = () => {
+    if (selectedContacts.length === filteredContacts.length) {
+      setSelectedContacts([]);
+    } else {
+      setSelectedContacts(filteredContacts.map(contact => contact.id));
+    }
+  };
+
+  // Toggle de seleção para um contato específico
+  const toggleSelectContact = (id: number) => {
+    if (selectedContacts.includes(id)) {
+      setSelectedContacts(selectedContacts.filter(contactId => contactId !== id));
+    } else {
+      setSelectedContacts([...selectedContacts, id]);
+    }
+  };
+
+  // Formata a data de última atividade para exibição
+  const formatLastActivity = (date: Date) => {
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Hoje";
+    if (diffDays === 1) return "Ontem";
+    if (diffDays < 7) return `${diffDays} dias atrás`;
+    
+    return date.toLocaleDateString('pt-BR');
+  };
+  
+  // Abre o modal de detalhes do contato
+  const openContactDetail = (id: number) => {
+    setSelectedContactId(id);
+    setContactDetailOpen(true);
+  };
+  
+  // Abre o modal de edição de contato
+  const openEditContact = (contact: any) => {
+    setEditingContact(contact);
+    setContactFormOpen(true);
+  };
+  
+  // Fecha o modal de detalhes
+  const handleCloseContactDetail = () => {
+    setContactDetailOpen(false);
+    setSelectedContactId(null);
+  };
+  
+  // Fecha o modal de criação/edição de contato
+  const handleCloseContactForm = () => {
+    setContactFormOpen(false);
+    setEditingContact(null);
+  };
+  
+  // Lidar com a aplicação de filtros
+  const handleApplyFilter = (filterType: string, value: string) => {
+    setActiveFilters(prev => {
+      const currentValues = prev[filterType as keyof typeof prev] as string[];
+      
+      if (currentValues.includes(value)) {
+        // Remove o filtro se já estiver aplicado
+        return {
+          ...prev,
+          [filterType]: currentValues.filter(v => v !== value)
+        };
+      } else {
+        // Adiciona o filtro se não estiver aplicado
+        return {
+          ...prev,
+          [filterType]: [...currentValues, value]
+        };
+      }
+    });
+  };
+  
+  // Reset de todos os filtros
+  const resetFilters = () => {
+    setActiveFilters({
+      type: [],
+      tags: [],
+      owner: []
+    });
+    setFiltersOpen(false);
+  };
+  
+  // Contagem de filtros ativos
+  const activeFiltersCount = 
+    activeFilters.type.length + 
+    activeFilters.tags.length + 
+    activeFilters.owner.length;
+
+  // Extrair todas as tags e proprietários únicos da lista de contatos para os filtros
+  const allTags = Array.from(new Set(MOCK_CONTACTS.flatMap(contact => contact.tags)));
+  const allOwners = Array.from(new Set(MOCK_CONTACTS.map(contact => contact.owner)));
+  
+  // Simular salvar um contato
+  const handleSaveContact = (contactData: any) => {
+    console.log('Salvando contato:', contactData);
+    setContactFormOpen(false);
+    setEditingContact(null);
+    // Aqui você faria uma chamada para a API para criar/atualizar o contato
+  };
+
   return (
-    <div className="space-y-6">
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Contatos</h1>
-              <p className="text-gray-500">
-                Gerencie seus contatos e clientes
-              </p>
-            </div>
-            <Button className="flex items-center">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo Contato
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input 
-                className="pl-10" 
-                placeholder="Buscar contatos..." 
-              />
-            </div>
-            <Button variant="outline">Filtros</Button>
+    <div className="p-6">
+      {/* Cabeçalho da página */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-3xl font-bold">Contatos</h1>
+        
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Busca */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar contatos..." 
+              className="pl-9 w-full sm:w-[250px]" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           
-          <div className="bg-gray-50 p-8 rounded-md flex flex-col items-center justify-center">
-            <div className="text-4xl mb-4">👥</div>
-            <h3 className="text-lg font-medium mb-2">Gestão de Contatos</h3>
-            <p className="text-center text-gray-500 mb-4">
-              Aqui você pode gerenciar todos os seus contatos, 
-              visualizar histórico de interações e detalhes.
-            </p>
-            <Button variant="default">
-              Importar Contatos
-            </Button>
+          {/* Filtros */}
+          <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-1">
+                <Filter className="h-4 w-4 mr-1" />
+                Filtros
+                {activeFiltersCount > 0 && (
+                  <Badge className="ml-1 h-5 w-5 p-0 flex items-center justify-center">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium">Filtros</h3>
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 text-xs">
+                  Limpar filtros
+                </Button>
+              </div>
+              
+              <Tabs defaultValue="type">
+                <TabsList className="w-full mb-3">
+                  <TabsTrigger value="type" className="flex-1">Tipo</TabsTrigger>
+                  <TabsTrigger value="tags" className="flex-1">Tags</TabsTrigger>
+                  <TabsTrigger value="owner" className="flex-1">Proprietário</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="type" className="mt-0">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="filter-type-cliente" 
+                        checked={activeFilters.type.includes("Cliente")}
+                        onCheckedChange={() => handleApplyFilter("type", "Cliente")}
+                      />
+                      <label htmlFor="filter-type-cliente" className="text-sm">Cliente</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="filter-type-lead" 
+                        checked={activeFilters.type.includes("Lead")}
+                        onCheckedChange={() => handleApplyFilter("type", "Lead")}
+                      />
+                      <label htmlFor="filter-type-lead" className="text-sm">Lead</label>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="tags" className="mt-0">
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {allTags.map(tag => (
+                      <div key={tag} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`filter-tag-${tag}`} 
+                          checked={activeFilters.tags.includes(tag)}
+                          onCheckedChange={() => handleApplyFilter("tags", tag)}
+                        />
+                        <label htmlFor={`filter-tag-${tag}`} className="text-sm">{tag}</label>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="owner" className="mt-0">
+                  <div className="space-y-2">
+                    {allOwners.map(owner => (
+                      <div key={owner} className="flex items-center gap-2">
+                        <Checkbox 
+                          id={`filter-owner-${owner}`} 
+                          checked={activeFilters.owner.includes(owner)}
+                          onCheckedChange={() => handleApplyFilter("owner", owner)}
+                        />
+                        <label htmlFor={`filter-owner-${owner}`} className="text-sm">{owner}</label>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </PopoverContent>
+          </Popover>
+          
+          {/* Botão Novo Contato */}
+          <Button 
+            className="flex items-center" 
+            onClick={() => {
+              setEditingContact(null);
+              setContactFormOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Novo Contato
+          </Button>
+        </div>
+      </div>
+
+      {/* Lista de contatos */}
+      <div className="rounded-md border overflow-hidden">
+        {/* Cabeçalho da tabela */}
+        <div className="bg-muted/50 p-3 flex items-center justify-between border-b">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="select-all"
+              checked={filteredContacts.length > 0 && selectedContacts.length === filteredContacts.length}
+              onCheckedChange={toggleSelectAll}
+            />
+            <label htmlFor="select-all" className="text-sm font-medium">
+              {selectedContacts.length > 0 
+                ? `${selectedContacts.length} selecionado${selectedContacts.length > 1 ? 's' : ''}` 
+                : 'Selecionar todos'}
+            </label>
           </div>
-        </CardContent>
-      </Card>
+          
+          {selectedContacts.length > 0 && (
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8">
+                    Ações em massa
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    Adicionar tags
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Remover tags
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    Alterar proprietário
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive">
+                    Excluir contatos
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
+        
+        {/* Contatos */}
+        <div className="divide-y">
+          {filteredContacts.length > 0 ? (
+            filteredContacts.map(contact => (
+              <div key={contact.id} className="p-3 flex items-center hover:bg-accent/10 cursor-pointer" onClick={() => openContactDetail(contact.id)}>
+                <div className="flex items-center gap-3 flex-1">
+                  <Checkbox 
+                    id={`contact-${contact.id}`}
+                    checked={selectedContacts.includes(contact.id)}
+                    onCheckedChange={() => toggleSelectContact(contact.id)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div className="mb-1">
+                        <h3 className="font-medium text-sm">{contact.name}</h3>
+                        <div className="flex gap-1 text-xs text-muted-foreground">
+                          <span>{contact.email}</span>
+                          <span>•</span>
+                          <span>{contact.phone}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <Badge 
+                          variant="outline" 
+                          className={`mb-1 text-xs ${contact.type === "Cliente" 
+                            ? "bg-green-50 text-green-700 border-green-200" 
+                            : "bg-blue-50 text-blue-700 border-blue-200"}`}
+                        >
+                          {contact.type}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          Última atividade: {formatLastActivity(contact.lastActivity)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <div className="flex flex-wrap gap-1">
+                        {contact.tags.map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs py-0">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {contact.company}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-12 text-center">
+              <p className="text-muted-foreground">Nenhum contato encontrado.</p>
+              {searchQuery && (
+                <Button 
+                  variant="link" 
+                  className="mt-1" 
+                  onClick={() => setSearchQuery("")}
+                >
+                  Limpar busca
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dialog para detalhes do contato */}
+      <Dialog open={contactDetailOpen} onOpenChange={setContactDetailOpen}>
+        <DialogContent className="sm:max-w-[500px] p-0 h-[80vh] max-h-[700px] flex flex-col">
+          {selectedContact && (
+            <ContactDetail 
+              contact={selectedContact} 
+              onEdit={() => {
+                handleCloseContactDetail();
+                openEditContact(selectedContact);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para criar/editar contato */}
+      <Dialog open={contactFormOpen} onOpenChange={setContactFormOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>{editingContact ? "Editar Contato" : "Novo Contato"}</DialogTitle>
+          </DialogHeader>
+          <ContactForm 
+            contact={editingContact} 
+            onSave={handleSaveContact} 
+            onCancel={handleCloseContactForm} 
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
