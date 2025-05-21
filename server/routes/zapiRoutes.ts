@@ -103,7 +103,7 @@ export function registerZapiRoutes(app: Router) {
               .set({
                 lastMessage: messageContent,
                 lastMessageAt: new Date(),
-                unreadCount: conversation.unreadCount + 1,
+                unreadCount: (conversation.unreadCount || 0) + 1,
                 status: "open" // Reabrir se estava fechada
               })
               .where(eq(conversations.id, conversation.id));

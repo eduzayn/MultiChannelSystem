@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConversationItem, ConversationItemProps } from "./ConversationItem";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
-// Mock data para as conversas
+// Mock data para backup/fallback
 const mockConversations: ConversationItemProps[] = [
   {
     id: "1",
@@ -19,38 +21,6 @@ const mockConversations: ConversationItemProps[] = [
     unreadCount: 0,
     channel: "instagram"
   },
-  {
-    id: "3",
-    name: "Ana Oliveira",
-    lastMessage: "Quando meu pedido será entregue?",
-    timestamp: new Date(Date.now() - 3 * 3600000),
-    unreadCount: 2,
-    channel: "facebook"
-  },
-  {
-    id: "4",
-    name: "Carlos Silva",
-    lastMessage: "Segue o comprovante de pagamento em anexo.",
-    timestamp: new Date(Date.now() - 12 * 3600000),
-    unreadCount: 0,
-    channel: "email"
-  },
-  {
-    id: "5",
-    name: "Beatriz Lima",
-    lastMessage: "Preciso trocar o produto que recebi.",
-    timestamp: new Date(Date.now() - 24 * 3600000),
-    unreadCount: 1,
-    channel: "whatsapp"
-  },
-  {
-    id: "6",
-    name: "Roberto Alves",
-    lastMessage: "Olá, gostaria de saber mais sobre o produto X.",
-    timestamp: new Date(Date.now() - 2 * 24 * 3600000),
-    unreadCount: 0,
-    channel: "instagram"
-  },
 ];
 
 interface ConversationListProps {
@@ -59,18 +29,68 @@ interface ConversationListProps {
 
 export const ConversationList = ({ onSelectConversation }: ConversationListProps) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  // Buscar conversas do servidor
+  const { data: conversations, isLoading, error } = useQuery({
+    queryKey: ['/api/conversations'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('/api/conversations');
+        return response.data.map((conversation: any) => ({
+          id: conversation.id.toString(),
+          name: conversation.name,
+          lastMessage: conversation.lastMessage || "Nova conversa",
+          timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : new Date(),
+          unreadCount: conversation.unreadCount || 0,
+          channel: conversation.channel,
+          status: conversation.status,
+          contactId: conversation.contactId
+        }));
+      } catch (err) {
+        console.error("Erro ao buscar conversas:", err);
+        // Em caso de erro, retornar mock data
+        return mockConversations;
+      }
+    },
+    refetchInterval: 10000 // Recarregar a cada 10 segundos para novas mensagens
+  });
   
   const handleSelectConversation = (conversation: ConversationItemProps) => {
     setActiveConversationId(conversation.id);
     onSelectConversation(conversation);
   };
 
+  // Determinar quais conversas exibir
+  const conversationsToDisplay = conversations || mockConversations;
+
   return (
     <div className="h-full flex flex-col overflow-y-auto">
       {/* Lista de conversas */}
       <div className="flex-1 flex flex-col">
-        {mockConversations.length > 0 ? (
-          mockConversations.map((conversation) => (
+        {isLoading && (
+          <div className="p-4 text-center">
+            <div className="animate-pulse space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="flex p-3 border-b">
+                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                  <div className="ml-3 space-y-1 flex-1">
+                    <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {!isLoading && error && (
+          <div className="p-4 text-center text-red-500">
+            Erro ao carregar conversas. Tente novamente.
+          </div>
+        )}
+        
+        {!isLoading && conversationsToDisplay.length > 0 ? (
+          conversationsToDisplay.map((conversation: ConversationItemProps) => (
             <ConversationItem
               key={conversation.id}
               {...conversation}
@@ -79,9 +99,11 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
             />
           ))
         ) : (
-          <div className="p-4 text-center text-muted-foreground">
-            Nenhuma conversa encontrada
-          </div>
+          !isLoading && (
+            <div className="p-4 text-center text-muted-foreground">
+              Nenhuma conversa encontrada
+            </div>
+          )
         )}
       </div>
     </div>
