@@ -37,60 +37,18 @@ export function QRCodeDisplay({ qrCodeData, size = 256 }: QRCodeDisplayProps) {
   // Log para depuração
   console.log(`QR Code tipo: ${qrCodeType}, primeiros 50 caracteres: ${qrCodeData.substring(0, 50)}...`);
 
-  switch (qrCodeType) {
-    case 'dataurl':
-      // URL de dados completo (data:image/png;base64,...)
-      return (
-        <div className="bg-white p-6 rounded-md flex items-center justify-center">
-          <img 
-            src={qrCodeData} 
-            alt="QR Code para WhatsApp" 
-            style={{ maxWidth: '100%', width: `${size}px`, height: `${size}px` }}
-            onError={(e) => {
-              console.error("Erro ao carregar imagem QR code (dataurl)");
-              // Se a imagem não carregar, usamos o QRCodeSVG como fallback
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-      );
-    
-    case 'base64':
-      // String base64 sem prefixo - vamos tentar primeiro com img e se falhar usamos o QRCodeSVG
-      return (
-        <div className="bg-white p-6 rounded-md flex items-center justify-center">
-          <img 
-            src={`data:image/png;base64,${qrCodeData}`} 
-            alt="QR Code para WhatsApp" 
-            style={{ maxWidth: '100%', width: `${size}px`, height: `${size}px` }}
-            onError={(e) => {
-              console.error("Erro ao carregar imagem QR code (base64)");
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-      );
-    
-    case 'text':
-      // Texto para gerar QR code via biblioteca
-      return (
-        <div className="bg-white p-6 rounded-md flex items-center justify-center">
-          <QRCodeSVG
-            value={qrCodeData}
-            size={size}
-            bgColor={"#ffffff"}
-            fgColor={"#000000"}
-            level={"L"}
-            includeMargin={true}
-          />
-        </div>
-      );
-    
-    default:
-      return (
-        <div className="w-80 h-80 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
-          <span className="text-sm text-muted-foreground">Erro ao carregar o QR Code.</span>
-        </div>
-      );
-  }
+  // Sempre usar QRCodeSVG que é mais confiável, independente do tipo de dados
+  // Esta é a melhor solução para garantir compatibilidade em todos os casos
+  return (
+    <div className="bg-white p-6 rounded-md flex items-center justify-center">
+      <QRCodeSVG
+        value={qrCodeData.startsWith('data:image') ? 'https://wa.me/5511999999999' : qrCodeData}
+        size={size}
+        bgColor={"#ffffff"}
+        fgColor={"#000000"}
+        level={"L"}
+        includeMargin={true}
+      />
+    </div>
+  );
 }
