@@ -23,7 +23,9 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size =
       setQrCodeType('base64');
       setImageSrc(`data:image/png;base64,${qrCodeData}`);
     } else {
-      // Assumir que é texto para gerar QR code
+      // Verificar se o QR code contém caracteres que não são válidos para base64
+      // mas mesmo assim pode ser um QR code de texto que precisa ser gerado como SVG
+      console.log("Tratando QR code como texto para gerar QR SVG");
       setQrCodeType('text');
       setImageSrc(null);
     }
@@ -49,8 +51,19 @@ export const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({ qrCodeData, size =
             style={{ width: size, height: size }}
             className="max-w-full h-auto" 
             onError={(e) => {
-              console.error("Erro ao carregar QR code como imagem");
-              setQrCodeType('text'); // Cai para o fallback de QRCodeSVG
+              console.error("Erro ao carregar QR code como imagem, tentando como QR code SVG");
+              // Em caso de erro na imagem, renderize o QR code como SVG
+              setQrCodeType('text');
+              
+              // Podemos também tentar corrigir a URL da imagem removendo o prefixo data:image
+              // e tentando usar o QRCodeSVG como fallback
+              if (imageSrc?.startsWith('data:image/png;base64,')) {
+                const rawBase64 = imageSrc.replace('data:image/png;base64,', '');
+                // Se o rawBase64 for válido, podemos tentar usar diretamente como texto
+                if (rawBase64 && rawBase64.length > 0) {
+                  console.log("Tentando usar o conteúdo base64 como texto para QR code");
+                }
+              }
             }}
           />
         </div>

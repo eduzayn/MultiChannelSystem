@@ -590,7 +590,7 @@ export const ChannelsTab = () => {
                         // Em ambiente de desenvolvimento, com o QR code simulado,
                         // Sempre mostrar como uma imagem (QR code real)
                         <img 
-                          src={`data:image/png;base64,${channelQrCodeData}`}
+                          src={channelQrCodeData.startsWith('data:') ? channelQrCodeData : `data:image/png;base64,${channelQrCodeData}`}
                           alt="QR Code para WhatsApp" 
                           className="w-auto h-auto max-w-full max-h-[450px]"
                           style={{minWidth: '300px', minHeight: '300px'}}
