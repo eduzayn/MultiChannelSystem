@@ -24,6 +24,7 @@ import MarketingSettings from "@/pages/settings-marketing";
 import UsersSettings from "@/pages/settings-users";
 import BrandingSettings from "@/pages/settings-branding";
 import CompanySettings from "@/pages/settings-company";
+import Settings from "@/pages/settings";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/campaigns/new" component={Campaigns} />
         <Route path="/automations" component={Automations} />
         <Route path="/reports" component={Reports} />
+        <Route path="/settings" component={Settings} />
         <Route path="/settings/ai" component={AISettings} />
         <Route path="/settings/channels" component={ChannelsSettings} />
         <Route path="/settings/crm" component={CRMSettings} />
