@@ -391,7 +391,10 @@ export const ChannelsTab = () => {
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg">
-                      <div className="w-36 h-36 bg-gray-100"></div>
+                      <QRCodeSVG
+                        value="https://wa.me/5511987654321?code=123ABC456DEF"
+                        size={144}
+                      />
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
