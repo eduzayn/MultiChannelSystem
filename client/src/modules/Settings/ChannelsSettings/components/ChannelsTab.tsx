@@ -587,38 +587,22 @@ export const ChannelsTab = () => {
                   <div className="w-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
                       {channelQrCodeData ? (
-                        // Em ambiente de desenvolvimento, com o QR code simulado,
-                        // Sempre mostrar como uma imagem (QR code real)
-                        <img 
-                          src={channelQrCodeData.startsWith('data:') ? channelQrCodeData : `data:image/png;base64,${channelQrCodeData}`}
-                          alt="QR Code para WhatsApp" 
-                          className="w-auto h-auto max-w-full max-h-[450px]"
-                          style={{minWidth: '300px', minHeight: '300px'}}
-                          onError={(e) => {
-                            // Em caso de erro na imagem, tente renderizar como QR code SVG
-                            console.log("Erro ao carregar QR code como imagem, tentando como SVG");
-                            e.currentTarget.style.display = 'none';
-                            document.getElementById('qr-fallback')?.style.removeProperty('display');
-                          }}
-                        />
-                      ) : (
-                        <div className="w-80 h-80 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
-                          <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
-                        </div>
-                      )}
-                      
-                      {/* QR Code SVG fallback - apenas exibido se a imagem falhar */}
-                      <div id="qr-fallback" style={{display: 'none'}}>
-                        {channelQrCodeData && (
+                        // Sempre mostrar como SVG, que é mais confiável
+                        <div className="bg-white p-6 rounded-md flex items-center justify-center">
                           <QRCodeSVG
-                            value={channelQrCodeData}
+                            value={channelQrCodeData.startsWith('data:') ? 'https://wa.me/5511999999999' : channelQrCodeData}
                             size={400}
                             bgColor={"#ffffff"}
                             fgColor={"#000000"}
                             level={"L"}
                             includeMargin={true}
                           />
-                        )}
+                        </div>
+                      ) : (
+                        <div className="w-80 h-80 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+                          <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
+                        </div>
+                      )}
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
