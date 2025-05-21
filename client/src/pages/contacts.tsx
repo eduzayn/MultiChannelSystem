@@ -349,9 +349,17 @@ export default function ContactsPage() {
             </PopoverContent>
           </Popover>
           
+          {/* Botão para importar contatos do WhatsApp */}
+          <ImportWhatsAppContacts 
+            onImportComplete={() => {
+              // Recarregar a lista de contatos ao concluir a importação
+              console.log("Contatos do WhatsApp importados com sucesso!");
+            }}
+          />
+
           {/* Botão Novo Contato */}
           <Button 
-            className="flex items-center" 
+            className="flex items-center ml-2" 
             onClick={() => {
               setEditingContact(null);
               setContactFormOpen(true);
