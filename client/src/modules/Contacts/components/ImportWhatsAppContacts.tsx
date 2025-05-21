@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -58,10 +58,12 @@ export function ImportWhatsAppContacts({ onImportComplete }: ImportWhatsAppConta
         await queryClient.invalidateQueries({ queryKey: ['/api/contacts'] });
         
         const contactCount = response.data.contacts?.length || 0;
+        const importedCount = response.data.stats?.imported || 0;
+        const updatedCount = response.data.stats?.updated || 0;
         
         toast({
           title: "Contatos importados com sucesso!",
-          description: `${contactCount} contato(s) do WhatsApp sincronizados com o sistema.`,
+          description: `${contactCount} contato(s) do WhatsApp encontrados. ${importedCount} novos e ${updatedCount} atualizados.`,
           variant: "default",
         });
         
@@ -72,9 +74,27 @@ export function ImportWhatsAppContacts({ onImportComplete }: ImportWhatsAppConta
           onImportComplete();
         }
       } else {
+        // Tratamento específico para mensagens de erro comuns da Z-API
+        let errorTitle = "Erro ao importar contatos";
+        let errorMessage = response.data.message || "Não foi possível importar os contatos do WhatsApp.";
+        
+        // Personalizar mensagens de erro para melhorar a experiência do usuário
+        if (errorMessage.includes("Instance not found")) {
+          errorTitle = "Instância não encontrada";
+          errorMessage = "O ID da instância fornecido não existe na Z-API. Verifique se o ID está correto.";
+        } 
+        else if (errorMessage.includes("need to be connected") || errorMessage.includes("not connected")) {
+          errorTitle = "WhatsApp não conectado";
+          errorMessage = "Você precisa primeiro conectar o WhatsApp usando o QR code na tela de configurações de canais antes de importar contatos.";
+        }
+        else if (errorMessage.includes("token")) {
+          errorTitle = "Token inválido";
+          errorMessage = "O token fornecido não é válido para esta instância Z-API.";
+        }
+        
         toast({
-          title: "Erro ao importar contatos",
-          description: response.data.message || "Não foi possível importar os contatos do WhatsApp.",
+          title: errorTitle,
+          description: errorMessage,
           variant: "destructive",
         });
       }
@@ -104,8 +124,14 @@ export function ImportWhatsAppContacts({ onImportComplete }: ImportWhatsAppConta
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Importar Contatos do WhatsApp</DialogTitle>
-            <DialogDescription>
-              Sincronize seus contatos do WhatsApp com o sistema. Forneça as credenciais da sua instância Z-API.
+            <DialogDescription className="space-y-2">
+              <p>Sincronize seus contatos do WhatsApp com o sistema. Forneça as credenciais da sua instância Z-API.</p>
+              <div className="flex items-center gap-2 p-3 text-sm bg-amber-50 border border-amber-200 rounded-md text-amber-800">
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <p><strong>Importante:</strong> Para importar contatos, você precisa primeiro conectar o WhatsApp na página de Configurações de Canais.</p>
+                </div>
+              </div>
             </DialogDescription>
           </DialogHeader>
 
