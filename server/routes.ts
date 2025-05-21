@@ -8,7 +8,20 @@ import {
   insertCompanySchema, 
   insertDealSchema,
   insertConversationSchema,
-  insertMessageSchema
+  insertMessageSchema,
+  insertTeamSchema,
+  insertUserTeamSchema,
+  insertRoleSchema,
+  insertCampaignSchema,
+  insertCampaignResultSchema,
+  insertAutomationSchema,
+  insertSubscriptionPlanSchema,
+  insertTenantSubscriptionSchema,
+  insertInvoiceSchema,
+  insertGoalSchema,
+  insertAchievementSchema,
+  insertUserAchievementSchema,
+  insertSettingSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
