@@ -14,12 +14,15 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
   const [isImageQR, setIsImageQR] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [qrCodeError, setQrCodeError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'waiting' | 'authenticating' | 'connected'>('waiting');
 
   const handleGetQRCode = async () => {
     try {
       setLoading(true);
       setError('');
+      setQrCodeError(null);
+      setQrCodeData(null);
       setConnectionStatus('waiting');
       
       // Obtenha a configuração do canal
@@ -29,8 +32,16 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
         clientToken: channelConfig?.clientToken || ''
       };
       
+      console.log("Iniciando conexão com Z-API usando credenciais:", {
+        instanceId: credentials.instanceId,
+        tokenLength: credentials.token?.length,
+        clientTokenLength: credentials.clientToken?.length
+      });
+      
       if (!credentials.instanceId || !credentials.token || !credentials.clientToken) {
-        setError('Configuração incompleta. Verifique instanceId, token e clientToken.');
+        const errorMsg = 'Configuração incompleta. Verifique instanceId, token e clientToken.';
+        setError(errorMsg);
+        setQrCodeError(errorMsg);
         setLoading(false);
         return;
       }
@@ -39,19 +50,24 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
       // Por padrão, usamos o formato de imagem, mas podemos alternar para bytes
       const useImageFormat = true; // true = imagem, false = bytes/texto
       
+      // Exibe estado de carregamento no QR code
+      setConnectionStatus('authenticating');
+      
       // Chamar o serviço para obter o QR code
+      console.log("Chamando serviço Z-API para obter QR code...");
       const result = await getZapiQRCode(credentials, useImageFormat);
       
       if (result.success && result.qrCode) {
         console.log("QR Code obtido com sucesso:", {
           isImage: result.isImage,
-          dataLength: result.qrCode.length
+          dataLength: result.qrCode.length,
+          dataPreview: result.qrCode.substring(0, 30) + '...'
         });
         
         // Atualiza os dados do QR Code
         setQrCodeData(result.qrCode);
         setIsImageQR(result.isImage);
-        setConnectionStatus('authenticating');
+        setQrCodeError(null);
         
         toast({
           title: "QR Code gerado",
@@ -71,19 +87,25 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
         }, 5000); // Verificar a cada 5 segundos
         */
       } else {
-        setError(result.message || 'Falha ao obter QR Code');
+        const errorMsg = result.message || 'Falha ao obter QR Code';
+        console.error("Erro ao obter QR Code da Z-API:", errorMsg);
+        setError(errorMsg);
+        setQrCodeError(errorMsg);
+        
         toast({
           title: "Erro ao gerar QR Code",
-          description: result.message || "Não foi possível gerar o QR Code. Verifique suas credenciais.",
+          description: errorMsg,
           variant: "destructive"
         });
       }
     } catch (err: any) {
       console.error('Erro ao obter QR code:', err);
-      setError('Erro ao conectar com a Z-API');
+      const errorMsg = `Erro ao conectar com a Z-API: ${err.message || 'Erro desconhecido'}`;
+      setError(errorMsg);
+      setQrCodeError(errorMsg);
       toast({
         title: "Erro de conexão",
-        description: `Houve um erro ao tentar conectar com a Z-API: ${err.message || 'Erro desconhecido'}`,
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -116,15 +138,29 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
         </div>
       )}
       
-      {connectionStatus === "authenticating" && qrCodeData && (
+      {connectionStatus === "authenticating" && (
         <div className="w-full flex flex-col items-center justify-center">
           <div className="border border-dashed border-gray-300 p-4 rounded-lg bg-white">
-            <SimpleQRCode imageData={qrCodeData} size={250} />
+            <SimpleQRCode 
+              imageData={qrCodeData} 
+              size={250}
+              error={qrCodeError !== null} 
+              errorMessage={qrCodeError || ''}
+            />
           </div>
-          <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
-          <p className="text-xs text-muted-foreground mt-1 max-w-md text-center">
-            Abra o WhatsApp no seu celular, toque em Menu ou Configurações e selecione "WhatsApp Web". Aponte a câmera para este QR Code.
-          </p>
+          {!qrCodeError && (
+            <>
+              <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-md text-center">
+                Abra o WhatsApp no seu celular, toque em Menu ou Configurações e selecione "WhatsApp Web". Aponte a câmera para este QR Code.
+              </p>
+            </>
+          )}
+          {qrCodeError && (
+            <p className="text-xs text-red-500 mt-2 max-w-md text-center">
+              Verifique o console para mais detalhes sobre o erro.
+            </p>
+          )}
         </div>
       )}
       
