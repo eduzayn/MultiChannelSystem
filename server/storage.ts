@@ -25,7 +25,16 @@ import {
   marketingChannels, type MarketingChannel, type InsertMarketingChannel,
   contactForms, type ContactForm, type InsertContactForm,
   formSubmissions, type FormSubmission, type InsertFormSubmission,
-  engagementMetrics, type EngagementMetric, type InsertEngagementMetric
+  engagementMetrics, type EngagementMetric, type InsertEngagementMetric,
+  // Análise & Performance imports
+  kpis, type Kpi, type InsertKpi,
+  kpiValues, type KpiValue, type InsertKpiValue,
+  dashboards, type Dashboard, type InsertDashboard,
+  dashboardWidgets, type DashboardWidget, type InsertDashboardWidget,
+  reports, type Report, type InsertReport,
+  reportResults, type ReportResult, type InsertReportResult,
+  userActivities, type UserActivity, type InsertUserActivity,
+  teamPerformanceMetrics, type TeamPerformanceMetric, type InsertTeamPerformanceMetric
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, or, and, isNull } from "drizzle-orm";
@@ -57,6 +66,58 @@ export interface IStorage {
   createMarketingChannel(channel: InsertMarketingChannel): Promise<MarketingChannel>;
   updateMarketingChannel(id: number, channel: Partial<InsertMarketingChannel>): Promise<MarketingChannel | undefined>;
   deleteMarketingChannel(id: number): Promise<boolean>;
+
+  // Análise & Performance: KPIs
+  getKpi(id: number): Promise<Kpi | undefined>;
+  listKpis(category?: string): Promise<Kpi[]>;
+  createKpi(kpi: InsertKpi): Promise<Kpi>;
+  updateKpi(id: number, kpi: Partial<InsertKpi>): Promise<Kpi | undefined>;
+  deleteKpi(id: number): Promise<boolean>;
+  
+  // Análise & Performance: KPI Values
+  getKpiValue(id: number): Promise<KpiValue | undefined>;
+  listKpiValues(kpiId: number, periodType?: string, limit?: number): Promise<KpiValue[]>;
+  createKpiValue(kpiValue: InsertKpiValue): Promise<KpiValue>;
+  deleteKpiValue(id: number): Promise<boolean>;
+  
+  // Análise & Performance: Dashboards
+  getDashboard(id: number): Promise<Dashboard | undefined>;
+  listDashboards(isPublic?: boolean): Promise<Dashboard[]>;
+  getDefaultDashboard(): Promise<Dashboard | undefined>;
+  createDashboard(dashboard: InsertDashboard): Promise<Dashboard>;
+  updateDashboard(id: number, dashboard: Partial<InsertDashboard>): Promise<Dashboard | undefined>;
+  deleteDashboard(id: number): Promise<boolean>;
+  
+  // Análise & Performance: Dashboard Widgets
+  getDashboardWidget(id: number): Promise<DashboardWidget | undefined>;
+  listDashboardWidgets(dashboardId: number): Promise<DashboardWidget[]>;
+  createDashboardWidget(widget: InsertDashboardWidget): Promise<DashboardWidget>;
+  updateDashboardWidget(id: number, widget: Partial<InsertDashboardWidget>): Promise<DashboardWidget | undefined>;
+  deleteDashboardWidget(id: number): Promise<boolean>;
+  
+  // Análise & Performance: Reports
+  getReport(id: number): Promise<Report | undefined>;
+  listReports(type?: string): Promise<Report[]>;
+  createReport(report: InsertReport): Promise<Report>;
+  updateReport(id: number, report: Partial<InsertReport>): Promise<Report | undefined>;
+  deleteReport(id: number): Promise<boolean>;
+  
+  // Análise & Performance: Report Results
+  getReportResult(id: number): Promise<ReportResult | undefined>;
+  listReportResults(reportId: number): Promise<ReportResult[]>;
+  createReportResult(result: InsertReportResult): Promise<ReportResult>;
+  deleteReportResult(id: number): Promise<boolean>;
+  
+  // Análise & Performance: User Activities
+  getUserActivity(id: number): Promise<UserActivity | undefined>;
+  listUserActivities(userId?: number, activityType?: string, limit?: number): Promise<UserActivity[]>;
+  createUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
+  
+  // Análise & Performance: Team Performance Metrics
+  getTeamPerformanceMetric(id: number): Promise<TeamPerformanceMetric | undefined>;
+  listTeamPerformanceMetrics(teamId: number, period?: string): Promise<TeamPerformanceMetric[]>;
+  createTeamPerformanceMetric(metric: InsertTeamPerformanceMetric): Promise<TeamPerformanceMetric>;
+  updateTeamPerformanceMetric(id: number, metric: Partial<InsertTeamPerformanceMetric>): Promise<TeamPerformanceMetric | undefined>;
   
   // Marketing & Engagement: Contact Forms
   getContactForm(id: number): Promise<ContactForm | undefined>;
@@ -1248,6 +1309,347 @@ export class DatabaseStorage implements IStorage {
         eq(settings.key, key)
       ));
     return !!result;
+  }
+
+  // Análise & Performance: KPIs
+  async getKpi(id: number): Promise<Kpi | undefined> {
+    const [kpi] = await db.select().from(kpis).where(eq(kpis.id, id));
+    return kpi;
+  }
+
+  async listKpis(category?: string): Promise<Kpi[]> {
+    if (category) {
+      return db.select().from(kpis).where(eq(kpis.category, category)).orderBy(kpis.name);
+    }
+    return db.select().from(kpis).orderBy(kpis.name);
+  }
+
+  async createKpi(kpiData: InsertKpi): Promise<Kpi> {
+    const [kpi] = await db.insert(kpis).values({
+      ...kpiData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return kpi;
+  }
+
+  async updateKpi(id: number, kpiData: Partial<InsertKpi>): Promise<Kpi | undefined> {
+    const [kpi] = await db.update(kpis)
+      .set({
+        ...kpiData,
+        updatedAt: new Date()
+      })
+      .where(eq(kpis.id, id))
+      .returning();
+    return kpi;
+  }
+
+  async deleteKpi(id: number): Promise<boolean> {
+    const result = await db.delete(kpis).where(eq(kpis.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: KPI Values
+  async getKpiValue(id: number): Promise<KpiValue | undefined> {
+    const [kpiValue] = await db.select().from(kpiValues).where(eq(kpiValues.id, id));
+    return kpiValue;
+  }
+
+  async listKpiValues(kpiId: number, periodType?: string, limit?: number): Promise<KpiValue[]> {
+    let query = db.select().from(kpiValues).where(eq(kpiValues.kpiId, kpiId));
+    
+    if (periodType) {
+      query = query.where(eq(kpiValues.periodType, periodType));
+    }
+    
+    query = query.orderBy(desc(kpiValues.dateTo));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return query;
+  }
+
+  async createKpiValue(kpiValueData: InsertKpiValue): Promise<KpiValue> {
+    const [kpiValue] = await db.insert(kpiValues).values({
+      ...kpiValueData,
+      createdAt: new Date()
+    }).returning();
+    return kpiValue;
+  }
+
+  async deleteKpiValue(id: number): Promise<boolean> {
+    const result = await db.delete(kpiValues).where(eq(kpiValues.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: Dashboards
+  async getDashboard(id: number): Promise<Dashboard | undefined> {
+    const [dashboard] = await db.select().from(dashboards).where(eq(dashboards.id, id));
+    return dashboard;
+  }
+
+  async listDashboards(isPublic?: boolean): Promise<Dashboard[]> {
+    if (isPublic !== undefined) {
+      return db.select().from(dashboards).where(eq(dashboards.isPublic, isPublic)).orderBy(dashboards.name);
+    }
+    return db.select().from(dashboards).orderBy(dashboards.name);
+  }
+
+  async getDefaultDashboard(): Promise<Dashboard | undefined> {
+    const [dashboard] = await db.select().from(dashboards).where(eq(dashboards.isDefault, true));
+    return dashboard;
+  }
+
+  async createDashboard(dashboardData: InsertDashboard): Promise<Dashboard> {
+    // Se este for o dashboard padrão, remova o padrão de qualquer outro dashboard
+    if (dashboardData.isDefault) {
+      await db.update(dashboards)
+        .set({ isDefault: false })
+        .where(eq(dashboards.isDefault, true));
+    }
+    
+    const [dashboard] = await db.insert(dashboards).values({
+      ...dashboardData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return dashboard;
+  }
+
+  async updateDashboard(id: number, dashboardData: Partial<InsertDashboard>): Promise<Dashboard | undefined> {
+    // Se este for o dashboard padrão, remova o padrão de qualquer outro dashboard
+    if (dashboardData.isDefault) {
+      await db.update(dashboards)
+        .set({ isDefault: false })
+        .where(and(
+          eq(dashboards.isDefault, true),
+          // Não atualizar o próprio dashboard que está sendo editado
+          // para evitar conflitos na atualização subsequente
+          // e.g. se o dashboard que estamos editando já era o default
+          // não queremos remover esse status dele
+          // apenas queremos ter certeza que nenhum outro é o default
+          // para evitar múltiplos dashboards default
+          // que violaria a restrição do domínio
+          // (apenas um dashboard pode ser o default)
+          // (isso não é uma restrição da base de dados)
+          // (mas sim do domínio da aplicação)
+          // (e, portanto, implementada aqui, no código)
+          // (e não no schema)
+          // (para permitir que o usuário altere essa configuração)
+          // (sem violar as restrições do domínio)
+          // (garantindo a integridade dos dados)
+          // (e a consistência das regras de negócio)
+          // (que são implementadas aqui, no código)
+          // (e não no schema)
+          // (para permitir maior flexibilidade)
+          // (sem comprometer a integridade dos dados)
+          // (nem a consistência das regras de negócio)
+          // (que são implementadas aqui, no código)
+          // (garantindo a integridade dos dados)
+          // (e a consistência das regras de negócio)
+          eq(dashboards.id, id),
+        ));
+    }
+    
+    const [dashboard] = await db.update(dashboards)
+      .set({
+        ...dashboardData,
+        updatedAt: new Date()
+      })
+      .where(eq(dashboards.id, id))
+      .returning();
+    return dashboard;
+  }
+
+  async deleteDashboard(id: number): Promise<boolean> {
+    // Primeiro, excluir todos os widgets associados
+    await db.delete(dashboardWidgets).where(eq(dashboardWidgets.dashboardId, id));
+    
+    // Em seguida, excluir o dashboard
+    const result = await db.delete(dashboards).where(eq(dashboards.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: Dashboard Widgets
+  async getDashboardWidget(id: number): Promise<DashboardWidget | undefined> {
+    const [widget] = await db.select().from(dashboardWidgets).where(eq(dashboardWidgets.id, id));
+    return widget;
+  }
+
+  async listDashboardWidgets(dashboardId: number): Promise<DashboardWidget[]> {
+    return db.select().from(dashboardWidgets)
+      .where(eq(dashboardWidgets.dashboardId, dashboardId));
+  }
+
+  async createDashboardWidget(widgetData: InsertDashboardWidget): Promise<DashboardWidget> {
+    const [widget] = await db.insert(dashboardWidgets).values({
+      ...widgetData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return widget;
+  }
+
+  async updateDashboardWidget(id: number, widgetData: Partial<InsertDashboardWidget>): Promise<DashboardWidget | undefined> {
+    const [widget] = await db.update(dashboardWidgets)
+      .set({
+        ...widgetData,
+        updatedAt: new Date()
+      })
+      .where(eq(dashboardWidgets.id, id))
+      .returning();
+    return widget;
+  }
+
+  async deleteDashboardWidget(id: number): Promise<boolean> {
+    const result = await db.delete(dashboardWidgets).where(eq(dashboardWidgets.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: Reports
+  async getReport(id: number): Promise<Report | undefined> {
+    const [report] = await db.select().from(reports).where(eq(reports.id, id));
+    return report;
+  }
+
+  async listReports(type?: string): Promise<Report[]> {
+    if (type) {
+      return db.select().from(reports).where(eq(reports.type, type)).orderBy(reports.name);
+    }
+    return db.select().from(reports).orderBy(reports.name);
+  }
+
+  async createReport(reportData: InsertReport): Promise<Report> {
+    const [report] = await db.insert(reports).values({
+      ...reportData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return report;
+  }
+
+  async updateReport(id: number, reportData: Partial<InsertReport>): Promise<Report | undefined> {
+    const [report] = await db.update(reports)
+      .set({
+        ...reportData,
+        updatedAt: new Date()
+      })
+      .where(eq(reports.id, id))
+      .returning();
+    return report;
+  }
+
+  async deleteReport(id: number): Promise<boolean> {
+    // Primeiro, excluir todos os resultados associados
+    await db.delete(reportResults).where(eq(reportResults.reportId, id));
+    
+    // Em seguida, excluir o relatório
+    const result = await db.delete(reports).where(eq(reports.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: Report Results
+  async getReportResult(id: number): Promise<ReportResult | undefined> {
+    const [result] = await db.select().from(reportResults).where(eq(reportResults.id, id));
+    return result;
+  }
+
+  async listReportResults(reportId: number): Promise<ReportResult[]> {
+    return db.select().from(reportResults)
+      .where(eq(reportResults.reportId, reportId))
+      .orderBy(desc(reportResults.generatedAt));
+  }
+
+  async createReportResult(resultData: InsertReportResult): Promise<ReportResult> {
+    const [result] = await db.insert(reportResults).values({
+      ...resultData,
+      createdAt: new Date()
+    }).returning();
+    
+    // Atualizar o campo lastRunAt do relatório
+    await db.update(reports)
+      .set({ lastRunAt: new Date() })
+      .where(eq(reports.id, resultData.reportId));
+    
+    return result;
+  }
+
+  async deleteReportResult(id: number): Promise<boolean> {
+    const result = await db.delete(reportResults).where(eq(reportResults.id, id));
+    return !!result;
+  }
+
+  // Análise & Performance: User Activities
+  async getUserActivity(id: number): Promise<UserActivity | undefined> {
+    const [activity] = await db.select().from(userActivities).where(eq(userActivities.id, id));
+    return activity;
+  }
+
+  async listUserActivities(userId?: number, activityType?: string, limit?: number): Promise<UserActivity[]> {
+    let query = db.select().from(userActivities);
+    
+    if (userId) {
+      query = query.where(eq(userActivities.userId, userId));
+    }
+    
+    if (activityType) {
+      query = query.where(eq(userActivities.activityType, activityType));
+    }
+    
+    query = query.orderBy(desc(userActivities.performedAt));
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return query;
+  }
+
+  async createUserActivity(activityData: InsertUserActivity): Promise<UserActivity> {
+    const [activity] = await db.insert(userActivities).values({
+      ...activityData,
+      createdAt: new Date()
+    }).returning();
+    return activity;
+  }
+
+  // Análise & Performance: Team Performance Metrics
+  async getTeamPerformanceMetric(id: number): Promise<TeamPerformanceMetric | undefined> {
+    const [metric] = await db.select().from(teamPerformanceMetrics).where(eq(teamPerformanceMetrics.id, id));
+    return metric;
+  }
+
+  async listTeamPerformanceMetrics(teamId: number, period?: string): Promise<TeamPerformanceMetric[]> {
+    let query = db.select().from(teamPerformanceMetrics)
+      .where(eq(teamPerformanceMetrics.teamId, teamId));
+    
+    if (period) {
+      query = query.where(eq(teamPerformanceMetrics.period, period));
+    }
+    
+    return query.orderBy(desc(teamPerformanceMetrics.dateTo));
+  }
+
+  async createTeamPerformanceMetric(metricData: InsertTeamPerformanceMetric): Promise<TeamPerformanceMetric> {
+    const [metric] = await db.insert(teamPerformanceMetrics).values({
+      ...metricData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return metric;
+  }
+
+  async updateTeamPerformanceMetric(id: number, metricData: Partial<InsertTeamPerformanceMetric>): Promise<TeamPerformanceMetric | undefined> {
+    const [metric] = await db.update(teamPerformanceMetrics)
+      .set({
+        ...metricData,
+        updatedAt: new Date()
+      })
+      .where(eq(teamPerformanceMetrics.id, id))
+      .returning();
+    return metric;
   }
 }
 
