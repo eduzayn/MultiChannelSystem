@@ -20,6 +20,12 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
   const [formattedData, setFormattedData] = useState<string>('');
   
   useEffect(() => {
+    console.log("QRCodeDisplay - Dados recebidos:", { 
+      qrCodeData: qrCodeData?.substring(0, 30) + "...",  
+      isImage, 
+      dataLength: qrCodeData?.length || 0
+    });
+    
     if (!qrCodeData) return;
     
     try {
@@ -31,6 +37,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         } else {
           // Limpeza de caracteres potencialmente problemáticos no início e fim do base64
           let cleanBase64 = qrCodeData.trim().replace(/^[^A-Za-z0-9+/=]+|[^A-Za-z0-9+/=]+$/g, '');
+          // Garantimos que o prefixo data:image/png;base64, seja adicionado 
           setFormattedData(`data:image/png;base64,${cleanBase64}`);
         }
       } else {
