@@ -17,6 +17,7 @@ import Campaigns from "@/pages/campaigns";
 import Automations from "@/pages/automations";
 import Reports from "@/pages/reports";
 import AISettings from "@/pages/settings-ai";
+import ChannelsSettings from "@/pages/settings-channels";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/automations" component={Automations} />
         <Route path="/reports" component={Reports} />
         <Route path="/settings/ai" component={AISettings} />
+        <Route path="/settings/channels" component={ChannelsSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
