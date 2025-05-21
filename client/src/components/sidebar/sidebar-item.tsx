@@ -54,18 +54,37 @@ export function SidebarItem({ icon, label, href, badge, submenu }: SidebarItemPr
       {submenu && submenu.length > 0 && (
         <div 
           className={cn(
-            "sidebar-submenu absolute left-full top-0 ml-2 w-64 bg-gray-700 rounded-md shadow-lg z-10",
-            isHovering ? "block" : "hidden"
+            "sidebar-submenu fixed left-full top-0 ml-2 w-64 bg-gray-700 rounded-md shadow-lg z-50 transition-opacity duration-150",
+            isHovering ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
           )}
+          style={{
+            top: 'var(--submenu-top)',
+            transform: 'translate3d(0, 0, 0)'
+          }}
+          onMouseEnter={(e) => {
+            // Calcular a posição vertical do submenu
+            const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+            if (rect) {
+              const topPos = rect.top; // Posição superior do item pai
+              const windowHeight = window.innerHeight;
+              const submenuHeight = e.currentTarget.clientHeight;
+              
+              // Ajustar posição para evitar que o submenu saia da tela
+              let adjustedTop = Math.min(topPos, windowHeight - submenuHeight - 20);
+              adjustedTop = Math.max(10, adjustedTop); // Manter pelo menos 10px da parte superior
+              
+              // Aplicar a posição calculada
+              e.currentTarget.style.setProperty('--submenu-top', `${adjustedTop}px`);
+            }
+          }}
         >
           <div className="py-1">
             {submenu.map((item, index) => (
-              // Usamos um span ao invés de div para evitar o aninhamento de <a>
-              <span key={index} onClick={() => window.location.href = item.href}>
+              <Link key={index} href={item.href}>
                 <div className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 cursor-pointer">
                   {item.label}
                 </div>
-              </span>
+              </Link>
             ))}
           </div>
         </div>
