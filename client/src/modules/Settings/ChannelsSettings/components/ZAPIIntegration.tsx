@@ -25,7 +25,7 @@ import {
 import { Loader2, CheckCircle, XCircle, QrCode, ExternalLink, Copy, Phone } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { QRCodeDisplay } from '@/components/QRCodeDisplay';
+import { QRCodeModal } from '@/components/QRCodeModal';
 
 interface ZAPICredentials {
   instanceId: string;
