@@ -100,7 +100,24 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     );
   }
   
-  // Caso a imagem falhe ou seja um texto QR code, renderiza como SVG
+  // Caso a imagem falhe ou seja um texto QR code, verificamos se é um base64 longo
+  // Se for base64 muito longo, usamos diretamente como uma imagem
+  if (qrCodeData.length > 1000 || qrCodeData.startsWith('data:image')) {
+    return (
+      <div className="flex flex-col items-center">
+        <img 
+          src={qrCodeData.startsWith('data:image') ? qrCodeData : `data:image/png;base64,${qrCodeData}`}
+          alt="QR Code para WhatsApp" 
+          width={size}
+          height={size}
+          style={{ maxWidth: '100%', height: 'auto' }}
+          className="rounded-md"
+        />
+      </div>
+    );
+  }
+
+  // Caso seja um texto QR normal (não muito longo), usamos QRCodeSVG
   return (
     <div className="flex flex-col items-center">
       <QRCodeSVG 
