@@ -88,15 +88,15 @@ export async function getZapiQRCode(
           }
           
           // Se chegou aqui, é uma imagem válida
-          // Convertemos os bytes para base64
-          const base64Image = Buffer.from(imageResponse.data).toString('base64');
+          // Convertemos os bytes para base64 COM prefixo data:image/png;base64,
+          const base64Image = `data:image/png;base64,${Buffer.from(imageResponse.data).toString('base64')}`;
           
-          console.log("QR code obtido com sucesso (bytes convertidos para base64)");
+          console.log("QR code obtido com sucesso (bytes convertidos para base64 com prefixo)");
           
           return {
             success: true,
             qrCode: base64Image,
-            isImage: true // É uma imagem em base64
+            isImage: true // É uma imagem em base64 com prefixo completo
           };
         } catch (processingError) {
           console.error("Erro ao processar resposta do QR code:", processingError);
