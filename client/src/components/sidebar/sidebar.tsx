@@ -211,22 +211,22 @@ export function Sidebar() {
       <div className="mt-auto border-t border-gray-700 p-4">
         <div className="space-y-1">
           <Link href="/profile">
-            <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer">
               <User className="mr-3 h-5 w-5" />
               <span>Meu Perfil</span>
-            </a>
+            </div>
           </Link>
           <Link href="/help">
-            <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer">
               <HelpCircle className="mr-3 h-5 w-5" />
               <span>Ajuda & Documentação</span>
-            </a>
+            </div>
           </Link>
           <Link href="/logout">
-            <a className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white">
+            <div className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-gray-700 hover:text-white cursor-pointer">
               <LogOut className="mr-3 h-5 w-5" />
               <span>Sair</span>
-            </a>
+            </div>
           </Link>
         </div>
       </div>
