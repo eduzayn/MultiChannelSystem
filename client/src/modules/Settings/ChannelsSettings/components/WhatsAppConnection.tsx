@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import QRCodeDisplay from "../../../../components/QRCodeDisplay"; // Usando o caminho relativo para garantir compatibilidade
+import { getZapiQRCode, ZapiCredentials, checkZapiConnectionStatus } from "../../../../services/zapiService";
 
 interface WhatsAppConnectionProps {
   channelConfig: any;
@@ -22,22 +23,24 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
       setConnectionStatus('waiting');
       
       // Obtenha a configuração do canal
-      const { instanceId, token, clientToken } = channelConfig || {};
+      const credentials: ZapiCredentials = {
+        instanceId: channelConfig?.instanceId || '',
+        token: channelConfig?.token || '',
+        clientToken: channelConfig?.clientToken || ''
+      };
       
-      if (!instanceId || !token || !clientToken) {
+      if (!credentials.instanceId || !credentials.token || !credentials.clientToken) {
         setError('Configuração incompleta. Verifique instanceId, token e clientToken.');
         setLoading(false);
         return;
       }
       
-      // Chamar a API para obter o QR code
-      const response = await fetch('/api/zapi/get-qrcode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instanceId, token, clientToken }),
-      });
+      // Opção para escolher o formato do QR code
+      // Por padrão, usamos o formato de imagem, mas podemos alternar para bytes
+      const useImageFormat = true; // true = imagem, false = bytes/texto
       
-      const result = await response.json();
+      // Chamar o serviço para obter o QR code
+      const result = await getZapiQRCode(credentials, useImageFormat);
       
       if (result.success && result.qrCode) {
         console.log("QR Code obtido com sucesso:", {
@@ -45,21 +48,28 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
           dataLength: result.qrCode.length
         });
         
-        // Atualiza a URL do QR Code real
-        // Se o QR code for uma imagem (base64), incluímos o prefixo data:image se necessário
-        if (result.isImage && !result.qrCode.startsWith('data:image')) {
-          setQrCodeData(`data:image/png;base64,${result.qrCode}`);
-        } else {
-          setQrCodeData(result.qrCode);
-        }
-        
-        setIsImageQR(result.isImage || false);
+        // Atualiza os dados do QR Code
+        setQrCodeData(result.qrCode);
+        setIsImageQR(result.isImage);
         setConnectionStatus('authenticating');
         
         toast({
           title: "QR Code gerado",
           description: "Escaneie o QR Code com seu WhatsApp para conectar",
         });
+        
+        // Opcionalmente, podemos iniciar um intervalo para verificar o status de conexão
+        // Essa verificação pode ser útil para atualizar o status quando o usuário escanear o QR code
+        /*
+        const checkInterval = setInterval(async () => {
+          const statusResult = await checkZapiConnectionStatus(credentials);
+          if (statusResult.success && statusResult.connected) {
+            setConnectionStatus('connected');
+            clearInterval(checkInterval);
+            if (onSuccess) onSuccess();
+          }
+        }, 5000); // Verificar a cada 5 segundos
+        */
       } else {
         setError(result.message || 'Falha ao obter QR Code');
         toast({
@@ -68,12 +78,12 @@ function WhatsAppConnection({ channelConfig, onSuccess }: WhatsAppConnectionProp
           variant: "destructive"
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao obter QR code:', err);
-      setError('Erro ao conectar com o servidor Z-API');
+      setError('Erro ao conectar com a Z-API');
       toast({
         title: "Erro de conexão",
-        description: "Houve um erro ao tentar conectar com a Z-API. Tente novamente.",
+        description: `Houve um erro ao tentar conectar com a Z-API: ${err.message || 'Erro desconhecido'}`,
         variant: "destructive"
       });
     } finally {
