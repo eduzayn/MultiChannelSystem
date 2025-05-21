@@ -137,7 +137,7 @@ export async function getZapiQRCode(
   instanceId: string,
   token: string,
   clientToken: string
-): Promise<{ success: boolean; qrCode?: string; message?: string }> {
+): Promise<{ success: boolean; qrCode?: string; message?: string; isImage?: boolean }> {
   try {
     console.log(`Obtendo QR Code para instância Z-API (${instanceId})...`);
     
@@ -145,19 +145,60 @@ export async function getZapiQRCode(
     if (process.env.NODE_ENV === 'development' || !instanceId || instanceId === 'test') {
       console.log("Usando simulação para QR Code (apenas para teste)");
       
-      // Código simulado para conectar o WhatsApp
-      const mockQRCode = "1-2ABCD-34EFGH-5IJKL";
+      // Simulação com um QR code base64 pré-definido para testes
+      // Este é um QR code de exemplo que pode ser exibido como imagem
+      const mockBase64QR = "iVBORw0KGgoAAAANSUhEUgAAAIQAAACECAYAAABRRIOnAAAAAklEQVR4AewaftIAAAO1SURBVO3BQY7cWAwEwUyC979y9hjaggYqyA8aHMTM/rDGJcZ4ibFeYqyXGOslxnqJsV5irJcY6yXGernh4CTKT4rckXKHyicpn6ScpPwk5Y4Y6yXGernh4IOUm5Q7Um5SblJOUk5S7lBuUu6IsT5irJtOflnKHSl3KJ+kfJJyh3KTcpJyk/KTYqyXGOvmhj+M8pep/EkxXmKslxv+MSlPRHmJsV5irJtOfpnySSl3pDxRnqScpNwRY32LsW4++SDlJuWOlE9SniiflHJHjJcY6+aGg/9TyknKf1KMlxjr5oaDk5STlG+m3JFyR8pJyh0pJyk3KTcpJylPxHiJsW5uODhJ+STliZSTlCfKE+WTlE9K+WUx1kuMdXPDwUnKTcpJyknKHSl3pNyR8kTKTcpJyknKScpJyk3KTconyicxXmKsmxsOTlJOUu5I+aSUm5Q7Uk5S7lCeSDlJOUm5STkp5STlJOWTYqyXGOvm5oddKTcpJyknKXekPJFyR8odKScpJyknKXco30z5phjrJca6ueHgJOWOlJOUJ8pNyh3KScpJyk3KTcpJyknKEyknKSdRvojxEmPd3HBwkvKTlCdSTlJOUk5SblJuUk5STlJuUp5IuUk5SfnLYryXGOvmhoOTlJOUk5STlJOUO1LuUE5STlJOUk5STlK+mXKT8pdirJcY6+aGg5OUm5STlJOUJ8pJyicpJyknKXek3KGcpJyk3KGcpJyknKR8UoyXGOvmhoOTlJuUO1JOUk5S7ki5STlJeSLlCeWTUk5STlJOUu5IOUk5SflJMdZLjHVzw8FJyk3KHSknKXek3JFyknJHyicpJyknKSdRvojyRJQnMdZLjPVyw8FJyknKJ6WcRHkiyhMpdygnKScpJyknKXeknKTcpHxSjJcY6+aGg5OUm5Q7lJOUO1JOUu5QblJOUm5STlJOUk5STlJ+kvJEyknKScpNMdZLjHVzw8En/aWUJ1JOUJ5QnkB5SflJMb6IsV5irE8yPkj5IspJlCeivMRYJzHWS4z1EmO9xFgvMdZLjPUSY73EWC8x1kuM9RJjvcRYLzHWS4z1EmO9xFgvMdZLjPUSY73EWC8x1ss/RMGmCyGEEmEAAAAASUVORK5CYII=";
       
       return {
         success: true,
-        qrCode: mockQRCode
+        qrCode: `data:image/png;base64,${mockBase64QR}`,
+        isImage: true
       };
     }
     
-    // Chamada real à API Z-API
-    // Primeiro tenta obter o QR Code como imagem, se falhar, obtém como texto
+    // Primeiro tenta obter o QR Code como imagem diretamente
     try {
-      // Tenta obter o QR Code como imagem
+      console.log("Tentando obter QR Code como imagem base64...");
+      
+      const imageResponse = await axios.get(
+        `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/image`,
+        { 
+          headers: getHeadersWithToken(clientToken)
+        }
+      );
+      
+      // Se a resposta já contém o base64, usamos diretamente
+      if (imageResponse.data && typeof imageResponse.data === 'string' && 
+          (imageResponse.data.startsWith('data:image') || imageResponse.data.match(/^[A-Za-z0-9+/=]+$/))) {
+        
+        // Verifica se já tem o prefixo data:image, se não tiver, adiciona
+        const qrCodeImage = imageResponse.data.startsWith('data:image') 
+          ? imageResponse.data 
+          : `data:image/png;base64,${imageResponse.data}`;
+        
+        return {
+          success: true,
+          qrCode: qrCodeImage,
+          isImage: true
+        };
+      }
+      
+      // Se a resposta contém um objeto com a propriedade base64, usa esse valor
+      if (imageResponse.data && imageResponse.data.base64) {
+        return {
+          success: true,
+          qrCode: `data:image/png;base64,${imageResponse.data.base64}`,
+          isImage: true
+        };
+      }
+    } catch (imageError) {
+      console.log("Falha ao obter QR Code como imagem base64, tentando outro método...");
+    }
+    
+    // Se falhar a requisição de imagem, tenta obter como bytes e converter para base64
+    try {
+      console.log("Tentando obter QR Code como bytes...");
+      
       const response = await axios.get(
         `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code`,
         { 
@@ -170,29 +211,35 @@ export async function getZapiQRCode(
       const base64Image = Buffer.from(response.data).toString('base64');
       return {
         success: true,
-        qrCode: `data:image/png;base64,${base64Image}`
+        qrCode: `data:image/png;base64,${base64Image}`,
+        isImage: true
       };
-    } catch (qrError) {
-      // Se falhar na obtenção da imagem, tenta obter o texto
-      console.log("Falha ao obter QR Code como imagem, tentando obter como texto...");
+    } catch (bytesError) {
+      console.log("Falha ao obter QR Code como bytes, tentando obter como texto...");
       
-      const textResponse = await axios.get(
-        `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/text`,
-        { 
-          headers: getHeadersWithToken(clientToken),
-          responseType: 'json'
-        }
-      );
-      
-      console.log("Resposta Z-API (QR Code texto):", textResponse.data ? "QR Code obtido com sucesso" : "Sem QR Code");
-      
-      // A resposta da Z-API contém o QR Code no formato correto na propriedade 'value'
-      const qrCodeData = textResponse.data?.value || textResponse.data;
-      
-      return {
-        success: true,
-        qrCode: qrCodeData
-      };
+      // Como último recurso, tenta obter o texto do QR code
+      try {
+        const textResponse = await axios.get(
+          `${BASE_URL}/instances/${instanceId}/token/${token}/qr-code/text`,
+          { 
+            headers: getHeadersWithToken(clientToken),
+            responseType: 'json'
+          }
+        );
+        
+        console.log("Resposta Z-API (QR Code texto):", textResponse.data ? "QR Code obtido com sucesso" : "Sem QR Code");
+        
+        // A resposta da Z-API contém o QR Code no formato correto na propriedade 'value'
+        const qrCodeData = textResponse.data?.value || textResponse.data;
+        
+        return {
+          success: true,
+          qrCode: qrCodeData,
+          isImage: false
+        };
+      } catch (textError) {
+        throw new Error("Não foi possível obter o QR Code em nenhum formato");
+      }
     }
   } catch (error) {
     console.error(`Erro ao obter QR Code Z-API:`, error);
