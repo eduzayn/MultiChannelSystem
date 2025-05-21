@@ -1,7 +1,15 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
+import { ParsedQs } from "qs";
+
+// Estendendo o tipo de Request para incluir a propriedade session
+declare module "express-serve-static-core" {
+  interface Request {
+    session: any;
+  }
+}
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -82,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/auth/logout", (req, res) => {
     if (req.session) {
-      req.session.destroy(err => {
+      req.session.destroy((err: Error | null) => {
         if (err) {
           return res.status(500).json({ message: "Erro ao fazer logout" });
         }
@@ -539,6 +547,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Falha ao buscar equipes" });
     }
   });
+  
+  // Campaigns API
+  app.get("/api/campaigns", async (req, res) => {
+    try {
+      const campaigns = await storage.listCampaigns();
+      res.json(campaigns);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar campanhas" });
+    }
+  });
+  
+  app.get("/api/campaigns/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de campanha inválido" });
+      }
+      
+      const campaign = await storage.getCampaign(id);
+      if (!campaign) {
+        return res.status(404).json({ message: "Campanha não encontrada" });
+      }
+      
+      res.json(campaign);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar campanha" });
+    }
+  });
+  
+  app.post("/api/campaigns", async (req, res) => {
+    try {
+      const validatedData = insertCampaignSchema.parse(req.body);
+      const campaign = await storage.createCampaign(validatedData);
+      res.status(201).json(campaign);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de campanha inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar campanha" });
+    }
+  });
+  
+  app.put("/api/campaigns/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de campanha inválido" });
+      }
+      
+      const validatedData = insertCampaignSchema.partial().parse(req.body);
+      const updatedCampaign = await storage.updateCampaign(id, validatedData);
+      
+      if (!updatedCampaign) {
+        return res.status(404).json({ message: "Campanha não encontrada" });
+      }
+      
+      res.json(updatedCampaign);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de campanha inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar campanha" });
+    }
+  });
+  
+  app.delete("/api/campaigns/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de campanha inválido" });
+      }
+      
+      const deleted = await storage.deleteCampaign(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Campanha não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir campanha" });
+    }
+  });
 
   app.get("/api/teams/:id", async (req, res) => {
     try {
@@ -846,6 +936,328 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Automations API
+  app.get("/api/automations", async (req, res) => {
+    try {
+      const automations = await storage.listAutomations();
+      res.json(automations);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar automações" });
+    }
+  });
+  
+  app.get("/api/automations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de automação inválido" });
+      }
+      
+      const automation = await storage.getAutomation(id);
+      if (!automation) {
+        return res.status(404).json({ message: "Automação não encontrada" });
+      }
+      
+      res.json(automation);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar automação" });
+    }
+  });
+  
+  app.post("/api/automations", async (req, res) => {
+    try {
+      const validatedData = insertAutomationSchema.parse(req.body);
+      const automation = await storage.createAutomation(validatedData);
+      res.status(201).json(automation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de automação inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar automação" });
+    }
+  });
+  
+  app.put("/api/automations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de automação inválido" });
+      }
+      
+      const validatedData = insertAutomationSchema.partial().parse(req.body);
+      const updatedAutomation = await storage.updateAutomation(id, validatedData);
+      
+      if (!updatedAutomation) {
+        return res.status(404).json({ message: "Automação não encontrada" });
+      }
+      
+      res.json(updatedAutomation);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de automação inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar automação" });
+    }
+  });
+  
+  app.delete("/api/automations/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de automação inválido" });
+      }
+      
+      const deleted = await storage.deleteAutomation(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Automação não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir automação" });
+    }
+  });
+  
+  app.patch("/api/automations/:id/toggle", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de automação inválido" });
+      }
+      
+      const { isActive } = req.body;
+      if (isActive === undefined) {
+        return res.status(400).json({ message: "Status ativo não informado" });
+      }
+      
+      const automation = await storage.toggleAutomation(id, isActive);
+      if (!automation) {
+        return res.status(404).json({ message: "Automação não encontrada" });
+      }
+      
+      res.json(automation);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao alternar status da automação" });
+    }
+  });
+  
+  // Goals API
+  app.get("/api/goals", async (req, res) => {
+    try {
+      const ownerId = req.query.ownerId ? Number(req.query.ownerId) : undefined;
+      const teamId = req.query.teamId ? Number(req.query.teamId) : undefined;
+      
+      const goals = await storage.listGoals(ownerId, teamId);
+      res.json(goals);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar metas" });
+    }
+  });
+  
+  app.get("/api/goals/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de meta inválido" });
+      }
+      
+      const goal = await storage.getGoal(id);
+      if (!goal) {
+        return res.status(404).json({ message: "Meta não encontrada" });
+      }
+      
+      res.json(goal);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar meta" });
+    }
+  });
+  
+  app.post("/api/goals", async (req, res) => {
+    try {
+      const validatedData = insertGoalSchema.parse(req.body);
+      const goal = await storage.createGoal(validatedData);
+      res.status(201).json(goal);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de meta inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar meta" });
+    }
+  });
+  
+  app.put("/api/goals/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de meta inválido" });
+      }
+      
+      const validatedData = insertGoalSchema.partial().parse(req.body);
+      const updatedGoal = await storage.updateGoal(id, validatedData);
+      
+      if (!updatedGoal) {
+        return res.status(404).json({ message: "Meta não encontrada" });
+      }
+      
+      res.json(updatedGoal);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de meta inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar meta" });
+    }
+  });
+  
+  app.delete("/api/goals/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de meta inválido" });
+      }
+      
+      const deleted = await storage.deleteGoal(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Meta não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir meta" });
+    }
+  });
+  
+  app.patch("/api/goals/:id/progress", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de meta inválido" });
+      }
+      
+      const { value } = req.body;
+      if (value === undefined) {
+        return res.status(400).json({ message: "Valor não informado" });
+      }
+      
+      const goal = await storage.updateGoalProgress(id, value);
+      if (!goal) {
+        return res.status(404).json({ message: "Meta não encontrada" });
+      }
+      
+      res.json(goal);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao atualizar progresso da meta" });
+    }
+  });
+  
+  // Achievements API
+  app.get("/api/achievements", async (req, res) => {
+    try {
+      const achievements = await storage.listAchievements();
+      res.json(achievements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar conquistas" });
+    }
+  });
+  
+  app.get("/api/achievements/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conquista inválido" });
+      }
+      
+      const achievement = await storage.getAchievement(id);
+      if (!achievement) {
+        return res.status(404).json({ message: "Conquista não encontrada" });
+      }
+      
+      res.json(achievement);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar conquista" });
+    }
+  });
+  
+  app.post("/api/achievements", async (req, res) => {
+    try {
+      const validatedData = insertAchievementSchema.parse(req.body);
+      const achievement = await storage.createAchievement(validatedData);
+      res.status(201).json(achievement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de conquista inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar conquista" });
+    }
+  });
+  
+  app.put("/api/achievements/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conquista inválido" });
+      }
+      
+      const validatedData = insertAchievementSchema.partial().parse(req.body);
+      const updatedAchievement = await storage.updateAchievement(id, validatedData);
+      
+      if (!updatedAchievement) {
+        return res.status(404).json({ message: "Conquista não encontrada" });
+      }
+      
+      res.json(updatedAchievement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de conquista inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar conquista" });
+    }
+  });
+  
+  app.delete("/api/achievements/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de conquista inválido" });
+      }
+      
+      const deleted = await storage.deleteAchievement(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Conquista não encontrada" });
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir conquista" });
+    }
+  });
+  
+  app.get("/api/users/:userId/achievements", async (req, res) => {
+    try {
+      const userId = Number(req.params.userId);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      const achievements = await storage.listUserAchievements(userId);
+      res.json(achievements);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar conquistas do usuário" });
+    }
+  });
+  
+  app.post("/api/user-achievements", async (req, res) => {
+    try {
+      const validatedData = insertUserAchievementSchema.parse(req.body);
+      const userAchievement = await storage.createUserAchievement(validatedData);
+      res.status(201).json(userAchievement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atribuir conquista ao usuário" });
+    }
+  });
+  
   // Settings API
   app.get("/api/settings", async (req, res) => {
     try {
