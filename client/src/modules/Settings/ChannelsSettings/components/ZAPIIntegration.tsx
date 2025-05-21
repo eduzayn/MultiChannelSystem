@@ -334,6 +334,7 @@ export const ZAPIIntegration = () => {
                     <TabsTrigger value="credentials">Credenciais</TabsTrigger>
                     <TabsTrigger value="connection">Conexão</TabsTrigger>
                     <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+                    <TabsTrigger value="advanced">Configurações</TabsTrigger>
                   </TabsList>
                   
                   <TabsContent value="credentials" className="space-y-4">
@@ -438,42 +439,204 @@ export const ZAPIIntegration = () => {
                   </TabsContent>
                   
                   <TabsContent value="webhooks" className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="webhook-url">
-                        URL do Webhook (Recebimento de Mensagens)
-                      </Label>
-                      <div className="flex space-x-2">
-                        <Input
-                          id="webhook-url"
-                          value={window.location.origin + '/api/zapi/webhook'}
-                          readOnly
-                        />
-                        <Button variant="outline" onClick={() => {
-                          navigator.clipboard.writeText(window.location.origin + '/api/zapi/webhook');
-                          toast({
-                            title: 'URL copiada',
-                            description: 'URL do webhook copiada para a área de transferência',
-                            variant: 'default',
-                          });
-                        }}>
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                    <div className="bg-amber-50 border border-amber-200 p-4 rounded-md mb-4">
+                      <div className="flex">
+                        <div className="flex-shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-amber-800">Configuração de Webhooks</h3>
+                          <p className="mt-1 text-sm text-amber-700">
+                            Você precisa configurar os webhooks no painel da Z-API para receber notificações de mensagens e alterações de status.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Configure esta URL no painel da Z-API para receber mensagens do WhatsApp
-                      </p>
+                    </div>
+
+                    <div className="border rounded-md">
+                      <div className="border-b px-4 py-3 bg-muted/20">
+                        <span className="font-medium">URL para webhooks da Z-API</span>
+                      </div>
+                      <div className="p-4 space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Use a mesma URL abaixo para todos os tipos de eventos na Z-API (Ao receber, Ao enviar, Ao desconectar, etc).
+                        </p>
+                        
+                        <div className="relative rounded-md border overflow-hidden">
+                          <Input
+                            id="webhook-url"
+                            value={`${window.location.origin}/api/zapi/webhook/${selectedChannelId}/${selectedChannelId}`}
+                            readOnly
+                            className="pr-24 bg-muted/10 font-mono text-sm"
+                          />
+                          <Button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/api/zapi/webhook/${selectedChannelId}/${selectedChannelId}`);
+                              toast({
+                                title: 'URL copiada',
+                                description: 'URL do webhook copiada para a área de transferência',
+                                variant: 'default',
+                              });
+                            }}
+                            size="sm"
+                            variant="ghost"
+                            className="absolute right-1 top-1 h-7"
+                          >
+                            <Copy className="h-4 w-4 mr-1" />
+                            Copiar
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                     
-                    <div className="rounded-md border p-4 bg-muted/50">
-                      <div className="font-medium">Configuração de Webhook na Z-API</div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Você pode configurar seu webhook automaticamente ou manualmente no painel da Z-API.
-                      </p>
-                      <div className="mt-4">
-                        <Button variant="outline">
-                          Configurar Webhook Automaticamente
-                        </Button>
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                              </svg>
+                              Ao receber
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Receba notificações quando uma mensagem chegar ao seu WhatsApp.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-green-500 mr-2"></span>
+                              <span className="text-xs font-medium text-green-700">Obrigatório</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              Ao enviar
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Acompanhe o status de envio das mensagens que você envia.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-amber-500 mr-2"></span>
+                              <span className="text-xs font-medium text-amber-700">Recomendado</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
+                              Status da mensagem
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Receba notificações quando uma mensagem for entregue ou lida.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-amber-500 mr-2"></span>
+                              <span className="text-xs font-medium text-amber-700">Recomendado</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+                              </svg>
+                              Ao desconectar
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Seja notificado quando o WhatsApp desconectar do dispositivo.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-amber-500 mr-2"></span>
+                              <span className="text-xs font-medium text-amber-700">Recomendado</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Ao conectar
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Receba notificação quando o WhatsApp conectar ao dispositivo.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-amber-500 mr-2"></span>
+                              <span className="text-xs font-medium text-amber-700">Recomendado</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            <span className="flex items-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                              Presença no chat
+                            </span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-muted-foreground">
+                            <p>Saiba quando alguém está digitando ou online/offline.</p>
+                            <div className="mt-3 flex items-center">
+                              <span className="h-2 w-2 rounded-full bg-slate-500 mr-2"></span>
+                              <span className="text-xs font-medium text-slate-700">Opcional</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t flex items-center justify-between">
+                      <a 
+                        href="https://developer.z-api.io/webhooks/introducao" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 flex items-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Documentação oficial dos webhooks
+                      </a>
                     </div>
                   </TabsContent>
                 </Tabs>
