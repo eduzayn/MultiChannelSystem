@@ -84,6 +84,8 @@ export async function testZapiConnection(
       { headers: getHeadersWithToken(clientToken) }
     );
     
+    console.log("Resposta Z-API (status):", response.data);
+    
     return {
       success: true,
       message: "Conexão bem-sucedida",
@@ -127,6 +129,8 @@ export async function getZapiQRCode(
         responseType: 'text' // A resposta é uma string Base64
       }
     );
+    
+    console.log("Resposta Z-API (QR Code):", response.data ? "QR Code obtido com sucesso" : "Sem QR Code");
     
     return {
       success: true,
