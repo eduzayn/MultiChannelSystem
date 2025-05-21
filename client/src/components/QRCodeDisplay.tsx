@@ -1,5 +1,5 @@
 import React from 'react';
-import * as QRCodeLib from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 interface QRCodeDisplayProps {
   qrCodeData: string;
@@ -37,7 +37,7 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
         alt="QR Code para WhatsApp" 
         style={{ width: size, height: size, maxWidth: '100%' }}
         onError={(e) => {
-          console.error("Erro ao carregar QR Code como imagem", e);
+          console.error("Erro ao carregar QR Code como imagem");
           // Caso haja erro ao carregar a imagem, mostramos uma mensagem de erro
           const target = e.currentTarget;
           if (target.parentElement) {
@@ -52,9 +52,9 @@ const QRCodeDisplay: React.FC<QRCodeDisplayProps> = ({
     );
   }
   
-  // Se for texto, usamos a biblioteca QRCode para gerar um SVG
+  // Se for texto, usamos a biblioteca QRCode para gerar um canvas
   return (
-    <QRCodeLib.QRCodeSVG
+    <QRCodeCanvas
       value={qrCodeData}
       size={size}
       level="H" // Nível de correção de erro mais alto para garantir melhor leitura
