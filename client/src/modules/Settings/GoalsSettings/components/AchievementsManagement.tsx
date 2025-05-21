@@ -180,7 +180,7 @@ export const AchievementsManagement = () => {
                   rows={3}
                 />
                 <p className="text-sm text-muted-foreground">
-                  Exemplo: "sales_goal_completion > 1.5 AND period = 'quarterly'"
+                  Exemplo: "sales_goal_completion maior que 1.5 E period igual quarterly"
                 </p>
               </div>
             </div>
