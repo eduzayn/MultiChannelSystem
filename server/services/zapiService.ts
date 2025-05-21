@@ -136,18 +136,45 @@ export async function testZapiConnection(
   success: boolean;
   message: string;
   status?: string;
+  details?: any;
 }> {
   try {
     console.log(`Testando conexão com instância Z-API (${instanceId})...`);
+    console.log(`Usando token: ${token}`);
+    console.log(`Usando client-token: ${clientToken}`);
     
     // Verifica o status da conexão via endpoint de status da Z-API
     const statusUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/status`;
+    
+    console.log(`Fazendo requisição para: ${statusUrl}`);
     
     const response = await axios.get(statusUrl, {
       headers: {
         "Client-Token": clientToken,
       },
+      validateStatus: function (status) {
+        // Aceitar qualquer status para poder tratar o erro adequadamente
+        return true;
+      }
     });
+    
+    console.log(`Resposta da Z-API (Status ${response.status}):`, JSON.stringify(response.data));
+    
+    // Se houver um erro na resposta (não 200), tratamos aqui
+    if (response.status !== 200) {
+      let errorMessage = `Erro ${response.status}`;
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMessage += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+        status: "error",
+        details: response.data
+      };
+    }
     
     // A Z-API retorna o status da conexão
     const connectionStatus = response.data?.connected;
@@ -158,18 +185,21 @@ export async function testZapiConnection(
         success: true,
         message: "Conexão estabelecida com sucesso. WhatsApp conectado.",
         status: "connected",
+        details: response.data
       };
     } else if (connectionStatus === false) {
       return {
         success: false,
         message: `WhatsApp não conectado. Status: ${statusMessage || "Desconectado"}`,
         status: "disconnected",
+        details: response.data
       };
     } else {
       return {
         success: false,
         message: `Status indeterminado: ${statusMessage || "Desconhecido"}`,
         status: "unknown",
+        details: response.data
       };
     }
     
