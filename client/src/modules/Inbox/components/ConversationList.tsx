@@ -31,7 +31,7 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   // Buscar conversas do servidor
-  const { data: conversations, isLoading, error } = useQuery({
+  const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/conversations'],
     queryFn: async () => {
       try {
@@ -52,8 +52,19 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
         return mockConversations;
       }
     },
-    refetchInterval: 10000 // Recarregar a cada 10 segundos para novas mensagens
+    refetchInterval: 3000, // Atualizar a cada 3 segundos para maior responsividade
+    refetchOnWindowFocus: true, // Recarregar quando a janela ganhar foco
+    staleTime: 2000 // Considerar os dados obsoletos após 2 segundos
   });
+  
+  // Polling periódico adicional para garantir atualizações frequentes
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refetch();
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
+  }, [refetch]);
   
   const handleSelectConversation = (conversation: ConversationItemProps) => {
     setActiveConversationId(conversation.id);
