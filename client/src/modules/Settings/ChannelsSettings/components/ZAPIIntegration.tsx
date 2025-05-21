@@ -36,7 +36,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { SimpleQRCode } from '@/components/SimpleQRCode';
-import { WhatsAppStatusBadge } from '@/components/channel/WhatsAppStatusBadge';
+import { WhatsAppConnectionStatus } from '@/components/channel/WhatsAppConnectionStatus';
 
 interface ZAPICredentials {
   instanceId: string;
@@ -400,7 +400,18 @@ export const ZAPIIntegration = () => {
                   <TabsContent value="connection" className="space-y-4">
                     <div className="space-y-4">
                       <div className="rounded-md border p-4 bg-muted/50">
-                        <div className="font-medium">Status da Conexão</div>
+                        <div className="flex items-center justify-between">
+                          <div className="font-medium">Status da Conexão</div>
+                          {credentials.instanceId && credentials.token && (
+                            <WhatsAppConnectionStatus
+                              instanceId={credentials.instanceId}
+                              token={credentials.token}
+                              clientToken={credentials.clientToken}
+                              autoRefresh={true}
+                              refreshInterval={30000}
+                            />
+                          )}
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           Para usar o WhatsApp, você precisa escanear o QR Code com o app do WhatsApp 
                           para conectar sua conta à Z-API.
