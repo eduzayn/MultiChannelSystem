@@ -1850,6 +1850,562 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Módulo de Análise & Performance: KPIs
+  app.get("/api/kpis", async (req, res) => {
+    try {
+      const category = req.query.category as string | undefined;
+      const kpis = await storage.listKpis(category);
+      res.json(kpis);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar KPIs" });
+    }
+  });
+  
+  app.get("/api/kpis/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de KPI inválido" });
+      }
+      
+      const kpi = await storage.getKpi(id);
+      if (!kpi) {
+        return res.status(404).json({ message: "KPI não encontrado" });
+      }
+      
+      res.json(kpi);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar KPI" });
+    }
+  });
+  
+  app.post("/api/kpis", async (req, res) => {
+    try {
+      const validatedData = insertKpiSchema.parse(req.body);
+      const kpi = await storage.createKpi(validatedData);
+      res.status(201).json(kpi);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de KPI inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar KPI" });
+    }
+  });
+  
+  app.put("/api/kpis/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de KPI inválido" });
+      }
+      
+      const validatedData = insertKpiSchema.partial().parse(req.body);
+      const kpi = await storage.updateKpi(id, validatedData);
+      
+      if (!kpi) {
+        return res.status(404).json({ message: "KPI não encontrado" });
+      }
+      
+      res.json(kpi);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de KPI inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar KPI" });
+    }
+  });
+  
+  app.delete("/api/kpis/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de KPI inválido" });
+      }
+      
+      await storage.deleteKpi(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir KPI" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: KPI Values
+  app.get("/api/kpis/:kpiId/values", async (req, res) => {
+    try {
+      const kpiId = Number(req.params.kpiId);
+      if (isNaN(kpiId)) {
+        return res.status(400).json({ message: "ID de KPI inválido" });
+      }
+      
+      const periodType = req.query.periodType as string | undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      
+      const values = await storage.listKpiValues(kpiId, periodType, limit);
+      res.json(values);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar valores de KPI" });
+    }
+  });
+  
+  app.post("/api/kpi-values", async (req, res) => {
+    try {
+      const validatedData = insertKpiValueSchema.parse(req.body);
+      const kpiValue = await storage.createKpiValue(validatedData);
+      res.status(201).json(kpiValue);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de valor de KPI inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar valor de KPI" });
+    }
+  });
+  
+  app.delete("/api/kpi-values/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de valor de KPI inválido" });
+      }
+      
+      await storage.deleteKpiValue(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir valor de KPI" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Dashboards
+  app.get("/api/dashboards", async (req, res) => {
+    try {
+      const isPublic = req.query.isPublic !== undefined 
+        ? req.query.isPublic === 'true'
+        : undefined;
+        
+      const dashboards = await storage.listDashboards(isPublic);
+      res.json(dashboards);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar dashboards" });
+    }
+  });
+  
+  app.get("/api/dashboards/default", async (req, res) => {
+    try {
+      const dashboard = await storage.getDefaultDashboard();
+      if (!dashboard) {
+        return res.status(404).json({ message: "Dashboard padrão não encontrado" });
+      }
+      
+      res.json(dashboard);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar dashboard padrão" });
+    }
+  });
+  
+  app.get("/api/dashboards/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de dashboard inválido" });
+      }
+      
+      const dashboard = await storage.getDashboard(id);
+      if (!dashboard) {
+        return res.status(404).json({ message: "Dashboard não encontrado" });
+      }
+      
+      res.json(dashboard);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar dashboard" });
+    }
+  });
+  
+  app.post("/api/dashboards", async (req, res) => {
+    try {
+      const validatedData = insertDashboardSchema.parse(req.body);
+      const dashboard = await storage.createDashboard(validatedData);
+      res.status(201).json(dashboard);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de dashboard inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar dashboard" });
+    }
+  });
+  
+  app.put("/api/dashboards/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de dashboard inválido" });
+      }
+      
+      const validatedData = insertDashboardSchema.partial().parse(req.body);
+      const dashboard = await storage.updateDashboard(id, validatedData);
+      
+      if (!dashboard) {
+        return res.status(404).json({ message: "Dashboard não encontrado" });
+      }
+      
+      res.json(dashboard);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de dashboard inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar dashboard" });
+    }
+  });
+  
+  app.delete("/api/dashboards/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de dashboard inválido" });
+      }
+      
+      await storage.deleteDashboard(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir dashboard" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Dashboard Widgets
+  app.get("/api/dashboards/:dashboardId/widgets", async (req, res) => {
+    try {
+      const dashboardId = Number(req.params.dashboardId);
+      if (isNaN(dashboardId)) {
+        return res.status(400).json({ message: "ID de dashboard inválido" });
+      }
+      
+      const widgets = await storage.listDashboardWidgets(dashboardId);
+      res.json(widgets);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar widgets do dashboard" });
+    }
+  });
+  
+  app.get("/api/dashboard-widgets/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de widget inválido" });
+      }
+      
+      const widget = await storage.getDashboardWidget(id);
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      res.json(widget);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar widget" });
+    }
+  });
+  
+  app.post("/api/dashboard-widgets", async (req, res) => {
+    try {
+      const validatedData = insertDashboardWidgetSchema.parse(req.body);
+      const widget = await storage.createDashboardWidget(validatedData);
+      res.status(201).json(widget);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de widget inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar widget" });
+    }
+  });
+  
+  app.put("/api/dashboard-widgets/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de widget inválido" });
+      }
+      
+      const validatedData = insertDashboardWidgetSchema.partial().parse(req.body);
+      const widget = await storage.updateDashboardWidget(id, validatedData);
+      
+      if (!widget) {
+        return res.status(404).json({ message: "Widget não encontrado" });
+      }
+      
+      res.json(widget);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de widget inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar widget" });
+    }
+  });
+  
+  app.delete("/api/dashboard-widgets/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de widget inválido" });
+      }
+      
+      await storage.deleteDashboardWidget(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir widget" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Relatórios
+  app.get("/api/reports", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const reports = await storage.listReports(type);
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar relatórios" });
+    }
+  });
+  
+  app.get("/api/reports/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de relatório inválido" });
+      }
+      
+      const report = await storage.getReport(id);
+      if (!report) {
+        return res.status(404).json({ message: "Relatório não encontrado" });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar relatório" });
+    }
+  });
+  
+  app.post("/api/reports", async (req, res) => {
+    try {
+      const validatedData = insertReportSchema.parse(req.body);
+      const report = await storage.createReport(validatedData);
+      res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de relatório inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar relatório" });
+    }
+  });
+  
+  app.put("/api/reports/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de relatório inválido" });
+      }
+      
+      const validatedData = insertReportSchema.partial().parse(req.body);
+      const report = await storage.updateReport(id, validatedData);
+      
+      if (!report) {
+        return res.status(404).json({ message: "Relatório não encontrado" });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de relatório inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar relatório" });
+    }
+  });
+  
+  app.delete("/api/reports/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de relatório inválido" });
+      }
+      
+      await storage.deleteReport(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir relatório" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Resultados de Relatórios
+  app.get("/api/reports/:reportId/results", async (req, res) => {
+    try {
+      const reportId = Number(req.params.reportId);
+      if (isNaN(reportId)) {
+        return res.status(400).json({ message: "ID de relatório inválido" });
+      }
+      
+      const results = await storage.listReportResults(reportId);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar resultados de relatório" });
+    }
+  });
+  
+  app.get("/api/report-results/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de resultado inválido" });
+      }
+      
+      const result = await storage.getReportResult(id);
+      if (!result) {
+        return res.status(404).json({ message: "Resultado não encontrado" });
+      }
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar resultado" });
+    }
+  });
+  
+  app.post("/api/report-results", async (req, res) => {
+    try {
+      const validatedData = insertReportResultSchema.parse(req.body);
+      const result = await storage.createReportResult(validatedData);
+      res.status(201).json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de resultado inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar resultado" });
+    }
+  });
+  
+  app.delete("/api/report-results/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de resultado inválido" });
+      }
+      
+      await storage.deleteReportResult(id);
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao excluir resultado" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Atividades de Usuário
+  app.get("/api/user-activities", async (req, res) => {
+    try {
+      const userId = req.query.userId ? Number(req.query.userId) : undefined;
+      const activityType = req.query.activityType as string | undefined;
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      
+      const activities = await storage.listUserActivities(userId, activityType, limit);
+      res.json(activities);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar atividades de usuário" });
+    }
+  });
+  
+  app.get("/api/user-activities/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de atividade inválido" });
+      }
+      
+      const activity = await storage.getUserActivity(id);
+      if (!activity) {
+        return res.status(404).json({ message: "Atividade não encontrada" });
+      }
+      
+      res.json(activity);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar atividade" });
+    }
+  });
+  
+  app.post("/api/user-activities", async (req, res) => {
+    try {
+      const validatedData = insertUserActivitySchema.parse(req.body);
+      const activity = await storage.createUserActivity(validatedData);
+      res.status(201).json(activity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de atividade inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao registrar atividade" });
+    }
+  });
+  
+  // Módulo de Análise & Performance: Métricas de Performance da Equipe
+  app.get("/api/teams/:teamId/performance-metrics", async (req, res) => {
+    try {
+      const teamId = Number(req.params.teamId);
+      if (isNaN(teamId)) {
+        return res.status(400).json({ message: "ID de equipe inválido" });
+      }
+      
+      const period = req.query.period as string | undefined;
+      const metrics = await storage.listTeamPerformanceMetrics(teamId, period);
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar métricas de performance" });
+    }
+  });
+  
+  app.get("/api/team-performance-metrics/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de métrica inválido" });
+      }
+      
+      const metric = await storage.getTeamPerformanceMetric(id);
+      if (!metric) {
+        return res.status(404).json({ message: "Métrica não encontrada" });
+      }
+      
+      res.json(metric);
+    } catch (error) {
+      res.status(500).json({ message: "Falha ao buscar métrica de performance" });
+    }
+  });
+  
+  app.post("/api/team-performance-metrics", async (req, res) => {
+    try {
+      const validatedData = insertTeamPerformanceMetricSchema.parse(req.body);
+      const metric = await storage.createTeamPerformanceMetric(validatedData);
+      res.status(201).json(metric);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de métrica inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao criar métrica de performance" });
+    }
+  });
+  
+  app.put("/api/team-performance-metrics/:id", async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID de métrica inválido" });
+      }
+      
+      const validatedData = insertTeamPerformanceMetricSchema.partial().parse(req.body);
+      const metric = await storage.updateTeamPerformanceMetric(id, validatedData);
+      
+      if (!metric) {
+        return res.status(404).json({ message: "Métrica não encontrada" });
+      }
+      
+      res.json(metric);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados de métrica inválidos", errors: error.errors });
+      }
+      res.status(500).json({ message: "Falha ao atualizar métrica de performance" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
