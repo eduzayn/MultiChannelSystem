@@ -25,6 +25,73 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // ===== API de Autenticação =====
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Usuário e senha são obrigatórios" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ message: "Credenciais inválidas" });
+      }
+      
+      // Armazenar o usuário na sessão
+      if (req.session) {
+        req.session.user = {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          role: user.role
+        };
+      }
+      
+      // Retorna os dados do usuário (sem a senha)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+      
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao fazer login" });
+    }
+  });
+  
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      if (!req.session || !req.session.user) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+      
+      const user = await storage.getUser(req.session.user.id);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Retorna os dados do usuário (sem a senha)
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+      
+    } catch (error) {
+      res.status(500).json({ message: "Erro ao buscar usuário autenticado" });
+    }
+  });
+  
+  app.post("/api/auth/logout", (req, res) => {
+    if (req.session) {
+      req.session.destroy(err => {
+        if (err) {
+          return res.status(500).json({ message: "Erro ao fazer logout" });
+        }
+        res.status(200).json({ message: "Logout realizado com sucesso" });
+      });
+    } else {
+      res.status(200).json({ message: "Nenhuma sessão ativa" });
+    }
+  });
   // Users API
   app.get("/api/users", async (req, res) => {
     try {
