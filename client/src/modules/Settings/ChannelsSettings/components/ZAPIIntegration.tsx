@@ -529,7 +529,7 @@ export const ZAPIIntegration = () => {
           {qrCodeData ? (
             <div className="flex justify-center p-4 bg-white rounded-md">
               <img 
-                src={`data:image/png;base64,${qrCodeData}`} 
+                src={qrCodeData}
                 alt="QR Code para WhatsApp" 
                 className="max-w-full h-auto"
               />
