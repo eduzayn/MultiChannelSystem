@@ -499,10 +499,67 @@ export const ChannelsTab = () => {
             </p>
           </div>
           
-          <div className="mt-6">
+          <div className="flex gap-2 mt-6">
+            <Button 
+              variant="outline"
+              onClick={async () => {
+                if (!channelConfigData.identifier || !channelConfigData.apiKey || !channelConfigData.clientToken) {
+                  toast({
+                    title: "Campos obrigatórios",
+                    description: "Preencha todos os campos: ID da Instância, Token da Instância e Client Token.",
+                    variant: "destructive"
+                  });
+                  return;
+                }
+                
+                toast({
+                  title: "Testando conexão...",
+                  description: "Verificando credenciais com a Z-API..."
+                });
+                
+                try {
+                  const response = await fetch('/api/zapi/test-connection', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      instanceId: channelConfigData.identifier, // ID da instância 
+                      token: channelConfigData.apiKey, // Token da instância
+                      clientToken: channelConfigData.clientToken // Client Token
+                    }),
+                  });
+                  
+                  const data = await response.json();
+                  
+                  if (data.success) {
+                    toast({
+                      title: "Conexão bem-sucedida!",
+                      description: "As credenciais estão corretas e a conexão foi estabelecida."
+                    });
+                  } else {
+                    toast({
+                      title: "Falha na conexão",
+                      description: data.message || "Não foi possível conectar com as credenciais fornecidas.",
+                      variant: "destructive"
+                    });
+                  }
+                } catch (error) {
+                  console.error("Erro ao testar conexão:", error);
+                  toast({
+                    title: "Erro de conexão",
+                    description: "Houve um erro ao tentar conectar com a Z-API. Verifique suas credenciais e tente novamente.",
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
+              Testar Conexão
+            </Button>
+            
             <Button 
               onClick={handleGenerateQRCode}
-              className="w-full"
+              className="flex-1"
             >
               <QrCode className="h-4 w-4 mr-2" />
               Gerar QR Code para Conexão
