@@ -145,13 +145,18 @@ export async function getZapiQRCode(
     if (process.env.NODE_ENV === 'development' || !instanceId || instanceId === 'test') {
       console.log("Usando simulação para QR Code (apenas para teste)");
       
-      // Simulação com um QR code base64 pré-definido para testes
-      // Este é um QR code de exemplo que pode ser exibido como imagem
+      // Em ambiente de desenvolvimento, sempre retorna um QR code de imagem real
+      // Esta é uma simulação mais realista para testar o componente de QR Code
       const mockBase64QR = "iVBORw0KGgoAAAANSUhEUgAAAIQAAACECAYAAABRRIOnAAAAAklEQVR4AewaftIAAAO1SURBVO3BQY7cWAwEwUyC979y9hjaggYqyA8aHMTM/rDGJcZ4ibFeYqyXGOslxnqJsV5irJcY6yXGernh4CTKT4rckXKHyicpn6ScpPwk5Y4Y6yXGernh4IOUm5Q7Um5SblJOUk5S7lBuUu6IsT5irJtOflnKHSl3KJ+kfJJyh3KTcpJyk/KTYqyXGOvmhj+M8pep/EkxXmKslxv+MSlPRHmJsV5irJtOfpnySSl3pDxRnqScpNwRY32LsW4++SDlJuWOlE9SniiflHJHjJcY6+aGg/9TyknKf1KMlxjr5oaDk5STlG+m3JFyR8pJyh0pJyk3KTcpJylPxHiJsW5uODhJ+STliZSTlCfKE+WTlE9K+WUx1kuMdXPDwUnKTcpJyknKHSl3pNyR8kTKTcpJyknKScpJyk3KTconyicxXmKsmxsOTlJOUu5I+aSUm5Q7Uk5S7lCeSDlJOUm5STkp5STlJOWTYqyXGOvm5oddKTcpJyknKXekPJFyR8odKScpJyknKXco30z5phjrJca6ueHgJOWOlJOUJ8pNyh3KScpJyk3KTcpJyknKEyknKSdRvojxEmPd3HBwkvKTlCdSTlJOUk5SblJuUk5STlJuUp5IuUk5SfnLYryXGOvmhoOTlJOUk5STlJOUO1LuUE5STlJOUk5STlK+mXKT8pdirJcY6+aGg5OUm5STlJOUJ8pJyicpJyknKXek3KGcpJyk3KGcpJyknKR8UoyXGOvmhoOTlJuUO1JOUk5S7ki5STlJeSLlCeWTUk5STlJOUu5IOUk5SflJMdZLjHVzw8FJyk3KHSknKXek3JFyknJHyicpJyknKSdRvojyRJQnMdZLjPVyw8FJyknKJ6WcRHkiyhMpdygnKScpJyknKXeknKTcpHxSjJcY6+aGg5OUm5Q7lJOUO1JOUu5QblJOUm5STlJOUk5STlJ+kvJEyknKScpNMdZLjHVzw8En/aWUJ1JOUJ5QnkB5SflJMb6IsV5irE8yPkj5IspJlCeivMRYJzHWS4z1EmO9xFgvMdZLjPUSY73EWC8x1kuM9RJjvcRYLzHWS4z1EmO9xFgvMdZLjPUSY73EWC8x1ss/RMGmCyGEEmEAAAAASUVORK5CYII=";
+      
+      // Vamos registrar nos logs o que estamos devolvendo para o frontend
+      console.log("======= QR Code Simulação =======");
+      console.log("Retornando QR code como imagem base64 para o frontend");
+      console.log("Com a flag isImage: true");
       
       return {
         success: true,
-        qrCode: `data:image/png;base64,${mockBase64QR}`,
+        qrCode: mockBase64QR, // Enviamos apenas o base64 sem o prefixo, o frontend irá adicioná-lo
         isImage: true
       };
     }

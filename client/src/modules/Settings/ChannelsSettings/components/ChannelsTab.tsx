@@ -171,8 +171,14 @@ export const ChannelsTab = () => {
         setQRCodeStatus("authenticating");
         
         // Atualiza a URL do QR Code real
-        setChannelQrCodeData(data.qrCode);
+        // Se o QR code for uma imagem (base64), incluímos o prefixo data:image se necessário
+        if (data.isImage && !data.qrCode.startsWith('data:image')) {
+          setChannelQrCodeData(`data:image/png;base64,${data.qrCode}`);
+        } else {
+          setChannelQrCodeData(data.qrCode);
+        }
         
+        // Mostra notificação de sucesso
         toast({
           title: "QR Code gerado",
           description: "Escaneie o QR Code com seu WhatsApp para conectar",
