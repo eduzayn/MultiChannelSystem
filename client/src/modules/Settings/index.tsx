@@ -95,6 +95,11 @@ export const SettingsModule = ({ children }: SettingsModuleProps) => {
                     </Link>
                   </Button>
                   <Button variant="ghost" className="w-full justify-start text-sm" asChild>
+                    <Link href="/settings/branding">
+                      <span className="mr-2">🎨</span> Aparência e Branding
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start text-sm" asChild>
                     <Link href="/settings/security">
                       <span className="mr-2">🔒</span> Segurança
                     </Link>
