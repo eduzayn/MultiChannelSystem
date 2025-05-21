@@ -37,7 +37,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   const { toast } = useToast();
   
   // Buscar mensagens do servidor quando uma conversa é selecionada
-  const { data: fetchedMessages, isLoading } = useQuery({
+  const { data: fetchedMessages, isLoading, refetch } = useQuery({
     queryKey: [`/api/conversations/${conversation.id}/messages`],
     queryFn: async () => {
       try {
@@ -57,8 +57,23 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         return [defaultWelcomeMessage];
       }
     },
-    refetchInterval: 5000 // Recarregar a cada 5 segundos para novas mensagens
+    refetchInterval: 2000, // Atualizações mais frequentes a cada 2 segundos
+    refetchOnWindowFocus: true,
+    staleTime: 1000, // Considerar os dados obsoletos após 1 segundo
+    cacheTime: 1500 // Manter no cache por 1.5 segundos apenas
   });
+  
+  // Adicionar polling mais agressivo para tempo real
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refetch();
+    }, 1500); // Polling a cada 1.5 segundos para garantir atualizações quase em tempo real
+    
+    // Verificação adicional no início
+    refetch();
+    
+    return () => clearInterval(intervalId);
+  }, [refetch, conversation.id]); // Incluir conversation.id para recriar o intervalo quando mudar a conversa
   
   // Atualizar mensagens quando os dados são buscados
   useEffect(() => {
