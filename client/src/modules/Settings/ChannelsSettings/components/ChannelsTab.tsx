@@ -587,15 +587,28 @@ export const ChannelsTab = () => {
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg">
                       {channelQrCodeData ? (
-                        // Verifica se já começa com "data:image" (base64 completo)
-                        channelQrCodeData.startsWith('data:image') ? (
-                          <img 
-                            src={channelQrCodeData} 
-                            alt="QR Code para WhatsApp" 
-                            className="w-36 h-36"
-                          />
-                        ) : (
-                          // Caso contrário, usa a string como valor para gerar um QR code
+                        // Em ambiente de desenvolvimento, com o QR code simulado,
+                        // Sempre mostrar como uma imagem (QR code real)
+                        <img 
+                          src={`data:image/png;base64,${channelQrCodeData}`}
+                          alt="QR Code para WhatsApp" 
+                          className="w-36 h-36"
+                          onError={(e) => {
+                            // Em caso de erro na imagem, tente renderizar como QR code SVG
+                            console.log("Erro ao carregar QR code como imagem, tentando como SVG");
+                            e.currentTarget.style.display = 'none';
+                            document.getElementById('qr-fallback')?.style.removeProperty('display');
+                          }}
+                        />
+                      ) : (
+                        <div className="w-36 h-36 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+                          <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
+                        </div>
+                      )}
+                      
+                      {/* QR Code SVG fallback - apenas exibido se a imagem falhar */}
+                      <div id="qr-fallback" style={{display: 'none'}}>
+                        {channelQrCodeData && (
                           <QRCodeSVG
                             value={channelQrCodeData}
                             size={144}
@@ -604,12 +617,8 @@ export const ChannelsTab = () => {
                             level={"L"}
                             includeMargin={true}
                           />
-                        )
-                      ) : (
-                        <div className="w-36 h-36 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
-                          <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
