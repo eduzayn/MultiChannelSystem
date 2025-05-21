@@ -42,6 +42,7 @@ function Router() {
         <Route path="/settings/channels" component={ChannelsSettings} />
         <Route path="/settings/crm" component={CRMSettings} />
         <Route path="/settings/integrations" component={IntegrationsSettings} />
+        <Route path="/settings/marketing" component={MarketingSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
