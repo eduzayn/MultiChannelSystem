@@ -115,6 +115,7 @@ export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   channel: text("channel").notNull(), // whatsapp, instagram, facebook, email
+  identifier: text("identifier"), // ID do contato no canal (número de telefone no WhatsApp, email, etc)
   avatar: text("avatar"),
   lastMessage: text("last_message"),
   lastMessageAt: timestamp("last_message_at").defaultNow(),
@@ -122,6 +123,7 @@ export const conversations = pgTable("conversations", {
   status: text("status").default("open"), // open, resolved, closed
   assignedTo: integer("assigned_to").references(() => users.id),
   contactId: integer("contact_id").references(() => contacts.id),
+  metadata: jsonb("metadata"), // Armazenar dados específicos do canal
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -129,6 +131,7 @@ export const conversations = pgTable("conversations", {
 export const insertConversationSchema = createInsertSchema(conversations).pick({
   name: true,
   channel: true,
+  identifier: true,
   avatar: true,
   lastMessage: true,
   lastMessageAt: true,
@@ -136,6 +139,7 @@ export const insertConversationSchema = createInsertSchema(conversations).pick({
   status: true,
   assignedTo: true,
   contactId: true,
+  metadata: true,
 });
 
 // Tabela para as mensagens
