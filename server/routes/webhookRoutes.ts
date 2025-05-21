@@ -5,7 +5,7 @@ export function registerWebhookRoutes(app: Router) {
   app.get("/api/webhooks/recent", async (req: Request, res: Response) => {
     try {
       const { db } = await import('../db');
-      const { messages } = await import('../../shared/schema');
+      const { messages, conversations } = await import('../../shared/schema');
       const { desc, eq } = await import('drizzle-orm');
       
       // Buscar as 10 mensagens mais recentes recebidas via webhook
@@ -31,7 +31,7 @@ export function registerWebhookRoutes(app: Router) {
           content: message.content,
           type: message.type,
           conversationId: message.conversationId,
-          contactName: message.conversation?.name || "Desconhecido",
+          contactName: message.conversation ? message.conversation.name : "Desconhecido",
           timestamp: message.timestamp,
           metadata: message.metadata || {}
         }))

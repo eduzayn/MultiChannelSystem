@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Info, Phone, Video, CheckCheck, Share2 } from "lucide-react";
 import { MessageBubble, MessageProps } from "./MessageBubble";
@@ -15,91 +17,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Dados de exemplo para mensagens
-const initialMessages: MessageProps[] = [
-  {
-    id: "1",
-    content: "Início da conversa",
-    timestamp: new Date(Date.now() - 3600000 * 5),
-    sender: "system",
-  },
-  {
-    id: "2",
-    content: "Olá! Preciso de ajuda com meu pedido #1234. Não recebi ainda e já se passaram 7 dias.",
-    timestamp: new Date(Date.now() - 3600000 * 2),
-    sender: "contact",
-  },
-  {
-    id: "3",
-    content: "Olá! Claro, vou verificar o status do seu pedido agora mesmo. Pode me informar o seu nome completo e email para confirmar os dados?",
-    timestamp: new Date(Date.now() - 3600000 * 1.9),
-    sender: "user",
-    status: "read",
-  },
-  {
-    id: "4",
-    content: "Sim, claro. Me chamo Maria Santos e meu email é maria.santos@email.com",
-    timestamp: new Date(Date.now() - 3600000 * 1.8),
-    sender: "contact",
-  },
-  {
-    id: "5",
-    content: "Obrigado pelas informações! Estou verificando seu pedido no sistema...",
-    timestamp: new Date(Date.now() - 3600000 * 1.7),
-    sender: "user",
-    status: "read",
-  },
-  {
-    id: "6",
-    content: "Encontrei seu pedido. Ele está em trânsito e deve chegar amanhã conforme a transportadora. Consigo ver aqui que houve um pequeno atraso devido a problemas logísticos.",
-    timestamp: new Date(Date.now() - 3600000 * 1.5),
-    sender: "user",
-    status: "read",
-  },
-  {
-    id: "7",
-    content: "Ah, entendi. Obrigada por verificar! Vou aguardar até amanhã então.",
-    timestamp: new Date(Date.now() - 3600000 * 1.4),
-    sender: "contact",
-  },
-  {
-    id: "8",
-    content: "Disponha! Se precisar de mais alguma coisa, é só avisar. Você receberá uma notificação assim que o pedido for entregue.",
-    timestamp: new Date(Date.now() - 3600000 * 1.3),
-    sender: "user",
-    status: "read",
-  },
-  {
-    id: "9",
-    type: "image",
-    content: "https://via.placeholder.com/300",
-    caption: "Comprovante de envio",
-    timestamp: new Date(Date.now() - 3600000 * 1),
-    sender: "user",
-    status: "delivered",
-  },
-  {
-    id: "10",
-    type: "interactive",
-    content: "Você poderia confirmar sua preferência de entrega?",
-    interactiveData: {
-      type: "button",
-      selected: "Entrega Padrão",
-      options: ["Entrega Padrão", "Entrega Expressa", "Retirar na Loja"]
-    },
-    timestamp: new Date(Date.now() - 3600000 * 0.8),
-    sender: "contact",
-  },
-  {
-    id: "11",
-    type: "document",
-    content: "nota-fiscal-pedido-1234.pdf",
-    fileSize: "320 KB",
-    timestamp: new Date(Date.now() - 3600000 * 0.5),
-    sender: "user",
-    status: "sent",
-  },
-];
+// Mensagem inicial padrão para novas conversas
+const defaultWelcomeMessage: MessageProps = {
+  id: "welcome",
+  content: "Início da conversa",
+  timestamp: new Date(),
+  sender: "system",
+};
 
 interface MessagePanelProps {
   conversation: ConversationItemProps;
@@ -107,15 +31,49 @@ interface MessagePanelProps {
 }
 
 export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePanelProps) => {
-  const [messages, setMessages] = useState<MessageProps[]>(initialMessages);
-  const [conversationStatus, setConversationStatus] = useState<string>("open");
+  const [messagesList, setMessagesList] = useState<MessageProps[]>([]);
+  const [conversationStatus, setConversationStatus] = useState<string>(conversation.status || "open");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // Buscar mensagens do servidor quando uma conversa é selecionada
+  const { data: fetchedMessages, isLoading } = useQuery({
+    queryKey: [`/api/conversations/${conversation.id}/messages`],
+    queryFn: async () => {
+      try {
+        const response = await axios.get(`/api/conversations/${conversation.id}/messages`);
+        return response.data.map((msg: any) => ({
+          id: msg.id.toString(),
+          content: msg.content,
+          type: msg.type || "text",
+          sender: msg.sender,
+          status: msg.status,
+          timestamp: new Date(msg.timestamp),
+          metadata: msg.metadata || {}
+        }));
+      } catch (error) {
+        console.error("Erro ao buscar mensagens:", error);
+        // Em caso de erro, carregar apenas a mensagem de boas-vindas
+        return [defaultWelcomeMessage];
+      }
+    },
+    refetchInterval: 5000 // Recarregar a cada 5 segundos para novas mensagens
+  });
+  
+  // Atualizar mensagens quando os dados são buscados
+  useEffect(() => {
+    if (fetchedMessages && fetchedMessages.length > 0) {
+      setMessagesList(fetchedMessages);
+    } else if (!isLoading && fetchedMessages && fetchedMessages.length === 0) {
+      // Se não houver mensagens, mostrar uma mensagem de boas-vindas
+      setMessagesList([defaultWelcomeMessage]);
+    }
+  }, [fetchedMessages, isLoading]);
 
   // Rolagem para o final da lista de mensagens quando novas mensagens são adicionadas
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messagesList]);
 
   // Extrai o número de telefone formatado da conversa (assumindo que é o identifier)
   const extractPhoneNumber = () => {
@@ -150,7 +108,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
       }
     }
     
-    setMessages([...messages, newMessage]);
+    setMessagesList([...messagesList, newMessage]);
     
     // Se a conversa for do WhatsApp e tivermos uma integração Z-API configurada,
     // envie realmente a mensagem via API
@@ -159,71 +117,51 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
       
       if (phoneNumber) {
         try {
-          // Assumindo que temos o channelId 
-          // Na vida real, precisaríamos obter isso do banco de dados ou do objeto de conversa
-          const channelId = 1; // Este valor deveria vir de uma configuração ou do objeto de conversa
+          // Enviar mensagem para a API
+          const response = await axios.post('/api/messages', {
+            conversationId: conversation.id,
+            content,
+            type: attachmentType || 'text',
+            sender: 'user',
+            status: 'sent',
+            metadata: attachmentData
+          });
           
-          // Tenta enviar a mensagem para o número do telefone
-          let result;
-          
-          if (attachmentType === 'interactive' && newMessage.interactiveData?.type === 'button') {
-            // Envio de mensagem com botões
-            result = await sendButtonMessage({
-              channelId,
-              to: phoneNumber,
-              title: '', // Título vazio para mensagens simples com botões
-              message: content,
-              footer: '',
-              buttons: newMessage.interactiveData.options?.map(option => ({ buttonText: option })) || []
-            });
-          } else {
-            // Envio de mensagem de texto simples
-            result = await sendTextMessage({
-              channelId,
-              to: phoneNumber,
-              message: content
-            });
-          }
-          
-          if (result.success) {
-            // Atualize o status da mensagem para "sent" e guarde o messageId
-            setMessages((prevMessages) => 
+          if (response.data && response.data.id) {
+            // Atualizar o status da mensagem para "sent" e o ID para o real do banco
+            setMessagesList((prevMessages) => 
               prevMessages.map(msg => 
                 msg.id === newMessage.id 
-                  ? { ...msg, status: "sent" as const, messageId: result.messageId } 
+                  ? { ...msg, id: response.data.id.toString(), status: "sent" as const } 
                   : msg
               )
             );
             
-            // Simula o status "delivered" após um pequeno tempo (apenas para demo)
-            setTimeout(() => {
-              setMessages((prevMessages) => 
-                prevMessages.map(msg => 
-                  msg.id === newMessage.id 
-                    ? { ...msg, status: "delivered" as const } 
-                    : msg
-                )
-              );
-            }, 1500);
-          } else {
-            // Se falhou, mostra um erro
-            toast({
-              title: "Erro ao enviar mensagem",
-              description: result.message || "Não foi possível enviar a mensagem. Tente novamente.",
-              variant: "destructive"
-            });
-            
-            // Atualiza o status da mensagem para indicar erro
-            setMessages((prevMessages) => 
-              prevMessages.map(msg => 
-                msg.id === newMessage.id 
-                  ? { ...msg, status: "error" as const } 
-                  : msg
-              )
-            );
+            // Enviar para a API Z-API
+            try {
+              const zapiResponse = await sendTextMessage({
+                channelId: Number(conversation.id),
+                to: phoneNumber,
+                message: content
+              });
+              
+              if (zapiResponse.success) {
+                // Atualizar status para delivered
+                setMessagesList((prevMessages) => 
+                  prevMessages.map(msg => 
+                    msg.id === response.data.id.toString() 
+                      ? { ...msg, status: "delivered" as const } 
+                      : msg
+                  )
+                );
+              }
+            } catch (zapiError) {
+              console.error("Erro ao enviar para Z-API:", zapiError);
+              // Mensagem ainda foi salva no banco, só não foi enviada ao WhatsApp
+            }
           }
         } catch (error) {
-          console.error("Erro ao enviar mensagem:", error);
+          console.error("Erro ao salvar mensagem:", error);
           
           toast({
             title: "Erro ao enviar mensagem",
@@ -232,7 +170,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
           });
           
           // Atualiza o status da mensagem para indicar erro
-          setMessages((prevMessages) => 
+          setMessagesList((prevMessages) => 
             prevMessages.map(msg => 
               msg.id === newMessage.id 
                 ? { ...msg, status: "error" as const } 
@@ -254,64 +192,72 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   const simulateMessageDelivery = (newMessage: MessageProps) => {
     // Simular status "delivered" após alguns segundos
     setTimeout(() => {
-      setMessages((prevMessages) => 
+      setMessagesList((prevMessages) => 
         prevMessages.map(msg => 
           msg.id === newMessage.id 
             ? { ...msg, status: "delivered" as const } 
             : msg
         )
       );
-      
-      // Após mais alguns segundos, simular uma resposta e atualizar status para "read"
-      setTimeout(() => {
-        const autoReply: MessageProps = {
-          id: `msg-${Date.now()}`,
-          content: "Ótimo! Obrigado pelo suporte.",
-          timestamp: new Date(),
-          sender: "contact",
-          avatar: conversation.avatar,
-        };
-        
-        setMessages((prevMessages) => [
-          ...prevMessages.map(msg => 
-            msg.id === newMessage.id 
-              ? { ...msg, status: "read" as const } 
-              : msg
-          ),
-          autoReply
-        ]);
-      }, 3000);
     }, 1500);
   };
 
   // Função para resolver uma conversa
-  const resolveConversation = () => {
-    setConversationStatus("resolved");
-    
-    // Adicionar mensagem de sistema
-    const systemMessage: MessageProps = {
-      id: `msg-${Date.now()}`,
-      content: "Conversa marcada como resolvida",
-      timestamp: new Date(),
-      sender: "system",
-    };
-    
-    setMessages([...messages, systemMessage]);
+  const resolveConversation = async () => {
+    try {
+      // Atualizar no servidor
+      await axios.put(`/api/conversations/${conversation.id}`, {
+        status: "resolved"
+      });
+      
+      setConversationStatus("resolved");
+      
+      // Adicionar mensagem de sistema
+      const systemMessage: MessageProps = {
+        id: `msg-${Date.now()}`,
+        content: "Conversa marcada como resolvida",
+        timestamp: new Date(),
+        sender: "system",
+      };
+      
+      setMessagesList([...messagesList, systemMessage]);
+    } catch (error) {
+      console.error("Erro ao resolver conversa:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível resolver a conversa",
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para reabrir uma conversa
-  const reopenConversation = () => {
-    setConversationStatus("open");
-    
-    // Adicionar mensagem de sistema
-    const systemMessage: MessageProps = {
-      id: `msg-${Date.now()}`,
-      content: "Conversa reaberta",
-      timestamp: new Date(),
-      sender: "system",
-    };
-    
-    setMessages([...messages, systemMessage]);
+  const reopenConversation = async () => {
+    try {
+      // Atualizar no servidor
+      await axios.put(`/api/conversations/${conversation.id}`, {
+        status: "open"
+      });
+      
+      setConversationStatus("open");
+      
+      // Adicionar mensagem de sistema
+      const systemMessage: MessageProps = {
+        id: `msg-${Date.now()}`,
+        content: "Conversa reaberta",
+        timestamp: new Date(),
+        sender: "system",
+      };
+      
+      setMessagesList([...messagesList, systemMessage]);
+    } catch (error) {
+      console.error("Erro ao reabrir conversa:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível reabrir a conversa",
+        variant: "destructive"
+      });
+    }
   };
 
   // Verificar se a sessão ZapAPI está conectada (simulado)
@@ -417,9 +363,32 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
       
       {/* Lista de mensagens */}
       <div className="flex-1 overflow-y-auto p-2">
-        {messages.map((message) => (
-          <MessageBubble key={message.id} {...message} />
-        ))}
+        {isLoading ? (
+          // Mostrar esqueleto de carregamento
+          <div className="animate-pulse space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                <div className={`rounded-lg p-3 max-w-[75%] ${i % 2 === 0 ? 'bg-primary/20' : 'bg-muted'}`}>
+                  <div className="h-2 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-40"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : messagesList.length > 0 ? (
+          // Mostrar mensagens
+          messagesList.map((message) => (
+            <MessageBubble key={message.id} {...message} />
+          ))
+        ) : (
+          // Sem mensagens
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-muted-foreground">
+              <p>Nenhuma mensagem ainda</p>
+              <p className="text-sm">Inicie uma conversa</p>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
       
