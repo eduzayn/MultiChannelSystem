@@ -37,8 +37,103 @@ export function registerZapiRoutes(app: Router) {
         console.log(`  Tipo: ${webhookData.type || "text"}`);
         console.log(`  Conteúdo: ${webhookData.body || webhookData.message || JSON.stringify(webhookData.text || webhookData.content || {})}`);
         
-        // TODO: Implementar lógica para processar mensagens recebidas
-        // Por exemplo: salvar no banco de dados, notificar por WebSocket, etc.
+        // Processar a mensagem recebida
+        try {
+          const { db } = await import('../db');
+          const { conversations, messages, contacts } = await import('../../shared/schema');
+          const { eq, and, desc } = await import('drizzle-orm');
+          
+          // Formatar o número no padrão internacional
+          const senderPhone = webhookData.phone || webhookData.sender || "";
+          const formattedPhone = senderPhone.replace(/\D/g, "");
+          
+          // Obter o tipo e conteúdo da mensagem
+          const messageType = webhookData.type || "text";
+          const messageContent = webhookData.body || webhookData.message || 
+                                JSON.stringify(webhookData.text || webhookData.content || {});
+          
+          // Verificar se já existe um contato com este número
+          let contact = await db.query.contacts.findFirst({
+            where: eq(contacts.phone, formattedPhone)
+          });
+          
+          // Se não existe contato, criar um novo
+          if (!contact) {
+            const name = webhookData.senderName || `WhatsApp ${formattedPhone}`;
+            
+            const [newContact] = await db.insert(contacts)
+              .values({
+                name,
+                phone: formattedPhone,
+                notes: `Contato criado automaticamente a partir de mensagem do WhatsApp`
+              })
+              .returning();
+              
+            contact = newContact;
+            console.log(`[Z-API] Novo contato criado: ${name} (${formattedPhone})`);
+          }
+          
+          // Verificar se já existe uma conversa com este contato no canal WhatsApp
+          let conversation = await db.query.conversations.findFirst({
+            where: and(
+              eq(conversations.contactId, contact.id),
+              eq(conversations.channel, "whatsapp")
+            )
+          });
+          
+          // Se não existe conversa, criar uma nova
+          if (!conversation) {
+            const [newConversation] = await db.insert(conversations)
+              .values({
+                name: contact.name,
+                channel: "whatsapp",
+                contactId: contact.id,
+                status: "open",
+                lastMessage: messageContent,
+                lastMessageAt: new Date(),
+                unreadCount: 1
+              })
+              .returning();
+              
+            conversation = newConversation;
+            console.log(`[Z-API] Nova conversa criada para o contato: ${contact.name}`);
+          } else {
+            // Atualizar a conversa existente
+            await db.update(conversations)
+              .set({
+                lastMessage: messageContent,
+                lastMessageAt: new Date(),
+                unreadCount: conversation.unreadCount + 1,
+                status: "open" // Reabrir se estava fechada
+              })
+              .where(eq(conversations.id, conversation.id));
+            
+            console.log(`[Z-API] Conversa atualizada para o contato: ${contact.name}`);
+          }
+          
+          // Salvar a mensagem recebida
+          const messageMetadata = {
+            zapiInstanceId: channelId,
+            zapiMessageId: webhookData.id || null,
+            fromMe: false,
+            receivedAt: new Date()
+          };
+          
+          await db.insert(messages)
+            .values({
+              conversationId: conversation.id,
+              content: messageContent,
+              type: messageType,
+              sender: "contact", // Mensagem recebida, então é do contato
+              status: "delivered",
+              metadata: messageMetadata,
+              timestamp: new Date()
+            });
+          
+          console.log(`[Z-API] Mensagem salva com sucesso para a conversa: ${conversation.id}`);
+        } catch (error) {
+          console.error(`[Z-API] Erro ao processar mensagem recebida:`, error);
+        }
       } 
       else if (isStatusEvent) {
         // Ao atualizar status
