@@ -38,10 +38,15 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   
   // Buscar mensagens do servidor quando uma conversa é selecionada
   const { data: fetchedMessages, isLoading, refetch } = useQuery({
-    queryKey: [`/api/conversations/${conversation.id}/messages`],
+    queryKey: [`/api/conversations/${conversation.id}/messages`, Date.now()], // Forçar nova query a cada vez
     queryFn: async () => {
       try {
-        const response = await axios.get(`/api/conversations/${conversation.id}/messages`);
+        // Adicionando um timestamp para evitar cache do navegador
+        const timestamp = new Date().getTime();
+        const response = await axios.get(`/api/conversations/${conversation.id}/messages?t=${timestamp}`);
+        
+        console.log("Mensagens recebidas:", response.data);
+        
         return response.data.map((msg: any) => ({
           id: msg.id.toString(),
           content: msg.content,
@@ -57,10 +62,9 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         return [defaultWelcomeMessage];
       }
     },
-    refetchInterval: 2000, // Atualizações mais frequentes a cada 2 segundos
+    refetchInterval: 1500, // Atualizações mais frequentes a cada 1.5 segundos
     refetchOnWindowFocus: true,
-    staleTime: 1000, // Considerar os dados obsoletos após 1 segundo
-    cacheTime: 1500 // Manter no cache por 1.5 segundos apenas
+    staleTime: 0 // Sempre considerar os dados obsoletos para forçar refetch
   });
   
   // Adicionar polling mais agressivo para tempo real

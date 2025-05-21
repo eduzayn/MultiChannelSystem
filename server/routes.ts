@@ -503,9 +503,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "ID de conversa inválido" });
       }
       
-      const messages = await storage.listMessagesByConversation(conversationId);
-      res.json(messages);
+      // Usar diretamente o banco de dados para garantir dados atualizados
+      try {
+        const { db } = await import('./db');
+        const { messages } = await import('../shared/schema');
+        const { desc, eq } = await import('drizzle-orm');
+        
+        // Buscar mensagens diretamente do banco em ordem cronológica
+        const dbMessages = await db.query.messages.findMany({
+          where: eq(messages.conversationId, conversationId),
+          orderBy: [desc(messages.timestamp)]
+        });
+        
+        // Modificação para sempre obter novas mensagens e evitar caching no HTTP 304
+        // Adicionando um timestamp como parâmetro de controle
+        res.set('Cache-Control', 'no-store');
+        res.set('Content-Type', 'application/json');
+        res.status(200).json(dbMessages);
+      } catch (dbError) {
+        console.error("Erro ao acessar banco de dados:", dbError);
+        // Fallback para o storage padrão
+        const messages = await storage.listMessagesByConversation(conversationId);
+        res.json(messages);
+      }
     } catch (error) {
+      console.error("Falha ao buscar mensagens:", error);
       res.status(500).json({ message: "Falha ao buscar mensagens" });
     }
   });
