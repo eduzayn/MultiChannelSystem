@@ -532,14 +532,7 @@ export const ZAPIIntegration = () => {
           {qrCodeData ? (
             <div className="flex flex-col items-center p-6 bg-white rounded-md gap-6">
               <div className="p-6 border-2 border-primary/10 bg-white rounded-lg shadow-lg">
-                <QRCodeSVG 
-                  value={qrCodeData} 
-                  size={350}
-                  bgColor={"#ffffff"}
-                  fgColor={"#000000"}
-                  level={"L"}
-                  includeMargin={true}
-                />
+                <QRCodeDisplay qrCodeData={qrCodeData} size={350} />
               </div>
               
               <div className="text-center max-w-2xl mt-2">

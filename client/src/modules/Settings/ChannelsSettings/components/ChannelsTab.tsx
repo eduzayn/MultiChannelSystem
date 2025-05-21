@@ -585,14 +585,14 @@ export const ChannelsTab = () => {
                 )}
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full h-full flex flex-col items-center justify-center">
-                    <div className="border border-dashed border-gray-300 p-4 rounded-lg">
+                    <div className="border border-dashed border-gray-300 p-6 rounded-lg">
                       {channelQrCodeData ? (
                         // Em ambiente de desenvolvimento, com o QR code simulado,
                         // Sempre mostrar como uma imagem (QR code real)
                         <img 
                           src={`data:image/png;base64,${channelQrCodeData}`}
                           alt="QR Code para WhatsApp" 
-                          className="w-36 h-36"
+                          className="w-64 h-64"
                           onError={(e) => {
                             // Em caso de erro na imagem, tente renderizar como QR code SVG
                             console.log("Erro ao carregar QR code como imagem, tentando como SVG");
@@ -601,7 +601,7 @@ export const ChannelsTab = () => {
                           }}
                         />
                       ) : (
-                        <div className="w-36 h-36 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+                        <div className="w-64 h-64 flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
                           <span className="text-sm text-muted-foreground">Aguardando QR Code...</span>
                         </div>
                       )}
