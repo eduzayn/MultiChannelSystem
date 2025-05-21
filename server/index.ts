@@ -6,6 +6,7 @@ import { initializeDatabase } from "./db-init";
 import session from "express-session";
 import MemoryStore from "memorystore";
 import { socketService } from "./services/socketService";
+import { channelMonitorService } from "./services/channelMonitorService";
 
 const app = express();
 app.use(express.json());

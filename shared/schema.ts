@@ -550,6 +550,10 @@ export const marketingChannels = pgTable("marketing_channels", {
   type: text("type").notNull(), // email, sms, whatsapp, push, social, etc
   configuration: jsonb("configuration"), // Channel-specific configuration
   isActive: boolean("is_active").default(true),
+  isConnected: boolean("is_connected").default(false), // Status da conexão com o serviço externo
+  lastStatusChange: timestamp("last_status_change"), // Quando o status mudou pela última vez
+  lastErrorMessage: text("last_error_message"), // Última mensagem de erro
+  lastCheck: timestamp("last_check"), // Quando foi verificado pela última vez
   createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
