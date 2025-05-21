@@ -60,11 +60,12 @@ export function SidebarItem({ icon, label, href, badge, submenu }: SidebarItemPr
         >
           <div className="py-1">
             {submenu.map((item, index) => (
-              <Link key={index} href={item.href}>
+              // Usamos um span ao invés de div para evitar o aninhamento de <a>
+              <span key={index} onClick={() => window.location.href = item.href}>
                 <div className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-600 cursor-pointer">
                   {item.label}
                 </div>
-              </Link>
+              </span>
             ))}
           </div>
         </div>
