@@ -58,6 +58,7 @@ export const ChannelsTab = () => {
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeStatus, setQRCodeStatus] = useState("waiting");
   const [channelFormTab, setChannelFormTab] = useState("credentials");
+  const [channelQrCodeData, setChannelQrCodeData] = useState<string | null>(null);
   
   const { toast } = useToast();
 
@@ -126,8 +127,8 @@ export const ChannelsTab = () => {
     }
   };
 
-  // Função para simular a geração de QR Code para Z-API
-  const handleGenerateQRCode = () => {
+  // Função para gerar QR Code real da Z-API
+  const handleGenerateQRCode = async () => {
     if (channelConfigData.clientToken.trim() === "") {
       toast({
         title: "Erro",
@@ -137,22 +138,62 @@ export const ChannelsTab = () => {
       return;
     }
     
+    // Verifica se temos o ID da instância e o token
+    if (!channelConfigData.apiKey.trim()) {
+      toast({
+        title: "Erro",
+        description: "É necessário informar o token da instância Z-API.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setShowQRCode(true);
     setQRCodeStatus("waiting");
     
-    // Em um ambiente real, aqui seria feita uma chamada à API Z-API para obter o QR Code
-    // Simulando o processo de obtenção do QR Code
-    setTimeout(() => {
-      setQRCodeStatus("authenticating");
-      setTimeout(() => {
-        setQRCodeStatus("connected");
-        // Atualiza o identificador com um número fictício
-        setChannelConfigData({
-          ...channelConfigData,
-          identifier: "+55 11 98765-4321"
+    try {
+      // Chama a API real para obter o QR Code
+      const response = await fetch('/api/zapi/get-qrcode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          instanceId: channelConfigData.identifier, // Estamos usando o campo identifier para armazenar o instanceId
+          token: channelConfigData.apiKey, // Estamos usando o campo apiKey para armazenar o token da instância
+          clientToken: channelConfigData.clientToken
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success && data.qrCode) {
+        setQRCodeStatus("authenticating");
+        
+        // Atualiza a URL do QR Code real
+        setChannelQrCodeData(data.qrCode);
+        
+        toast({
+          title: "QR Code gerado",
+          description: "Escaneie o QR Code com seu WhatsApp para conectar",
         });
-      }, 3000);
-    }, 2000);
+      } else {
+        setShowQRCode(false);
+        toast({
+          title: "Erro ao gerar QR Code",
+          description: data.message || "Não foi possível gerar o QR Code. Verifique suas credenciais.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao obter QR Code:", error);
+      setShowQRCode(false);
+      toast({
+        title: "Erro de conexão",
+        description: "Houve um erro ao tentar conectar com a Z-API. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Função para processar o formulário de credenciais
@@ -200,34 +241,98 @@ export const ChannelsTab = () => {
   };
 
   // Função para finalizar e salvar o canal
-  const handleSaveChannel = () => {
-    toast({
-      title: "Canal salvo com sucesso!",
-      description: `O canal ${channelConfigData.name} foi configurado e está ativo.`
-    });
-    
-    // Fecha os diálogos e reseta os estados
-    setOpenAddChannelDialog(false);
-    setOpenChannelConfigDialog(false);
-    setCurrentStep(1);
-    setSelectedChannelType(null);
-    setSelectedProvider(null);
-    setChannelConfigData({
-      name: "",
-      identifier: "",
-      webhookUrl: "https://api.minhaempresa.com/webhooks/tenant/123/channel/456",
-      apiKey: "",
-      clientToken: "",
-      smtpServer: "",
-      smtpPort: "",
-      imapServer: "",
-      imapPort: "",
-      username: "",
-      password: ""
-    });
-    setShowQRCode(false);
-    setQRCodeStatus("waiting");
-    setChannelFormTab("credentials");
+  const handleSaveChannel = async () => {
+    try {
+      // Prepara as configurações do canal com base no tipo e provedor
+      let configuration = {};
+      
+      if (selectedChannelType === "WhatsApp" && selectedProvider === "zapi") {
+        configuration = {
+          instanceId: channelConfigData.identifier, // ID da instância Z-API
+          token: channelConfigData.apiKey,         // Token da instância Z-API 
+          clientToken: channelConfigData.clientToken,  // Token de segurança da Z-API
+          webhookUrl: window.location.origin + '/api/zapi/webhook'
+        };
+      } else if (selectedChannelType === "WhatsApp" && selectedProvider === "api") {
+        configuration = {
+          phoneNumber: channelConfigData.identifier,
+          apiKey: channelConfigData.apiKey,
+          webhookUrl: channelConfigData.webhookUrl
+        };
+      } else if (selectedChannelType === "Email") {
+        configuration = {
+          email: channelConfigData.username,
+          smtpServer: channelConfigData.smtpServer,
+          smtpPort: channelConfigData.smtpPort,
+          imapServer: channelConfigData.imapServer,
+          imapPort: channelConfigData.imapPort,
+          password: channelConfigData.password
+        };
+      }
+      
+      // Dados do canal para API
+      const channelData = {
+        name: channelConfigData.name,
+        description: `Canal de ${selectedChannelType} configurado via ${selectedProvider || 'configuração padrão'}`,
+        type: selectedChannelType?.toLowerCase() || "unknown",
+        configuration: configuration,
+        isActive: true
+      };
+      
+      // Salva o canal no banco de dados através da API
+      const response = await fetch('/api/marketing-channels', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(channelData),
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Canal salvo com sucesso!",
+          description: `O canal ${channelConfigData.name} foi configurado e está ativo.`
+        });
+        
+        // Fecha os diálogos e reseta os estados
+        setOpenAddChannelDialog(false);
+        setOpenChannelConfigDialog(false);
+        setCurrentStep(1);
+        setSelectedChannelType(null);
+        setSelectedProvider(null);
+        setChannelConfigData({
+          name: "",
+          identifier: "",
+          webhookUrl: "https://api.minhaempresa.com/webhooks/tenant/123/channel/456",
+          apiKey: "",
+          clientToken: "",
+          smtpServer: "",
+          smtpPort: "",
+          imapServer: "",
+          imapPort: "",
+          username: "",
+          password: ""
+        });
+        setShowQRCode(false);
+        setQRCodeStatus("waiting");
+        setChannelFormTab("credentials");
+        setChannelQrCodeData(null);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: "Erro ao salvar canal",
+          description: errorData.message || "Ocorreu um erro ao salvar o canal. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar canal:", error);
+      toast({
+        title: "Erro ao salvar canal",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
   
   // Renderiza o formulário específico para cada canal/provedor
@@ -391,10 +496,18 @@ export const ChannelsTab = () => {
                 {qrCodeStatus === "authenticating" && (
                   <div className="w-full h-full flex flex-col items-center justify-center">
                     <div className="border border-dashed border-gray-300 p-4 rounded-lg">
-                      <QRCodeSVG
-                        value="https://wa.me/5511987654321?code=123ABC456DEF"
-                        size={144}
-                      />
+                      {channelQrCodeData ? (
+                        <img 
+                          src={`data:image/png;base64,${channelQrCodeData}`} 
+                          alt="QR Code para WhatsApp" 
+                          className="w-36 h-36"
+                        />
+                      ) : (
+                        <QRCodeSVG
+                          value="https://wa.me/5511987654321?code=123ABC456DEF"
+                          size={144}
+                        />
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-2">Escaneie com WhatsApp</p>
                   </div>
