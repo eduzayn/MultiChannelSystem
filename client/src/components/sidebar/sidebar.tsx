@@ -5,7 +5,7 @@ import { cn, userRoles, type UserRole } from '@/lib/utils';
 import { SidebarSection } from './sidebar-section';
 import { SidebarItem } from './sidebar-item';
 import { Home, MessageSquare, Inbox, Users, Building2, DollarSign, 
-         Megaphone, Bot, BarChart3, Trophy, Settings, User, HelpCircle, LogOut } from 'lucide-react';
+         Megaphone, Bot, BarChart3, Trophy, Settings, User, HelpCircle, LogOut, Brain } from 'lucide-react';
 import { Link } from 'wouter';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -91,6 +91,11 @@ export function Sidebar() {
               submenu={[
                 { label: 'Conversas de todos os canais', href: '/inbox/all' },
               ]}
+            />
+            <SidebarItem 
+              icon={<Brain />} 
+              href="/profana" 
+              label="Prof. Ana" 
             />
           </SidebarSection>
           

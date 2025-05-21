@@ -11,6 +11,7 @@ import Inbox from "@/pages/inbox";
 import Contacts from "@/pages/contacts";
 import Companies from "@/pages/companies";
 import Deals from "@/pages/deals";
+import ProfAna from "@/pages/profana";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
         <Route path="/contacts" component={Contacts} />
         <Route path="/companies" component={Companies} />
         <Route path="/deals" component={Deals} />
+        <Route path="/profana" component={ProfAna} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
