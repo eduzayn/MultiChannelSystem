@@ -12,6 +12,7 @@ import Contacts from "@/pages/contacts";
 import Companies from "@/pages/companies";
 import Deals from "@/pages/deals";
 import ProfAna from "@/pages/profana";
+import Goals from "@/pages/goals";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/companies" component={Companies} />
         <Route path="/deals" component={Deals} />
         <Route path="/profana" component={ProfAna} />
+        <Route path="/goals" component={Goals} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
