@@ -599,66 +599,60 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
       </ScrollArea>
       
       {/* Campo de entrada de mensagem */}
-      <div className="border-t bg-background w-full">
-        <div className="px-6 py-4">
-          <div className="flex flex-col">
+      <div className="border-t">
+        <div className="mx-2 border border-gray-200 rounded-md my-2">
+          <div className="grid grid-cols-1 divide-y">
             {/* Sugestões */}
-            <div className="mb-2 flex gap-2 overflow-x-auto">
-              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
-                Poderia detalhar mais sobre a...
-              </Button>
-              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
-                Vou verificar e te retorno em...
-              </Button>
-              <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
-                Entendido, obrigado pela atual...
-              </Button>
+            <div className="p-2">
+              <div className="flex gap-2 overflow-x-auto">
+                <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                  Poderia detalhar mais sobre a...
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                  Vou verificar e te retorno em...
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs whitespace-nowrap h-8 px-3">
+                  Entendido, obrigado pela atual...
+                </Button>
+              </div>
             </div>
             
             {/* Campo de texto e botões */}
-            <form onSubmit={handleSendMessage} className="flex">
-              <div className="flex w-full items-end rounded-md border bg-white">
-                <div className="flex-1 p-2">
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={`Mensagem para #${channelId ? channels[channelId]?.name : 'canal'}`}
-                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 px-0"
-                  />
-                </div>
+            <div className="p-2">
+              <form onSubmit={handleSendMessage} className="flex items-center">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={`Mensagem para #${channelId ? channels[channelId]?.name : 'canal'}`}
+                  className="flex-1 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                />
                 
-                <div className="flex items-center p-2 gap-0.5">
+                <div className="flex items-center gap-1 ml-2">
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
-                    <Smile className="h-5 w-5" />
+                    <Smile className="h-4 w-4" />
                   </Button>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
-                    <Paperclip className="h-5 w-5" />
+                    <Paperclip className="h-4 w-4" />
                   </Button>
                   <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground">
-                    <Mic className="h-5 w-5" />
+                    <Mic className="h-4 w-4" />
+                  </Button>
+                  <Button type="submit" className="ml-1 rounded-full h-8 w-8 p-0 bg-blue-500 hover:bg-blue-600" disabled={!newMessage.trim()}>
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
-              
-              <Button type="submit" className="ml-2 rounded-full h-10 w-10 p-0 bg-blue-500 hover:bg-blue-600" disabled={!newMessage.trim()}>
-                <Send className="h-5 w-5" />
-              </Button>
-            </form>
-          </div>
-          
-          {/* Rodapé com informações adicionais */}
-          <div className="flex justify-between items-center mt-2">
-            <div className="flex items-center text-xs text-muted-foreground">
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                Sugestões da IA
-              </Button>
+              </form>
             </div>
             
-            <div className="flex items-center text-xs text-muted-foreground gap-1">
-              <span>Pressione</span>
-              <kbd className="px-1.5 py-0.5 border rounded text-xs">Enter</kbd>
-              <span>para enviar</span>
+            {/* Rodapé com informações adicionais */}
+            <div className="px-2 py-1 flex justify-between items-center text-xs text-muted-foreground bg-gray-50">
+              <span>Sugestões da IA</span>
+              <div className="flex items-center gap-1">
+                <span>Pressione</span>
+                <kbd className="px-1.5 py-0.5 border rounded text-xs">Enter</kbd>
+                <span>para enviar</span>
+              </div>
             </div>
           </div>
         </div>
