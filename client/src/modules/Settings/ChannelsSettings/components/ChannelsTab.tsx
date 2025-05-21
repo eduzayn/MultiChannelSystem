@@ -432,16 +432,43 @@ export const ChannelsTab = () => {
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="zapi-instance-id">ID da Instância Z-API</Label>
+            <Input 
+              id="zapi-instance-id" 
+              placeholder="Ex: A1B2C3D4E5F6G7H8I9J0" 
+              value={channelConfigData.identifier}
+              onChange={(e) => setChannelConfigData({...channelConfigData, identifier: e.target.value})}
+            />
+            <p className="text-sm text-muted-foreground">
+              ID da instância fornecido pelo painel da Z-API.
+            </p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="zapi-token">Token da Instância</Label>
+            <Input 
+              id="zapi-token" 
+              type="password" 
+              placeholder="Ex: abcde12345-abcde12345-abcde12345" 
+              value={channelConfigData.apiKey}
+              onChange={(e) => setChannelConfigData({...channelConfigData, apiKey: e.target.value})}
+            />
+            <p className="text-sm text-muted-foreground">
+              Token da instância fornecido pelo painel da Z-API.
+            </p>
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="client-token">Client Token Z-API</Label>
             <Input 
               id="client-token" 
               type="password" 
-              placeholder="Client Token da instância Z-API" 
+              placeholder="Client Token da conta Z-API" 
               value={channelConfigData.clientToken}
               onChange={(e) => setChannelConfigData({...channelConfigData, clientToken: e.target.value})}
             />
             <p className="text-sm text-muted-foreground">
-              Token fornecido pela Z-API para acessar sua instância.
+              Token de segurança da conta Z-API (Client-Token).
             </p>
           </div>
           
