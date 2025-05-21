@@ -99,14 +99,8 @@ export function registerZapiRoutes(app: Router) {
                 status: "open",
                 lastMessage: messageContent,
                 lastMessageAt: new Date(),
-                unreadCount: 1,
-                metadata: {
-                  source: "zapi-webhook",
-                  originalData: {
-                    tenantId,
-                    channelId
-                  }
-                }
+                unreadCount: 1
+                // campo metadata removido temporariamente até migração ser aplicada
               })
               .returning();
               
