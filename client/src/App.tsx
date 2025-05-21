@@ -20,6 +20,7 @@ import AISettings from "@/pages/settings-ai";
 import ChannelsSettings from "@/pages/settings-channels";
 import CRMSettings from "@/pages/settings-crm";
 import IntegrationsSettings from "@/pages/settings-integrations";
+import MarketingSettings from "@/pages/settings-marketing";
 
 function Router() {
   return (
