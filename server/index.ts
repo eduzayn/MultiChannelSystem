@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeDatabase } from "./db-init";
+import session from "express-session";
+import MemoryStore from "memorystore";
 
 const app = express();
 app.use(express.json());
@@ -36,7 +39,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Configuração de sessão
+const MemoryStoreSession = MemoryStore(session);
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'security-crm-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 86400000 }, // 24 horas
+  store: new MemoryStoreSession({
+    checkPeriod: 86400000 // limpa as sessões expiradas a cada 24 horas
+  })
+}));
+
 (async () => {
+  // Inicializar o banco de dados com dados iniciais (se necessário)
+  try {
+    await initializeDatabase();
+    log("Banco de dados inicializado com sucesso");
+  } catch (error) {
+    log("Erro ao inicializar o banco de dados:", error);
+  }
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
