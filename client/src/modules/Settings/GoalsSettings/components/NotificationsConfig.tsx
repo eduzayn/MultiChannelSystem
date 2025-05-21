@@ -138,11 +138,11 @@ export const NotificationsConfig = () => {
             <Textarea 
               id="celebration-message" 
               placeholder="Modelo de mensagem para celebrar conquistas..."
-              defaultValue="Parabéns a {nome} por atingir {meta_nome}! 🎉 Esse é mais um exemplo do nosso compromisso com a excelência!"
+              defaultValue="Parabéns a {usuario} por atingir {meta}! 🎉 Esse é mais um exemplo do nosso compromisso com a excelência!"
               rows={3}
             />
             <p className="text-sm text-muted-foreground">
-              Use {nome} para o nome do usuário, {meta_nome} para o nome da meta, {valor} para o valor atingido.
+              Use {"{{usuario}}"} para o nome do usuário, {"{{meta}}"} para o nome da meta, {"{{valor_atingido}}"} para o valor atingido.
             </p>
           </div>
         </CardContent>

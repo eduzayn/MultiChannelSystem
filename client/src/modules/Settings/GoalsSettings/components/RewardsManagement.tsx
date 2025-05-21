@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Gift, PlusCircle, Star, Edit, Trash, ArrowUpRight } from "lucide-react";
 
 // Mock de recompensas disponíveis

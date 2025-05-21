@@ -24,6 +24,7 @@ import MarketingSettings from "@/pages/settings-marketing";
 import UsersSettings from "@/pages/settings-users";
 import BrandingSettings from "@/pages/settings-branding";
 import CompanySettings from "@/pages/settings-company";
+import GoalsSettings from "@/pages/settings-goals";
 import Settings from "@/pages/settings";
 
 function Router() {
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/settings/users" component={UsersSettings} />
         <Route path="/settings/branding" component={BrandingSettings} />
         <Route path="/settings/company" component={CompanySettings} />
+        <Route path="/settings/goals" component={GoalsSettings} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
