@@ -1157,7 +1157,7 @@ export const ChannelsTab = () => {
       
       {/* Dialog para adicionar novo canal */}
       <Dialog open={openAddChannelDialog} onOpenChange={setOpenAddChannelDialog}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[700px] md:max-w-[800px]">
           <DialogHeader>
             <DialogTitle>Adicionar Novo Canal</DialogTitle>
             <DialogDescription>
