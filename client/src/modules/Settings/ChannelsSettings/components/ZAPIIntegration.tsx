@@ -531,7 +531,7 @@ export const ZAPIIntegration = () => {
           {qrCodeData ? (
             <div className="flex flex-col items-center p-4 bg-white rounded-md gap-4">
               <div className="w-64 h-64 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md relative">
-                <QRCodeDisplay qrCodeData={qrCodeData} />
+                <QRCodeDisplay qrCodeData={qrCodeData} size={300} />
               </div>
               
               <div className="text-center mt-4">
