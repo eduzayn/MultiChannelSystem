@@ -62,7 +62,7 @@ export function ImportWhatsAppContacts({ onImportComplete }: ImportWhatsAppConta
         toast({
           title: "Contatos importados com sucesso!",
           description: `${contactCount} contato(s) do WhatsApp sincronizados com o sistema.`,
-          variant: "success",
+          variant: "default",
         });
         
         // Fechar o diálogo e notificar conclusão

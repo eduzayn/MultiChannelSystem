@@ -44,6 +44,7 @@ export const contacts = pgTable("contacts", {
   phone: text("phone"),
   company: text("company"),
   notes: text("notes"),
+  metadata: jsonb("metadata"), // Para armazenar dados da Z-API e outras fontes
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   createdBy: integer("created_by").references(() => users.id),
@@ -55,6 +56,7 @@ export const insertContactSchema = createInsertSchema(contacts).pick({
   phone: true,
   company: true,
   notes: true,
+  metadata: true,
   createdBy: true,
 });
 

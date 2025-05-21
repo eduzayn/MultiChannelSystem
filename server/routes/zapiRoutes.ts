@@ -367,15 +367,37 @@ export function registerZapiRoutes(app: Router) {
                           zapiContact.formattedName || 
                           existingContact.name;
               
+              // Preparar os metadados para atualização
+              let updatedMetadata: Record<string, any> = {};
+              
+              // Se já existir metadata, converter para objeto e mesclar
+              if (existingContact.metadata) {
+                try {
+                  // Se for string, tentar parsear como JSON
+                  if (typeof existingContact.metadata === 'string') {
+                    updatedMetadata = JSON.parse(existingContact.metadata);
+                  } 
+                  // Se for objeto, usar diretamente
+                  else if (typeof existingContact.metadata === 'object') {
+                    updatedMetadata = { ...existingContact.metadata as Record<string, any> };
+                  }
+                } catch (e) {
+                  console.error("Erro ao processar metadata existente:", e);
+                }
+              }
+              
+              // Adicionar os novos dados como propriedades do objeto
+              updatedMetadata = {
+                ...updatedMetadata,
+                zapiData: zapiContact,
+                lastSync: new Date().toISOString(),
+                source: "zapi-sync"
+              };
+              
               await db.update(contacts)
                 .set({
                   name,
-                  metadata: {
-                    ...existingContact.metadata,
-                    zapiData: zapiContact,
-                    lastSync: new Date().toISOString(),
-                    source: "zapi-sync"
-                  }
+                  metadata: updatedMetadata
                 })
                 .where(eq(contacts.id, existingContact.id));
               

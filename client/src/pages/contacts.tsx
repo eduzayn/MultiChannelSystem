@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContactDetail from "@/modules/Contacts/components/ContactDetail";
 import { ContactForm } from "@/modules/Contacts/components/ContactForm";
+import { ImportWhatsAppContacts } from "@/modules/Contacts/components/ImportWhatsAppContacts";
 
 // Dados de exemplo para os contatos
 const MOCK_CONTACTS = [
