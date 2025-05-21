@@ -19,7 +19,7 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
   useEffect(() => {
     if (!qrCodeData) return;
     
-    // Verificar se a resposta contém um erro da API
+    // Verificar se a resposta contém um erro da API ou está conectado
     try {
       // Tentativa de decodificar base64 e verificar se é um JSON de erro
       if (/^[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
@@ -28,6 +28,11 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
           if (decodedData.startsWith('{"error"')) {
             const errorObj = JSON.parse(decodedData);
             setErrorMessage(`Erro Z-API: ${errorObj.error || errorObj.message || 'Erro desconhecido'}`);
+            setIsError(true);
+            return;
+          } else if (decodedData.startsWith('{"connected":true}')) {
+            // WhatsApp já está conectado
+            setErrorMessage("WhatsApp já está conectado com esta instância. Não é necessário escanear QR Code.");
             setIsError(true);
             return;
           }
