@@ -395,27 +395,125 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         </div>
       </div>
       
-      {/* Lista de mensagens */}
-      <div className="flex-1 overflow-y-auto p-2">
+      {/* Lista de mensagens - Implementação reconstruída */}
+      <div className="flex-1 overflow-y-auto p-2 bg-card/5">
         {isLoading ? (
-          // Mostrar esqueleto de carregamento
-          <div className="animate-pulse space-y-4">
+          // Esqueleto de carregamento redesenhado
+          <div className="animate-pulse space-y-4 py-4">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div className={`rounded-lg p-3 max-w-[75%] ${i % 2 === 0 ? 'bg-primary/20' : 'bg-muted'}`}>
-                  <div className="h-2 bg-gray-200 rounded w-24 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-40"></div>
+                <div className={`relative rounded-lg p-3 max-w-[75%] ${
+                  i % 2 === 0 ? 'bg-primary/10 rounded-tr-none' : 'bg-gray-100 dark:bg-gray-800 rounded-tl-none'
+                }`}>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-40"></div>
+                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded w-16 mt-2"></div>
                 </div>
               </div>
             ))}
           </div>
-        ) : messagesList.length > 0 ? (
-          // Mostrar mensagens
-          messagesList.map((message) => (
-            <MessageBubble key={message.id} {...message} />
-          ))
+        ) : fetchedMessages && fetchedMessages.length > 0 ? (
+          // Nova implementação para exibir mensagens
+          <div className="space-y-3 py-4">
+            {fetchedMessages.map((message) => {
+              // Processar conteúdo da mensagem
+              let displayContent = message.content;
+              let messageType = message.type;
+              
+              // Tentar parsear conteúdo JSON
+              if (typeof message.content === 'string' && message.content.startsWith('{') && message.content.endsWith('}')) {
+                try {
+                  const contentObj = JSON.parse(message.content);
+                  // Extrair conteúdo de diferentes formatos de mensagem
+                  if (contentObj.text) displayContent = contentObj.text;
+                  else if (contentObj.body) displayContent = contentObj.body;
+                  else if (contentObj.message) displayContent = contentObj.message;
+                  else if (contentObj.content) displayContent = contentObj.content;
+                  
+                  // Verificar tipos especiais de mensagem
+                  if (messageType === 'MessageStatusCallback' || 
+                      messageType === 'PresenceChatCallback') {
+                    displayContent = '[Atualização de status]';
+                  }
+                } catch (e) {
+                  // Se falhar o parse, manter conteúdo original
+                  console.log("Erro ao processar mensagem JSON:", e);
+                }
+              }
+              
+              return (
+                <div 
+                  key={message.id} 
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : message.sender === 'system' ? 'justify-center' : 'justify-start'}`}
+                >
+                  {message.sender === 'system' ? (
+                    // Mensagens do sistema
+                    <div className="bg-muted/50 rounded-full px-4 py-1 text-xs text-muted-foreground max-w-[80%]">
+                      {displayContent}
+                    </div>
+                  ) : (
+                    // Mensagens de usuários e contatos
+                    <div className={`max-w-[80%] ${message.sender === 'contact' ? 'flex items-start' : ''}`}>
+                      {/* Avatar para mensagens de contato */}
+                      {message.sender === 'contact' && (
+                        <div className="mr-2 mt-1">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            {message.avatar ? (
+                              <img src={message.avatar} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                            ) : (
+                              <span className="text-sm font-medium">C</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-col">
+                        {/* Balão de mensagem com conteúdo */}
+                        <div className={`px-3 py-2 rounded-lg break-words ${
+                          message.sender === 'user' 
+                            ? 'bg-primary text-primary-foreground rounded-br-none' 
+                            : 'bg-gray-100 dark:bg-gray-800 text-foreground rounded-bl-none'
+                        }`}>
+                          {displayContent}
+                        </div>
+                        
+                        {/* Timestamp e status */}
+                        <div className={`flex items-center mt-1 text-xs ${
+                          message.sender === 'user' ? 'justify-end' : 'justify-start'
+                        }`}>
+                          <span className="text-muted-foreground">
+                            {formatDistanceToNow(message.timestamp, { addSuffix: true, locale: ptBR })}
+                          </span>
+                          
+                          {message.sender === 'user' && (
+                            <span className="ml-1.5 flex items-center">
+                              {message.status === 'sending' ? (
+                                <span className="flex items-center">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500 mr-1 animate-pulse"></span>
+                                  <span className="text-xs text-muted-foreground">Enviando</span>
+                                </span>
+                              ) : message.status === 'sent' ? (
+                                <Check className="h-3.5 w-3.5 text-muted-foreground" />
+                              ) : message.status === 'delivered' ? (
+                                <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                              ) : message.status === 'read' ? (
+                                <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                              ) : message.status === 'error' ? (
+                                <span className="text-xs text-destructive">Erro</span>
+                              ) : null}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
         ) : (
-          // Sem mensagens
+          // Mensagem quando não há conversas
           <div className="flex items-center justify-center h-full">
             <div className="text-center text-muted-foreground">
               <p>Nenhuma mensagem ainda</p>
@@ -423,7 +521,6 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
       </div>
       
       {/* Área de entrada de texto */}
