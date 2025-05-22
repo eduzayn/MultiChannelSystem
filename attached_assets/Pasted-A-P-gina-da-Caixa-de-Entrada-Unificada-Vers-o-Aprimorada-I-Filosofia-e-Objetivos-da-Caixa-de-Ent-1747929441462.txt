@@ -1,0 +1,220 @@
+A Página da Caixa de Entrada Unificada (Versão Aprimorada)
+
+I. Filosofia e Objetivos da Caixa de Entrada Reimaginada
+
+A Caixa de Entrada Unificada é o epicentro da interação com o cliente/aluno na plataforma Omnichannel. Ela deve transcender uma simples lista de mensagens, tornando-se um ambiente de trabalho inteligente e colaborativo.
+
+Filosofia de Design:
+
+Foco no Agente: Empoderar o agente com informações contextuais e ferramentas eficientes para que ele possa oferecer um atendimento excepcional.
+Fluxo Contínuo: Minimizar a necessidade de alternar telas ou procurar informações em locais diferentes. Tudo deve estar ao alcance.
+Inteligência Proativa: A IA Prof. Ana não é apenas um recurso, mas uma assistente integrada que auxilia na compreensão, redação e sugestão de ações.
+Clareza e Simplicidade Visual: Apesar da riqueza de funcionalidades, a interface deve ser limpa, organizada e fácil de aprender.
+Desempenho em Tempo Real: A velocidade e a capacidade de resposta são cruciais.
+Objetivos Chave:
+
+Consolidar 100% das interações de todos os canais configurados.
+Fornecer um contexto completo do cliente/aluno e seu histórico com o tenant.
+Otimizar o tempo de resposta e resolução.
+Facilitar a colaboração entre agentes e equipes.
+Integrar de forma transparente as capacidades da IA Prof. Ana.
+Permitir a personalização do fluxo de trabalho pelo agente/administrador.
+II. Layout Geral e Componentes Estruturais da Página
+
+Acessada diretamente pelo menu lateral principal (ex: "📥 Caixa de Entrada"), a página adotará uma estrutura comprovadamente eficaz de três painéis, com atualizações em tempo real como espinha dorsal.
+
+Estrutura Persistente de 3 Painéis:
+Painel Esquerdo: Lista de Conversas (InboxPanel) – O radar para triagem, navegação e gerenciamento de filas.
+Painel Central: Área da Conversa Ativa (ConversationView) – O palco principal para diálogo e resolução.
+Painel Direito: Painel de Contexto Dinâmico (ContextPanel) – A fonte de inteligência e ferramentas de apoio para o agente.
+III. Painel Esquerdo: Lista de Conversas (InboxPanel) - O Centro de Comando de Filas
+
+Este painel organiza e prioriza o fluxo de trabalho do agente.
+
+A. Cabeçalho do Painel:
+Título: "Caixa de Entrada".
+Seletor de Status do Agente: Um dropdown visualmente claro com ícone e texto:
+🟢 Online (Disponível para receber novas conversas automaticamente).
+🟡 Ausente (Não recebe novas conversas automaticamente, mas pode trabalhar nas existentes).
+🔴 Ocupado/Não Perturbe (Foco total, sem novas atribuições ou notificações invasivas).
+⚫ Offline (Sessão encerrada ou explicitamente offline).
+O sistema de atribuição de conversas respeitará este status.
+(Opcional) Botão + Nova Conversa: Permite ao agente iniciar uma conversa proativa (ex: enviar um SMS ou Email para um contato existente, ou iniciar um chat WhatsApp com um número, sujeito às políticas de opt-in e permissões do agente).
+Indicadores de Volume de Trabalho:
+Minhas Ativas: [Nº]
+Fila da Equipe [Nome da Equipe]: [Nº] (se o agente pertence a equipes com filas compartilhadas).
+Não Atribuídas: [Nº]
+B. Ferramentas de Navegação e Filtragem Avançada:
+Abas de Filtros Rápidos (com contadores):
+Todas: Todas as conversas visíveis para o agente.
+Minhas: Conversas atribuídas ao agente logado.
+Não Atribuídas: Conversas em filas de equipes das quais o agente faz parte, aguardando seleção ou atribuição.
+@Menções: Conversas onde o agente foi mencionado em notas internas.
+Não Lidas: Conversas com mensagens não lidas pelo agente.
+SLA em Risco: Conversas cujo SLA de resposta ou resolução está próximo ou já expirou.
+Favoritas ⭐: Conversas marcadas como favoritas pelo agente.
+Campo de Busca Universal: "Buscar por nome, telefone, email, ID da conversa, conteúdo..." com sugestões dinâmicas e histórico de buscas recentes.
+Botão Filtros Avançados 📊 (abre um painel lateral deslizante ou um modal elegante):
+Canal de Origem: Multi-seleção com ícones claros (WhatsApp API Oficial, WhatsApp Z-API, SMS, Email, Instagram DM, Facebook Messenger, Telefonia, Chat Interno – se as conversas internas puderem ser escaladas para a caixa de entrada).
+Status da Conversa: Multi-seleção ("Nova", "Aberta", "Pendente Cliente", "Pendente Agente", "Em Atendimento pela IA", "Resolvida", "Fechada", "Spam").
+Agente Atribuído: Multi-seleção de agentes (para supervisores).
+Equipe Atribuída: Multi-seleção de equipes.
+Tags da Conversa: Multi-seleção de tags com suas cores.
+Prioridade da Conversa: Multi-seleção (Baixa, Normal, Alta, Urgente).
+Intervalo de Datas: (Última Mensagem, Data de Criação) com presets ("Hoje", "Ontem", "Últimos 7 dias") e seletor de período customizado.
+(Opcional) Sentimento da Conversa (IA): (Positivo, Neutro, Negativo).
+(Opcional) Contém Anexo?: Sim/Não.
+Ações no Painel de Filtros: Aplicar Filtros, Limpar Filtros, Salvar Filtro como Visualização Personalizada (ex: "Meus Casos Urgentes de WhatsApp").
+Opções de Ordenação da Lista: Dropdown (Padrão: "Mais Recente", opções: "Mais Antiga", "Prioridade", "Maior Tempo de Espera", "SLA mais próximo").
+C. Lista de Itens de Conversa (ConversationList com ConversationItem):
+Design Moderno do ConversationItem (Card de Conversa):
+Layout Responsivo: Adapta a quantidade de informação exibida conforme a largura do painel.
+Linha 1:
+Avatar/Iniciais do Contato/Aluno (com indicador de status online do contato, se o canal fornecer).
+Nome do Contato/Aluno (texto em negrito, clicável para carregar no painel direito sem selecionar a conversa).
+Ícone do Canal de Origem (pequeno e claro).
+Linha 2:
+Trecho da Última Mensagem (com um ícone indicando se é do cliente ← ou do agente/sistema →). O texto pode ser sutilmente mais escuro se não lido.
+Linha 3 (ou lado direito do card):
+Timestamp da Última Mensagem (relativo: "Agora", "2m", "1h"; ou absoluto: "14:30").
+Contador de Mensagens Não Lidas (um badge circular vermelho com o número, se houver).
+Indicadores Adicionais no Card (visíveis através de ícones ou pequenos badges):
+Agente/Equipe Atribuída (mini avatar do agente ou iniciais da equipe).
+Tags Principais (1-2 tags mais relevantes com suas cores).
+Indicador de SLA em Risco (ex: ícone de relógio laranja/vermelho).
+Indicador de Prioridade (ex: ❗ ou cor).
+Indicador de Thread Ativa (se houver respostas não lidas em threads da conversa).
+Destaque Visual: O item de conversa atualmente selecionado (ativo no Painel Central) deve ter um fundo ou borda claramente destacado. Itens não lidos podem ter um fundo sutilmente diferente.
+Ações Rápidas no ConversationItem (ao passar o mouse ou via menu de contexto ...):
+Resolver Rápido (se a conversa já foi respondida).
+Atribuir a mim.
+Marcar como Lida/Não Lida.
+Adicionar Tag Rápida... (abre um pequeno seletor de tags).
+Ver Detalhes do Contato (carrega o perfil no Painel Direito sem mudar a conversa ativa no Painel Central).
+Silenciar Notificações desta Conversa.
+Scroll Infinito Otimizado (Virtualização): Para carregar e exibir milhares de conversas sem degradação de performance.
+IV. Painel Central: Área da Conversa Ativa (ConversationView) - O Espaço de Diálogo e Resolução
+
+Este é o foco principal do agente quando uma conversa está selecionada.
+
+A. Cabeçalho da Conversa Ativa (Informativo e Acionável):
+Avatar e Nome do Contato/Aluno (clicável, ancora para o perfil completo no Painel Direito).
+Identificador Principal do Contato (Telefone, Email, @username, etc.) com um botão "Copiar".
+Ícone e Nome Personalizado do Canal da conversa atual.
+Status Atual da Conversa (ex: "Aberta - Aguardando Agente", "Pendente Cliente").
+Tags da Conversa (exibidas como badges editáveis – clicar abre o seletor de tags).
+Barra de Ferramentas da Conversa (Botões e Menus):
+✅ Resolver Conversa / 🔄 Reabrir Conversa.
+👤 Atribuir: Dropdown para buscar e selecionar Agente ou Equipe.
+🏷️ Adicionar/Editar Tags da Conversa.
+📅 Agendar Follow-up (integra com Tarefas do CRM, pré-preenchendo o contexto).
+🤖 Ações da IA Prof. Ana: Dropdown com opções como "Resumir esta Conversa", "Sugerir Resposta", "Analisar Sentimento", "Traduzir Última Mensagem do Cliente", "Transferir para IA".
+Menu Mais Ações (...):
+👁️ Marcar como Não Lida/Lida.
+🚫 Bloquear Contato.
+🗑️ Marcar como Spam.
+🔗 Mesclar esta Conversa com....
+📄 Exportar Transcrição da Conversa.
+⭐ Adicionar/Remover dos Favoritos.
+(Para Chamadas de Voz Ativas - sobrepõe ou integra-se ao cabeçalho):
+Timer da chamada.
+Controles: Mudo, Colocar em Espera, Teclado DTMF, Transferir Chamada (para outro agente/fila/número externo), Adicionar Participante (conferência), 🔴 Encerrar Chamada.
+B. Histórico de Mensagens (MessageList e MessageBubble) - A Narrativa da Interação:
+Visualização Cronológica Clara: Com linhas divisórias para dias diferentes ou para "Novas Mensagens".
+Agrupamento Inteligente: Mensagens consecutivas do mesmo remetente em um curto período são agrupadas visualmente para reduzir ruído.
+Componente MessageBubble Altamente Adaptável:
+Avatar do Remetente (agente, cliente, IA, sistema) e Nome do Remetente.
+Timestamp preciso (com opção de ver data completa ao passar o mouse).
+Renderização de Conteúdo Rica e Específica do Canal:
+Texto: Suporte a links clicáveis (com preview unfurled), formatação (Markdown para chat, HTML para email), emojis.
+Mídia: Previews otimizados para imagens e vídeos (com lightbox para tela cheia e download), players de áudio dedicados (com waveform, controles de velocidade, indicação de PTT para WhatsApp), ícones e links para download de documentos (PDF, DOCX, XLS, etc.) com nome e tamanho.
+Mensagens Interativas (WhatsApp, Messenger): Botões de resposta rápida e listas são exibidos como o cliente os veria ou mostrando claramente a seleção feita pelo cliente.
+Emails Completos: Renderização segura do HTML do email, exibição de De:, Para:, Cc:, Assunto:, Data:, e lista de Anexos clicáveis. Opção para "Ver Email Original" ou "Responder/Encaminhar Email" (que popula o composer).
+Registros de SMS: Texto simples e claro.
+Registros de Chamadas de Voz: Ícone de chamada, informações (De, Para, Duração, Agente), link para ▶️ Ouvir Gravação (se disponível), e ✍️ Transcrição da Chamada (se gerada pela IA Prof. Ana).
+Notas Internas: Destaque visual distinto (ex: fundo amarelo, ícone de cadeado), com nome do agente autor e @menções a colegas.
+Status de Entrega/Leitura (por mensagem enviada pelo agente): Ícones universais (ex: ✓ Enviado, ✓✓ Entregue ao Destinatário, ✓✓ Azul (Lido) para WhatsApp; "Enviado", "Aberto", "Clicado" para Email). Tooltip com detalhes do status.
+Reações a Mensagens: Exibição dos emojis de reação e quem reagiu.
+Indicador de Thread: Se uma mensagem tem respostas em thread, um link "Ver Respostas na Thread (X)" abre a thread no Painel Direito.
+Ações Contextuais na Mensagem (visíveis ao passar o mouse ou via menu ...):
+💬 Responder em Thread.
+👍 Adicionar Reação.
+📋 Copiar Texto/Link.
+↪️ Encaminhar.
+⭐ Salvar.
+🗣️ Traduzir (via IA Prof. Ana).
+✏️ Editar / 🗑️ Excluir (para mensagens do agente, com restrições).
+C. Área de Composição de Mensagem (InputArea) - O Arsenal Multicanal do Agente:
+Editor de Texto Principal (Adaptável e Inteligente):
+Email: Editor WYSIWYG completo, com barra de ferramentas de formatação, inserção de imagens, tabelas, HTML. Campos Para:, Cc:, Cco:, Assunto:.
+Canais de Chat (WhatsApp, Messenger, Instagram, SMS, Chat Interno): Textarea que se expande, com suporte a Markdown intuitivo, picker de emojis, e @menções (para notas internas ou para mencionar em canais de grupo, se o canal suportar).
+SMS: Contador de caracteres em tempo real e indicador de número de SMS.
+(CRUCIAL) Seletor de Identidade/Canal de Resposta: Se o tenant tiver múltiplos números de WhatsApp, emails de departamento, ou se o contato tiver múltiplos canais, um dropdown claro "Responder por/como: [Canal Selecionado]" permite ao agente escolher a origem da resposta. O sistema sugere o canal da mensagem mais recente do cliente.
+Barra de Ferramentas Avançada do Composer (Ícones Funcionais):
+📎 Anexar Arquivo: Abre seletor de arquivos. Tipos e tamanhos permitidos se adaptam dinamicamente ao canal de resposta selecionado. Pré-visualização de anexos antes do envio.
+🎙️ Gravar Mensagem de Voz: (Para canais de chat) Ativa o microfone, com interface de gravação (timer, waveform), reprodução, descarte e envio. Após o envio, a IA Prof. Ana pode ser acionada para transcrever automaticamente.
+📝 Usar Resposta Rápida / Modelo de Mensagem:
+Abre um modal ou painel com busca e filtro por tags/canal para encontrar:
+Respostas Rápidas (Canned Responses): Textos curtos para perguntas frequentes.
+Modelos de Mensagem Completos: Para emails ou mensagens mais elaboradas.
+Para WhatsApp API Oficial: Seletor dedicado para Templates HSM aprovados, com interface clara para preencher as variáveis dinâmicas ({{1}}, {{2}}) usando dados do contato/negócio ({{contact.name}}, {{order.id}}). Preview do template preenchido.
+Variáveis de personalização ({{...}}) são resolvidas antes do envio.
+✨ Assistência da IA Prof. Ana no Composer:
+Botão Revisar com Prof. Ana: Envia o texto para a IA para sugestões de correção (ortografia, gramática), clareza, concisão e ajuste de tom (com opções como "Tornar mais formal/empático/direto"). As sugestões podem ser aplicadas com um clique.
+Botão Sugestões de Resposta da Prof. Ana: A IA analisa o contexto da conversa e sugere 1-3 respostas completas ou parciais, que o agente pode usar ou adaptar.
+(Para Canais de Chat que Suportam) ➕ Criar Mensagem Interativa:
+Abre um construtor visual simples para:
+Botões de Resposta Rápida (WhatsApp, Messenger).
+Listas de Opções Selecionáveis (WhatsApp, Messenger).
+Carrosséis de Itens (Messenger).
+O construtor deve ser adaptado às limitações e formatos de cada API (Oficial vs. Z-API).
+(Opcional) 📅 Agendar Envio da Resposta: Permite ao agente redigir a resposta e programar seu envio para uma data/hora futura.
+Botão de Envio Principal: Com ícone e texto dinâmico (ex: Enviar Email, Enviar Mensagem via WhatsApp, Enviar SMS).
+V. Painel Direito: Contexto e Ferramentas (ContextPanel) - A Inteligência de Apoio ao Agente
+
+Este painel é dinâmico e fornece informações e ações contextuais sem que o agente precise sair da conversa.
+
+Abas ou Seções Retráteis:
+1. Perfil do Contato/Aluno:
+Informações chave (nome, foto, email, telefone, empresa, cargo), tags, status no CRM, campos personalizados mais importantes.
+Link direto para o perfil completo no módulo CRM/Contatos.
+Ações rápidas: Editar Contato, Adicionar Nota ao Contato.
+2. Histórico Completo de Interações:
+Uma timeline rolável e filtrável de TODAS as interações anteriores com este contato, em todos os canais (conversas, emails, negócios, tickets, compras, aulas). Cada item é um resumo com link para o detalhe completo.
+3. Detalhes do CRM (Negócios/Empresa):
+Se o contato está vinculado a Negócios/Oportunidades: lista resumida dos negócios (Nome, Valor, Etapa), com links.
+Se B2B, informações chave da Empresa associada (Nome, Setor, Porte), com link.
+Botões: + Novo Negócio para este Contato/Empresa, + Nova Tarefa no CRM.
+4. Assistência Inteligente da IA Prof. Ana:
+Base de Conhecimento Contextual: Com base no conteúdo da conversa atual, a Prof. Ana sugere automaticamente os 2-3 artigos da base de conhecimento, FAQs ou documentos mais relevantes. O agente pode clicar para ver o conteúdo ou copiar trechos para a resposta.
+Próximas Ações Recomendadas: A IA analisa o estágio da conversa e o perfil do cliente para sugerir os próximos passos (ex: "Sugerir agendamento de demonstração", "Enviar o catálogo do Produto X", "Verificar se o problema de pagamento foi resolvido").
+Resumir Conversa Atual (Botão): A IA gera um resumo conciso da interação em andamento.
+Analisar Sentimento do Cliente: Indicador visual (😄, 😐, 😔) do sentimento predominante nas últimas mensagens, com uma breve justificativa da IA.
+5. Notas Internas (da Conversa e do Contato):
+Espaço para visualização e adição de notas que são visíveis apenas para a equipe interna. Suporte a @menções para notificar colegas.
+6. (Opcional) Aplicativos e Integrações:
+Widgets contextuais de integrações (Asaas: ver/criar cobranças; E-commerce: ver histórico de pedidos; Sistema Acadêmico: ver notas/frequência do aluno).
+VI. Funcionalidades Globais e Diferenciais para uma Experiência Superior
+
+Notificações em Tempo Real Ultra-Responsivas: Novas mensagens e atualizações devem refletir instantaneamente na UI, com alertas sonoros e visuais sutis e configuráveis pelo usuário.
+Colaboração Interna Fluida:
+@Menções em notas internas que notificam colegas no Chat Interno com um link direto para a conversa/nota.
+Opção "Discutir em privado sobre esta conversa" que cria um chat interno temporário ou uma thread vinculada.
+Para supervisores: Modo "Observar Conversa" (silencioso) e Modo "Sussurrar para Agente" (mensagens visíveis apenas para o agente, dentro da interface da conversa).
+Gerenciamento Visual de SLA: Timers ou barras de progresso coloridas em cada item da lista de conversas e no cabeçalho da conversa ativa, indicando o tempo restante para SLAs de resposta/resolução.
+Unificação Inteligente de Contatos e Conversas: Se um mesmo indivíduo contata por múltiplos canais, o sistema deve tentar identificar e unificar o perfil do contato. Oferecer ferramentas para agentes mesclarem contatos ou conversas duplicadas.
+Atalhos de Teclado Abrangentes: Para todas as ações comuns (responder, resolver, atribuir, próxima/anterior conversa, usar resposta rápida, etc.) para maximizar a produtividade.
+Personalização da Interface pelo Agente (Limitada):
+Escolher densidade da lista de conversas.
+Ordenar/ocultar algumas colunas no Painel de Lista (se aplicável).
+Configurar quais tipos de notificações pop-up/sonoras deseja receber.
+Modo Foco (Zen Mode): Um botão que minimiza os painéis laterais, deixando apenas a área da conversa ativa e o composer em tela cheia, para máxima concentração durante interações complexas.
+Acessibilidade (a11y): Designado com atenção a navegação por teclado, contraste de cores, e compatibilidade com leitores de tela.
+Ao construir a Página da Caixa de Entrada Unificada com esta profundidade de detalhamento, focando na experiência do agente, na integração inteligente da IA Prof. Ana, e na fluidez da comunicação omnicanal, você estará criando não apenas uma ferramenta, mas um ambiente de trabalho que impulsiona a excelência no atendimento e engajamento.
+
+
+Fontes
+
+
+
+
