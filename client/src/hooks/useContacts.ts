@@ -24,14 +24,33 @@ export function useContacts() {
     queryKey: ['/api/contacts'],
     select: (data: any[]) => {
       // Transformar dados do backend para o formato esperado pelo frontend
-      return data.map((contact) => ({
-        ...contact,
-        // Garantir que tags seja sempre um array
-        tags: contact.tags || [],
-        // Converter strings de data para objetos Date
-        lastActivity: contact.lastActivity ? new Date(contact.lastActivity) : new Date(),
-        createdAt: contact.createdAt ? new Date(contact.createdAt) : new Date(),
-      }));
+      return data.map((contact) => {
+        // Determinar se é um contato do WhatsApp (baseado no metadata)
+        const isWhatsAppContact = contact.metadata?.source === 'zapi-sync';
+        
+        // Criar tags personalizadas
+        let contactTags = [...(contact.tags || [])];
+        
+        // Adicionar tag WhatsApp para contatos importados da Z-API
+        if (isWhatsAppContact) {
+          contactTags.push('WhatsApp');
+        }
+        
+        return {
+          ...contact,
+          // Atualizar tags com as novas informações
+          tags: contactTags,
+          
+          // Para contatos do WhatsApp, configurar valores mais apropriados
+          type: isWhatsAppContact ? 'WhatsApp' : (contact.type || 'Contato'),
+          
+          // Tentar usar dados de lastSync para contatos do WhatsApp como última atividade
+          lastActivity: contact.lastActivity ? new Date(contact.lastActivity) : 
+                        (contact.metadata?.lastSync ? new Date(contact.metadata.lastSync) : new Date()),
+          
+          createdAt: contact.createdAt ? new Date(contact.createdAt) : new Date(),
+        };
+      });
     }
   });
 }
@@ -41,12 +60,32 @@ export function useContact(id: number) {
   return useQuery({
     queryKey: ['/api/contacts', id.toString()],
     enabled: !!id,
-    select: (data: any) => ({
-      ...data,
-      tags: data.tags || [],
-      lastActivity: data.lastActivity ? new Date(data.lastActivity) : new Date(),
-      createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-    })
+    select: (data: any) => {
+      // Verificar se é um contato importado do WhatsApp
+      const isWhatsAppContact = data.metadata?.source === 'zapi-sync';
+      
+      // Criar tags personalizadas
+      let contactTags = [...(data.tags || [])];
+      
+      // Adicionar tag WhatsApp para contatos importados da Z-API
+      if (isWhatsAppContact && !contactTags.includes('WhatsApp')) {
+        contactTags.push('WhatsApp');
+      }
+      
+      return {
+        ...data,
+        // Atualizar tags
+        tags: contactTags,
+        
+        // Para contatos do WhatsApp, configurar valores mais apropriados
+        type: isWhatsAppContact ? 'WhatsApp' : (data.type || 'Contato'),
+        
+        lastActivity: data.lastActivity ? new Date(data.lastActivity) : 
+                     (data.metadata?.lastSync ? new Date(data.metadata.lastSync) : new Date()),
+        
+        createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+      };
+    }
   });
 }
 
