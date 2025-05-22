@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import { Search, Plus, Filter, X, ChevronDown, ChevronLeft, ChevronRight, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -24,6 +24,13 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import ContactDetail from "@/modules/Contacts/components/ContactDetail";
 import { ContactForm } from "@/modules/Contacts/components/ContactForm";
 import { ImportWhatsAppContacts } from "@/modules/Contacts/components/ImportWhatsAppContacts";
@@ -49,6 +56,10 @@ export default function ContactsPage() {
   const { toast } = useToast();
   const createContact = useCreateContact();
   const updateContact = useUpdateContact();
+  
+  // Configuração de paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10); // Número de contatos por página
   
   // Estado para o termo de busca
   const [searchQuery, setSearchQuery] = useState("");
@@ -130,6 +141,38 @@ export default function ContactsPage() {
       setSelectedContacts(selectedContacts.filter(contactId => contactId !== id));
     } else {
       setSelectedContacts([...selectedContacts, id]);
+    }
+  };
+  
+  // Lógica de paginação
+  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
+  
+  // Garantir que a página atual esteja dentro dos limites válidos
+  useEffect(() => {
+    if (filteredContacts.length > 0 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [filteredContacts.length, totalPages, currentPage]);
+  
+  // Obter contatos da página atual
+  const indexOfLastContact = currentPage * itemsPerPage;
+  const indexOfFirstContact = indexOfLastContact - itemsPerPage;
+  const currentContacts = filteredContacts.slice(indexOfFirstContact, indexOfLastContact);
+  
+  // Funções para mudança de página
+  const goToPage = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+  
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
     }
   };
 
@@ -383,52 +426,53 @@ export default function ContactsPage() {
       </div>
 
       {/* Lista de contatos */}
-      <div className="rounded-md border overflow-hidden">
-        {/* Cabeçalho da tabela */}
-        <table className="w-full">
-          <thead>
-            <tr className="bg-muted/50 border-b">
-              <th className="py-3 px-4 text-left w-[40px]">
-                <Checkbox 
-                  id="select-all"
-                  checked={filteredContacts.length > 0 && selectedContacts.length === filteredContacts.length}
-                  onCheckedChange={toggleSelectAll}
-                />
-              </th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Nome</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Email</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Telefone</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Empresa</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Tipo</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">
-                Última<br />Atividade
-              </th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Proprietário</th>
-              <th className="py-3 px-4 text-left font-medium text-sm">Tags</th>
-              <th className="py-3 px-4 text-center font-medium text-sm">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              <tr>
-                <td colSpan={10} className="py-12 text-center">
-                  <div className="flex flex-col items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-                    <p className="text-muted-foreground">Carregando contatos...</p>
-                  </div>
-                </td>
+      <div className="rounded-md border">
+        {/* Tabela com barra de rolagem */}
+        <div className="max-h-[600px] overflow-y-auto">
+          <table className="w-full">
+            <thead className="sticky top-0 bg-background z-10">
+              <tr className="bg-muted/50 border-b">
+                <th className="py-3 px-4 text-left w-[40px]">
+                  <Checkbox 
+                    id="select-all"
+                    checked={filteredContacts.length > 0 && selectedContacts.length === filteredContacts.length}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Nome</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Email</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Telefone</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Empresa</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Tipo</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">
+                  Última<br />Atividade
+                </th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Proprietário</th>
+                <th className="py-3 px-4 text-left font-medium text-sm">Tags</th>
+                <th className="py-3 px-4 text-center font-medium text-sm">Ações</th>
               </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={10} className="py-12 text-center">
-                  <div className="flex flex-col items-center justify-center">
-                    <AlertCircle className="h-8 w-8 text-destructive mb-2" />
-                    <p className="text-muted-foreground">Erro ao carregar contatos. Tente novamente mais tarde.</p>
-                  </div>
-                </td>
-              </tr>
-            ) : filteredContacts.length > 0 ? (
-              filteredContacts.map(contact => (
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                      <p className="text-muted-foreground">Carregando contatos...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={10} className="py-12 text-center">
+                    <div className="flex flex-col items-center justify-center">
+                      <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+                      <p className="text-muted-foreground">Erro ao carregar contatos. Tente novamente mais tarde.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredContacts.length > 0 ? (
+                currentContacts.map(contact => (
                 <tr 
                   key={contact.id} 
                   className="border-b hover:bg-accent/10 cursor-pointer"
@@ -524,6 +568,83 @@ export default function ContactsPage() {
             )}
           </tbody>
         </table>
+        </div>
+        
+        {/* Paginação */}
+        <div className="flex items-center justify-between border-t p-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            Mostrando {currentContacts.length > 0 ? indexOfFirstContact + 1 : 0}-
+            {Math.min(indexOfLastContact, filteredContacts.length)} de {filteredContacts.length} contatos
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Página anterior</span>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              // Lógica para mostrar os números de página corretos quando há muitas páginas
+              let pageNumber;
+              if (totalPages <= 5) {
+                pageNumber = i + 1;
+              } else {
+                if (currentPage <= 3) {
+                  pageNumber = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNumber = totalPages - 4 + i;
+                } else {
+                  pageNumber = currentPage - 2 + i;
+                }
+              }
+              
+              return (
+                <Button
+                  key={pageNumber}
+                  variant={currentPage === pageNumber ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => goToPage(pageNumber)}
+                  className="h-8 w-8 p-0"
+                >
+                  <span className="sr-only">Ir para página {pageNumber}</span>
+                  {pageNumber}
+                </Button>
+              );
+            })}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Próxima página</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            
+            <Select value={itemsPerPage.toString()} onValueChange={(value: string) => {
+              setItemsPerPage(Number(value));
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="h-8 w-24">
+                <SelectValue placeholder="10 por página" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 por página</SelectItem>
+                <SelectItem value="25">25 por página</SelectItem>
+                <SelectItem value="50">50 por página</SelectItem>
+                <SelectItem value="100">100 por página</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
       {/* Dialog para detalhes do contato */}
@@ -531,7 +652,7 @@ export default function ContactsPage() {
         <DialogContent className="sm:max-w-[500px] p-0 h-[80vh] max-h-[700px] flex flex-col">
           {selectedContact && (
             <ContactDetail 
-              contact={selectedContact} 
+              contact={selectedContact as ContactType} 
               onEdit={() => {
                 handleCloseContactDetail();
                 openEditContact(selectedContact);
