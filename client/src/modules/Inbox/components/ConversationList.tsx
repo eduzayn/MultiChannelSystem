@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ConversationItem, ConversationItemProps } from "./ConversationItem";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
@@ -64,7 +64,9 @@ interface ConversationListProps {
 
 export const ConversationList = ({ onSelectConversation }: ConversationListProps) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-
+  const [storedData, setStoredData] = useState<ConversationItemProps[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   // Buscar conversas do servidor
   const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['/api/conversations'],
@@ -98,10 +100,42 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
     staleTime: 2000 // Considerar os dados obsoletos após 2 segundos
   });
   
+  // Salvar a posição de scroll antes de atualizar
+  const saveScrollPosition = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.dataset.scrollTop = scrollContainerRef.current.scrollTop.toString();
+    }
+  };
+
+  // Restaurar a posição de scroll após atualizar
+  const restoreScrollPosition = () => {
+    if (scrollContainerRef.current && scrollContainerRef.current.dataset.scrollTop) {
+      scrollContainerRef.current.scrollTop = parseInt(scrollContainerRef.current.dataset.scrollTop);
+    }
+  };
+  
+  // Atualizando dados preservando a posição de scroll
+  useEffect(() => {
+    if (conversations) {
+      saveScrollPosition();
+      setStoredData(conversations);
+      // Aguarde um tick para garantir que o DOM foi atualizado
+      setTimeout(() => {
+        restoreScrollPosition();
+      }, 0);
+    }
+  }, [conversations]);
+  
   // Polling periódico adicional para garantir atualizações frequentes
   useEffect(() => {
     const intervalId = setInterval(() => {
-      refetch();
+      saveScrollPosition();
+      refetch().then(() => {
+        // Aguarde um tick para garantir que o DOM foi atualizado
+        setTimeout(() => {
+          restoreScrollPosition();
+        }, 0);
+      });
     }, 5000);
     
     return () => clearInterval(intervalId);
@@ -113,13 +147,16 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
   };
 
   // Determinar quais conversas exibir
-  const conversationsToDisplay = conversations || mockConversations;
+  const conversationsToDisplay = storedData.length > 0 ? storedData : (conversations || mockConversations);
 
   return (
-    <div className="h-full flex flex-col overflow-y-auto">
+    <div className="h-full flex flex-col">
       {/* Lista de conversas */}
-      <div className="flex-1 flex flex-col">
-        {isLoading && (
+      <div 
+        className="flex-1 flex flex-col overflow-y-auto" 
+        ref={scrollContainerRef}
+      >
+        {isLoading && !storedData.length && (
           <div className="p-4 text-center">
             <div className="animate-pulse space-y-3">
               {[1, 2, 3, 4].map((i) => (
@@ -151,7 +188,7 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
             />
           ))
         ) : (
-          !isLoading && (
+          !isLoading && !storedData.length && (
             <div className="p-4 text-center text-muted-foreground">
               Nenhuma conversa encontrada
             </div>
