@@ -3,6 +3,41 @@ import { ConversationItem, ConversationItemProps } from "./ConversationItem";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 
+// Função para formatar a última mensagem, tratando objetos JSON
+const formatLastMessage = (lastMessage: string): string => {
+  if (!lastMessage) return "";
+  
+  // Se a mensagem parece ser um objeto JSON
+  if (lastMessage.startsWith('{') && lastMessage.endsWith('}')) {
+    try {
+      const messageObj = JSON.parse(lastMessage);
+      
+      // Se o objeto tiver um campo de texto ou mensagem, usar esse valor
+      if (messageObj.text) return messageObj.text;
+      if (messageObj.message) return messageObj.message;
+      if (messageObj.body) return messageObj.body;
+      if (messageObj.content) return messageObj.content;
+      
+      // Se for um tipo especial de mensagem
+      if (messageObj.type === 'image') return '🖼️ Imagem';
+      if (messageObj.type === 'video') return '🎥 Vídeo';
+      if (messageObj.type === 'audio') return '🔊 Áudio';
+      if (messageObj.type === 'document') return '📄 Documento';
+      if (messageObj.type === 'location') return '📍 Localização';
+      if (messageObj.type === 'contact') return '👤 Contato';
+      
+      // Fallback para outros objetos JSON
+      return "Nova mensagem";
+    } catch (e) {
+      // Se falhar o parse, retornar a mensagem original com limite de caracteres
+      return lastMessage.length > 30 ? lastMessage.substring(0, 30) + "..." : lastMessage;
+    }
+  }
+  
+  // Se for uma string normal, retornar com limite de caracteres
+  return lastMessage.length > 30 ? lastMessage.substring(0, 30) + "..." : lastMessage;
+};
+
 // Mock data para backup/fallback
 const mockConversations: ConversationItemProps[] = [
   {
@@ -43,7 +78,7 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
         return response.data.map((conversation: any) => ({
           id: conversation.id.toString(),
           name: conversation.name,
-          lastMessage: conversation.lastMessage || "Nova conversa",
+          lastMessage: formatLastMessage(conversation.lastMessage) || "Nova conversa",
           timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : new Date(),
           unreadCount: conversation.unreadCount || 0,
           channel: conversation.channel,
