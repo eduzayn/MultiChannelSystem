@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ConversationList } from "./ConversationList";
 import { ConversationItemProps } from "./ConversationItem";
-import { MessagePanel } from "@/modules/Messages/components/MessagePanel";
 import { ContactPanel } from "@/modules/Contacts/components/ContactPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,10 +51,6 @@ export const InboxPanel = () => {
     }
   };
 
-  const toggleContactPanel = () => {
-    setContactPanelOpen(!contactPanelOpen);
-  };
-
   const handleFilterChange = (filter: FilterStatus) => {
     setActiveFilter(filter);
     // Aqui implementaríamos a lógica para filtrar as conversas com base no filtro selecionado
@@ -64,6 +59,8 @@ export const InboxPanel = () => {
   const toggleAdvancedFilters = () => {
     setShowAdvancedFilters(!showAdvancedFilters);
   };
+  
+  // Removemos a função toggleContactPanel pois não será mais usada
 
   // Contadores para o cabeçalho (simulados)
   const totalUnassigned = 5;
@@ -256,29 +253,25 @@ export const InboxPanel = () => {
 
       {/* Painel de mensagens (Centro) */}
       <div className="flex-1 h-full overflow-hidden flex flex-col">
-        {selectedConversation ? (
-          <MessagePanel 
-            conversation={selectedConversation} 
-            onToggleContactPanel={toggleContactPanel} 
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center bg-muted/30">
-            <div className="text-center p-4">
-              <h2 className="text-2xl font-semibold mb-2">Bem-vindo à Caixa de Entrada</h2>
-              <p className="text-muted-foreground">
-                Selecione uma conversa para começar a interagir.
-              </p>
-            </div>
+        <div className="h-full flex items-center justify-center bg-muted/30">
+          <div className="text-center p-4">
+            <h2 className="text-2xl font-semibold mb-2">Painel de Mensagens</h2>
+            <p className="text-muted-foreground">
+              Este painel será reconstruído conforme novas orientações.
+            </p>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Painel de contato (Direita) - Condicional */}
-      {selectedConversation && contactPanelOpen && (
-        <div className="w-72 h-full border-l hidden lg:block overflow-auto">
-          <ContactPanel conversation={selectedConversation} />
+      {/* Painel de contato (Direita) - Removido temporariamente */}
+      <div className="w-72 h-full border-l hidden lg:block overflow-auto">
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-2">Painel de Detalhes</h3>
+          <p className="text-muted-foreground text-sm">
+            Este painel será reconstruído conforme novas orientações.
+          </p>
         </div>
-      )}
+      </div>
     </div>
   );
 };
