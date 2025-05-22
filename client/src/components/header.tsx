@@ -65,10 +65,15 @@ export function Header() {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="md:hidden mr-4 text-gray-600 hover:text-gray-900"
-              onClick={toggleMobileSidebar}
+              className="md:hidden mr-4 text-gray-600 hover:text-gray-900 active:bg-gray-200"
+              onClick={() => toggleMobileSidebar()}
+              onTouchStart={(e) => {
+                e.preventDefault(); // Previne comportamento padrão do toque
+                toggleMobileSidebar();
+              }}
             >
               <Menu className="h-6 w-6" />
+              <span className="sr-only">Menu</span>
             </Button>
             
             <div className="hidden md:flex items-center">
