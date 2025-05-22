@@ -52,9 +52,9 @@ export const MessagePanel = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background">
+    <div className="flex flex-col h-full w-full bg-background relative overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-border flex items-center">
+      <div className="p-4 border-b border-border flex items-center shrink-0">
         <div className="flex items-center ml-9">
           <div className="flex items-center justify-center bg-primary/10 rounded-full w-9 h-9 mr-3">
             <Brain className="h-5 w-5 text-primary" />

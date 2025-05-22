@@ -364,9 +364,9 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
   const emojis = ["😊", "👍", "❤️", "😂", "🔥", "✅", "🎉", "🙏", "👌", "🤔"];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden relative">
       {/* Cabeçalho */}
-      <header className="flex items-center justify-between border-b px-4 py-3 bg-background">
+      <header className="flex items-center justify-between border-b px-4 py-3 bg-background shrink-0">
         <div className="flex items-center overflow-hidden">
           <div className="mr-2">
             {dmId && directMessages[dmId]?.users.length === 1 && (
@@ -598,8 +598,8 @@ export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelP
         </div>
       </ScrollArea>
       
-      {/* Campo de entrada de mensagem */}
-      <div className="border-t">
+      {/* Campo de entrada de mensagem - fixado na parte inferior */}
+      <div className="border-t mt-auto shrink-0">
         <div className="mx-2 border border-gray-200 rounded-md my-2">
           <div className="grid grid-cols-1 divide-y">
             {/* Sugestões */}
