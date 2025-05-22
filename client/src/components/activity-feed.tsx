@@ -43,22 +43,22 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-0">
-        <h2 className="text-lg font-medium">Atividades Recentes</h2>
+      <CardHeader className="pb-0 p-3 sm:p-4 md:p-6">
+        <h2 className="text-base sm:text-lg font-medium">Atividades Recentes</h2>
       </CardHeader>
-      <CardContent className="pt-6">
-        <div className="space-y-4">
+      <CardContent className="pt-3 sm:pt-4 md:pt-6 p-3 sm:p-4 md:p-6">
+        <div className="space-y-3 sm:space-y-4">
           {activities.map((activity) => {
             const { icon, bgClass } = getIconForType(activity.icon);
             
             return (
               <div key={activity.id} className="flex items-start">
-                <div className={`h-10 w-10 rounded-full ${bgClass} flex items-center justify-center mr-3 flex-shrink-0`}>
+                <div className={`h-8 w-8 sm:h-10 sm:w-10 rounded-full ${bgClass} flex items-center justify-center mr-2 sm:mr-3 flex-shrink-0`}>
                   {icon}
                 </div>
-                <div>
-                  <p className="text-sm font-medium">{activity.title}</p>
-                  <p className="text-xs text-gray-500">{activity.description}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium truncate">{activity.title}</p>
+                  <p className="text-xs text-gray-500 truncate">{activity.description}</p>
                   <p className="text-xs text-gray-400 mt-1">{getRelativeTime(activity.timestamp)}</p>
                 </div>
               </div>
@@ -66,8 +66,8 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
           })}
         </div>
       </CardContent>
-      <CardFooter>
-        <Button className="w-full" variant="outline">Ver todas as atividades</Button>
+      <CardFooter className="p-3 sm:p-4 md:p-6 pt-0 sm:pt-0 md:pt-0">
+        <Button className="w-full text-xs sm:text-sm" variant="outline">Ver todas as atividades</Button>
       </CardFooter>
     </Card>
   );

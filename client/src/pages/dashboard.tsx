@@ -166,42 +166,42 @@ export default function Dashboard() {
       </div>
       
       {/* Middle Content: Charts & Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Chart Section */}
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium">Atendimentos por Canal</h2>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 text-xs rounded-md bg-primary-500 text-white">Hoje</button>
-              <button className="px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Semana</button>
-              <button className="px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Mês</button>
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-3 sm:p-4 md:p-6">
+          <div className="flex flex-wrap items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-base sm:text-lg font-medium mb-2 sm:mb-0">Atendimentos por Canal</h2>
+            <div className="flex space-x-1 sm:space-x-2">
+              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-primary-500 text-white">Hoje</button>
+              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Semana</button>
+              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Mês</button>
             </div>
           </div>
           
           {/* Chart Placeholder */}
-          <div className="h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
-            <div className="text-center px-4">
-              <div className="text-4xl text-gray-300 mb-3">📊</div>
-              <p className="text-gray-500">Gráfico de distribuição de atendimentos por canal (WhatsApp, Email, Chat, etc.)</p>
+          <div className="h-48 sm:h-56 md:h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+            <div className="text-center px-2 sm:px-4">
+              <div className="text-3xl sm:text-4xl text-gray-300 mb-2 sm:mb-3">📊</div>
+              <p className="text-xs sm:text-sm text-gray-500">Gráfico de distribuição de atendimentos por canal</p>
             </div>
           </div>
           
           {/* Stats Below Chart */}
-          <div className="grid grid-cols-4 gap-4 mt-6">
-            <div className="text-center">
-              <div className="text-lg font-semibold text-success-500">42%</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
+            <div className="text-center p-2 bg-gray-50 rounded-md">
+              <div className="text-base sm:text-lg font-semibold text-success-500">42%</div>
               <div className="text-xs text-gray-500">WhatsApp</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-primary-500">28%</div>
-              <div className="text-xs text-gray-500">Chat no Site</div>
+            <div className="text-center p-2 bg-gray-50 rounded-md">
+              <div className="text-base sm:text-lg font-semibold text-primary-500">28%</div>
+              <div className="text-xs text-gray-500">Chat</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-secondary-500">18%</div>
+            <div className="text-center p-2 bg-gray-50 rounded-md">
+              <div className="text-base sm:text-lg font-semibold text-secondary-500">18%</div>
               <div className="text-xs text-gray-500">Email</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold text-warning-500">12%</div>
+            <div className="text-center p-2 bg-gray-50 rounded-md">
+              <div className="text-base sm:text-lg font-semibold text-warning-500">12%</div>
               <div className="text-xs text-gray-500">Instagram</div>
             </div>
           </div>
@@ -212,17 +212,21 @@ export default function Dashboard() {
       </div>
       
       {/* Bottom Section: Attendances & Reports */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Atendimentos em Andamento */}
-        <div className="lg:col-span-2">
+        <div className="md:col-span-2">
           <Attendances attendances={attendances} />
         </div>
         
         {/* Top Performers */}
-        <TopPerformers performers={performers} />
+        <div className="md:col-span-1">
+          <TopPerformers performers={performers} />
+        </div>
         
         {/* Quick Actions */}
-        <QuickActions actions={quickActions} />
+        <div className="md:col-span-1">
+          <QuickActions actions={quickActions} />
+        </div>
       </div>
     </div>
   );
