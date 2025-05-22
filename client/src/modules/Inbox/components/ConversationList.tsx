@@ -74,8 +74,8 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
       try {
         const response = await axios.get('/api/conversations');
         
-        // Logging para debug
-        console.log("Conversas recebidas do servidor:", response.data);
+        // Substituir log detalhado por um resumo da quantidade
+        console.log(`Recebendo ${response.data.length} conversas do servidor`);
         
         return response.data.map((conversation: any) => ({
           id: conversation.id.toString(),
@@ -95,9 +95,9 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
         return mockConversations;
       }
     },
-    refetchInterval: 3000, // Atualizar a cada 3 segundos para maior responsividade
+    refetchInterval: 5000, // Aumentado para 5 segundos para reduzir carga no servidor
     refetchOnWindowFocus: true, // Recarregar quando a janela ganhar foco
-    staleTime: 2000 // Considerar os dados obsoletos após 2 segundos
+    staleTime: 3000 // Aumentado para 3 segundos
   });
   
   // Salvar a posição de scroll antes de atualizar
@@ -126,17 +126,27 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
     }
   }, [conversations]);
   
-  // Polling periódico adicional para garantir atualizações frequentes
+  // Polling periódico para garantir atualizações com preservação da posição de rolagem
   useEffect(() => {
+    // Usamos um intervalo mais longo (7s) do que o refetchInterval (5s) 
+    // para evitar muitas requisições simultâneas
     const intervalId = setInterval(() => {
+      // Salvamos a posição de rolagem antes de atualizar
       saveScrollPosition();
+      
+      // Executamos o refetch e depois restauramos a posição
       refetch().then(() => {
-        // Aguarde um tick para garantir que o DOM foi atualizado
+        // Pequeno atraso para garantir que o DOM foi atualizado
+        setTimeout(() => {
+          restoreScrollPosition();
+        }, 0);
+      }).catch(error => {
+        // Em caso de erro, ainda tentamos restaurar a posição
         setTimeout(() => {
           restoreScrollPosition();
         }, 0);
       });
-    }, 5000);
+    }, 7000);
     
     return () => clearInterval(intervalId);
   }, [refetch]);

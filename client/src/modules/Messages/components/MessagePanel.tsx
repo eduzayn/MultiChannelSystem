@@ -224,18 +224,17 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
     staleTime: 0 // Sempre considerar os dados obsoletos para forçar refetch
   });
   
-  // Verificar se há novas mensagens a cada segundo
+  // Verificar se há novas mensagens periodicamente
   useEffect(() => {
     // Refetch imediato quando o componente montar ou a conversa mudar
     refetch();
     
     const intervalId = setInterval(() => {
-      console.log("Buscando novas mensagens para conversa:", conversation.id);
+      // Removed console.log to reduce console clutter
       refetch();
-    }, 1000); // Polling mais frequente para melhor resposta em tempo real
+    }, 3000); // Reduzido de 1s para 3s para diminuir carga no servidor
     
     return () => {
-      console.log("Limpando intervalo de polling para conversa:", conversation.id);
       clearInterval(intervalId);
     };
   }, [refetch, conversation.id]);
@@ -243,10 +242,17 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   // Atualizar mensagens quando os dados são buscados
   useEffect(() => {
     if (fetchedMessages) {
-      console.log("Atualizando messagesList com:", fetchedMessages);
-      setMessagesList(fetchedMessages.length > 0 ? fetchedMessages : [defaultWelcomeMessage]);
+      // Comparar se as mensagens realmente mudaram para evitar renders desnecessários
+      const currentMessagesIds = messagesList.map(msg => msg.id).join(',');
+      const newMessagesIds = fetchedMessages.map((msg: any) => msg.id).join(',');
+      
+      if (currentMessagesIds !== newMessagesIds || messagesList.length === 0) {
+        // Apenas log da quantidade de mensagens, não do conteúdo completo
+        console.log(`Atualizando ${fetchedMessages.length} mensagens para conversa ${conversation.id}`);
+        setMessagesList(fetchedMessages.length > 0 ? fetchedMessages : [defaultWelcomeMessage]);
+      }
     }
-  }, [fetchedMessages]);
+  }, [fetchedMessages, conversation.id, messagesList]);
 
   // Rolagem para o final da lista de mensagens quando novas mensagens são adicionadas
   useEffect(() => {
