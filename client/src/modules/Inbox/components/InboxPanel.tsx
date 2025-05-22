@@ -131,15 +131,15 @@ export const InboxPanel = () => {
   return (
     <div className="h-full w-full flex overflow-hidden">
       {/* Painel Esquerdo: Lista de Conversas (InboxPanel) */}
-      <div className="w-72 h-full border-r hidden md:flex md:flex-col">
+      <div className="w-60 h-full border-r hidden md:flex md:flex-col">
         {/* Cabeçalho do painel */}
         <div className="p-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold">Caixa de Entrada</h2>
+            <h2 className="text-base font-semibold">Caixa de Entrada</h2>
             <div className="flex items-center space-x-1">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-7 gap-1 text-xs">
+                  <Button variant="outline" size="sm" className="h-6 gap-1 text-xs">
                     {agentStatus === "online" ? (
                       <span className="h-2 w-2 rounded-full bg-green-500" />
                     ) : agentStatus === "busy" ? (
@@ -177,8 +177,8 @@ export const InboxPanel = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
               
-              <Button variant="ghost" size="icon" className="h-7 w-7" title="Nova Conversa">
-                <Plus className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className="h-6 w-6" title="Nova Conversa">
+                <Plus className="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
@@ -191,11 +191,7 @@ export const InboxPanel = () => {
             </Badge>
             <Badge variant="outline" className="gap-1 py-0 text-xs px-1.5">
               <Users className="h-3 w-3" />
-              <span>{totalUnassigned} não atribuídas</span>
-            </Badge>
-            <Badge variant="outline" className="gap-1 py-0 text-xs px-1.5">
-              <Clock className="h-3 w-3" />
-              <span>{totalSlaRisk} SLA em risco</span>
+              <span>{totalUnassigned} não atr.</span>
             </Badge>
           </div>
 
@@ -204,7 +200,7 @@ export const InboxPanel = () => {
             <div className="relative flex-1">
               <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input 
-                placeholder="Buscar nome, telefone, conteúdo..." 
+                placeholder="Buscar..." 
                 className="pl-7 h-7 text-sm" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -225,32 +221,29 @@ export const InboxPanel = () => {
           <Tabs 
             value={activeTab} 
             onValueChange={(value) => handleTabChange(value as FilterTab)}
-            className="mt-2"
+            className="mt-1"
           >
-            <TabsList className="w-full h-8 grid grid-cols-4 mb-2">
-              <TabsTrigger value="all" className="text-xs h-7 px-1">
-                Todas <span className="ml-1 text-muted-foreground">({totalActiveConversations})</span>
+            <TabsList className="w-full h-7 grid grid-cols-3 mb-1">
+              <TabsTrigger value="all" className="text-xs h-6 px-1">
+                Todas ({totalActiveConversations})
               </TabsTrigger>
-              <TabsTrigger value="mine" className="text-xs h-7 px-1">
-                Minhas <span className="ml-1 text-muted-foreground">({Math.floor(totalActiveConversations/2)})</span>
+              <TabsTrigger value="mine" className="text-xs h-6 px-1">
+                Minhas ({Math.floor(totalActiveConversations/2)})
               </TabsTrigger>
-              <TabsTrigger value="unassigned" className="text-xs h-7 px-1">
-                Não Atr. <span className="ml-1 text-muted-foreground">({totalUnassigned})</span>
-              </TabsTrigger>
-              <TabsTrigger value="mentioned" className="text-xs h-7 px-1">
-                @Menções <span className="ml-1 text-muted-foreground">({totalMentions})</span>
+              <TabsTrigger value="unassigned" className="text-xs h-6 px-1">
+                Não Atr. ({totalUnassigned})
               </TabsTrigger>
             </TabsList>
-            <TabsList className="w-full h-8 grid grid-cols-3 mb-1">
-              <TabsTrigger value="unread" className="text-xs h-7 px-1">
-                Não Lidas <span className="ml-1 text-muted-foreground">({totalUnread})</span>
+            <TabsList className="w-full h-7 grid grid-cols-3 mb-1">
+              <TabsTrigger value="mentioned" className="text-xs h-6 px-1">
+                @Menções ({totalMentions})
               </TabsTrigger>
-              <TabsTrigger value="sla-risk" className="text-xs h-7 px-1">
-                SLA Risco <span className="ml-1 text-muted-foreground">({totalSlaRisk})</span>
+              <TabsTrigger value="unread" className="text-xs h-6 px-1">
+                Não Lidas ({totalUnread})
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="text-xs h-7 px-1">
+              <TabsTrigger value="favorites" className="text-xs h-6 px-1">
                 <Star className="h-3 w-3 mr-1" />
-                Favoritas <span className="ml-1 text-muted-foreground">({totalFavorites})</span>
+                Favoritas
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -302,24 +295,6 @@ export const InboxPanel = () => {
                 </Select>
               </div>
               
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Prioridade</label>
-                <Select>
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Qualquer prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="all">Qualquer Prioridade</SelectItem>
-                      <SelectItem value="low">Baixa</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="high">Alta</SelectItem>
-                      <SelectItem value="urgent">Urgente</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-              
               <div className="flex justify-between pt-1">
                 <Button variant="outline" size="sm" className="text-xs h-7">
                   Limpar Filtros
@@ -335,7 +310,7 @@ export const InboxPanel = () => {
           <div className="flex items-center justify-between pt-2 pb-1 border-t mt-1">
             <span className="text-xs text-muted-foreground">Ordenar por:</span>
             <Select value={activeSortOrder} onValueChange={handleSortOrderChange}>
-              <SelectTrigger className="h-6 text-xs w-40">
+              <SelectTrigger className="h-6 text-xs w-32">
                 <SelectValue placeholder="Mais Recente" />
               </SelectTrigger>
               <SelectContent>
@@ -349,9 +324,9 @@ export const InboxPanel = () => {
           </div>
         </div>
 
-        {/* Lista de Conversas com scroll infinito */}
-        <div className="flex-1 overflow-hidden flex flex-col" ref={conversationListRef}>
-          <ConversationList onSelectConversation={handleSelectConversation} />
+        {/* Lista de Conversas com botão para carregar mais */}
+        <div className="flex-1 overflow-auto flex flex-col" ref={conversationListRef}>
+          <ConversationList onSelectConversation={handleSelectConversation} limit={20} />
         </div>
       </div>
 
@@ -405,23 +380,34 @@ export const InboxPanel = () => {
               </div>
             </div>
             
+            {/* Botão de carregar mensagens anteriores */}
+            <div className="p-2 text-center border-b bg-background sticky top-[44px] z-10">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs text-muted-foreground hover:text-primary"
+              >
+                Carregar mensagens anteriores
+              </Button>
+            </div>
+            
             {/* Espaço para o histórico de mensagens */}
             <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-muted/20">
-              <div className="text-center text-muted-foreground text-sm py-3">
+              <div className="text-center text-muted-foreground text-xs py-3">
                 <span className="px-3 py-1 rounded-full bg-muted">Início da conversa</span>
               </div>
               
-              {/* Mensagens do cliente */}
+              {/* Mensagens do cliente - limitadas a 50 por padrão */}
               <div className="flex flex-col space-y-3">
                 {/* Mensagem do Cliente 1 */}
-                <div className="flex items-start gap-2 max-w-[80%]">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                <div className="flex items-start gap-2 max-w-[70%]">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
                     <span className="text-xs font-medium text-primary">
                       {selectedConversation.name?.charAt(0) || "C"}
                     </span>
                   </div>
                   <div>
-                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-2.5">
                       <p className="text-sm">Olá, gostaria de saber mais sobre o curso de licenciatura em Letras Português.</p>
                     </div>
                     <div className="flex items-center mt-1 ml-1">
@@ -431,12 +417,12 @@ export const InboxPanel = () => {
                 </div>
                 
                 {/* Mensagem do Agente 1 */}
-                <div className="flex items-start gap-2 max-w-[80%] self-end flex-row-reverse">
-                  <div className="w-8 h-8 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center">
+                <div className="flex items-start gap-2 max-w-[70%] self-end flex-row-reverse">
+                  <div className="w-7 h-7 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center">
                     <span className="text-xs font-medium text-white">A</span>
                   </div>
                   <div>
-                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3">
+                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-2.5">
                       <p className="text-sm">Olá! Claro, temos duas modalidades de licenciatura em Letras Português: presencial e EAD. 
                       Qual delas você tem interesse?</p>
                     </div>
@@ -448,14 +434,14 @@ export const InboxPanel = () => {
                 </div>
                 
                 {/* Mensagem do Cliente 2 */}
-                <div className="flex items-start gap-2 max-w-[80%]">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                <div className="flex items-start gap-2 max-w-[70%]">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
                     <span className="text-xs font-medium text-primary">
                       {selectedConversation.name?.charAt(0) || "C"}
                     </span>
                   </div>
                   <div>
-                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-2.5">
                       <p className="text-sm">Gostaria de verificar as duas.</p>
                     </div>
                     <div className="flex items-center mt-1 ml-1">
@@ -470,14 +456,14 @@ export const InboxPanel = () => {
                 </div>
                 
                 {/* Mensagem do Cliente 3 */}
-                <div className="flex items-start gap-2 max-w-[80%]">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                <div className="flex items-start gap-2 max-w-[70%]">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
                     <span className="text-xs font-medium text-primary">
                       {selectedConversation.name?.charAt(0) || "C"}
                     </span>
                   </div>
                   <div>
-                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-2.5">
                       <p className="text-sm">Se eu quiser fazer a segunda graduação em Licenciatura em Letras Português, é possível, né?</p>
                     </div>
                     <div className="flex items-center mt-1 ml-1">
@@ -487,7 +473,7 @@ export const InboxPanel = () => {
                 </div>
                 
                 {/* Nota Interna */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 mx-8">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 mx-6">
                   <div className="flex items-center mb-1">
                     <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mr-1">
                       <span className="text-[10px] font-medium text-white">A</span>

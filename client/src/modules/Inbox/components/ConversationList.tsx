@@ -60,11 +60,13 @@ const mockConversations: ConversationItemProps[] = [
 
 interface ConversationListProps {
   onSelectConversation: (conversation: ConversationItemProps) => void;
+  limit?: number; // Número máximo de conversas a mostrar
 }
 
-export const ConversationList = ({ onSelectConversation }: ConversationListProps) => {
+export const ConversationList = ({ onSelectConversation, limit }: ConversationListProps) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<ConversationItemProps[]>([]);
+  const [showAllConversations, setShowAllConversations] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Buscar conversas do servidor
@@ -91,13 +93,13 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
         }));
       } catch (err) {
         console.error("Erro ao buscar conversas:", err);
-        // Em caso de erro, retornar mock data
+        // Em caso de erro, retornar mock data para feedback visual
         return mockConversations;
       }
     },
-    refetchInterval: 5000, // Aumentado para 5 segundos para reduzir carga no servidor
+    refetchInterval: 5000, // 5 segundos para reduzir carga no servidor
     refetchOnWindowFocus: true, // Recarregar quando a janela ganhar foco
-    staleTime: 3000 // Aumentado para 3 segundos
+    staleTime: 3000 // 3 segundos
   });
   
   // Salvar a posição de scroll antes de atualizar
@@ -166,8 +168,20 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
     onSelectConversation(conversation);
   };
 
-  // Determinar quais conversas exibir
-  const conversationsToDisplay = storedData.length > 0 ? storedData : (conversations || mockConversations);
+  // Determinar quais conversas exibir com limite opcional
+  const allConversations = storedData.length > 0 ? storedData : (conversations || mockConversations);
+  
+  // Limitar conversas mostradas se limit estiver definido e não estiver mostrando todas
+  const conversationsToDisplay = limit && !showAllConversations 
+    ? allConversations.slice(0, limit) 
+    : allConversations;
+  
+  // Verificar se tem mais conversas além do limite
+  const hasMoreConversations = limit ? allConversations.length > limit : false;
+
+  const handleLoadMore = () => {
+    setShowAllConversations(true);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -199,14 +213,26 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
         )}
         
         {!isLoading && conversationsToDisplay.length > 0 ? (
-          conversationsToDisplay.map((conversation: ConversationItemProps) => (
-            <ConversationItem
-              key={conversation.id}
-              {...conversation}
-              isActive={activeConversationId === conversation.id}
-              onClick={() => handleSelectConversation(conversation)}
-            />
-          ))
+          <>
+            {conversationsToDisplay.map((conversation: ConversationItemProps) => (
+              <ConversationItem
+                key={conversation.id}
+                {...conversation}
+                isActive={activeConversationId === conversation.id}
+                onClick={() => handleSelectConversation(conversation)}
+              />
+            ))}
+            
+            {/* Botão para carregar mais conversas */}
+            {hasMoreConversations && !showAllConversations && (
+              <button 
+                className="mx-auto my-2 text-xs text-muted-foreground hover:text-primary py-2 px-3"
+                onClick={handleLoadMore}
+              >
+                Carregar mais conversas ({allConversations.length - (limit || 0)} restantes)
+              </button>
+            )}
+          </>
         ) : (
           !isLoading && !storedData.length && (
             <div className="p-4 text-center text-muted-foreground">
