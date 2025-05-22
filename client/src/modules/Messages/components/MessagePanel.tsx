@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Info, Phone, Video, CheckCheck, Share2 } from "lucide-react";
-import { MessageBubble, MessageProps } from "./MessageBubble";
+import { Info, Phone, Video, CheckCheck, Check, Share2 } from "lucide-react";
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { MessageProps } from "./MessageBubble";
 import { InputArea } from "./InputArea";
 import { ConversationItemProps } from "@/modules/Inbox/components/ConversationItem";
 import { useToast } from "@/hooks/use-toast";
@@ -38,31 +40,136 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   
   // Buscar mensagens do servidor quando uma conversa é selecionada
   const { data: fetchedMessages, isLoading, refetch } = useQuery({
-    queryKey: [`/api/conversations/${conversation.id}/messages`, Date.now()], // Forçar nova query a cada vez
+    queryKey: [`/api/conversations/${conversation.id}/messages`], // Chave única por conversa
     queryFn: async () => {
       try {
         // Adicionando um timestamp para evitar cache do navegador
         const timestamp = new Date().getTime();
         const response = await axios.get(`/api/conversations/${conversation.id}/messages?t=${timestamp}`);
-        
         console.log("Mensagens recebidas:", response.data);
         
-        return response.data.map((msg: any) => ({
-          id: msg.id.toString(),
-          content: msg.content,
-          type: msg.type || "text",
-          sender: msg.sender,
-          status: msg.status,
-          timestamp: new Date(msg.timestamp),
-          metadata: msg.metadata || {}
-        }));
+        // Processar as mensagens do servidor
+        return response.data.map((msg: any) => {
+          // Informações básicas da mensagem
+          const messageId = msg.id.toString();
+          const messageType = msg.type || "text";
+          const messageSender = msg.sender;
+          const messageStatus = msg.status;
+          const messageTimestamp = new Date(msg.timestamp);
+          const messageMetadata = msg.metadata || {};
+          
+          // Processamento do conteúdo da mensagem
+          let messageContent: string = "";
+          let hasMediaAttachment = false;
+          let mediaType = "";
+          let mediaUrl = "";
+          
+          // Processar conteúdo vindo como JSON string
+          if (typeof msg.content === 'string' && msg.content.startsWith('{') && msg.content.endsWith('}')) {
+            try {
+              const contentObj = JSON.parse(msg.content);
+              
+              // Extrair conteúdo textual baseado em diferentes formatos de mensagem
+              if (contentObj.text) {
+                messageContent = contentObj.text.message || contentObj.text;
+              } else if (contentObj.body) {
+                messageContent = contentObj.body;
+              } else if (contentObj.message) {
+                messageContent = contentObj.message;
+              } else if (contentObj.content) {
+                messageContent = contentObj.content;
+              }
+              
+              // Verificação de tipos especiais de mensagem
+              if (messageType === 'ReceivedCallback') {
+                // Verificar se é uma mensagem de áudio
+                if (contentObj.audio) {
+                  hasMediaAttachment = true;
+                  mediaType = 'audio';
+                  mediaUrl = contentObj.audio.audioUrl || '';
+                  messageContent = messageContent || '🔊 Mensagem de áudio';
+                }
+                // Verificar se é uma mensagem de imagem
+                else if (contentObj.image || contentObj.caption) {
+                  hasMediaAttachment = true;
+                  mediaType = 'image';
+                  mediaUrl = contentObj.image?.imageUrl || '';
+                  messageContent = contentObj.caption || messageContent || '🖼️ Imagem';
+                }
+                // Verificar se é uma mensagem de vídeo
+                else if (contentObj.video) {
+                  hasMediaAttachment = true;
+                  mediaType = 'video';
+                  mediaUrl = contentObj.video.videoUrl || '';
+                  messageContent = messageContent || '🎥 Vídeo';
+                }
+                // Verificar se é uma mensagem de documento
+                else if (contentObj.document) {
+                  hasMediaAttachment = true;
+                  mediaType = 'document';
+                  mediaUrl = contentObj.document.documentUrl || '';
+                  messageContent = contentObj.document.fileName || messageContent || '📄 Documento';
+                }
+                // Verificar se é uma mensagem de localização
+                else if (contentObj.location) {
+                  hasMediaAttachment = true;
+                  mediaType = 'location';
+                  messageContent = '📍 Localização compartilhada';
+                }
+                // Verificar se é uma mensagem de contato
+                else if (contentObj.contacts) {
+                  hasMediaAttachment = true;
+                  mediaType = 'contact';
+                  messageContent = '👤 Contato compartilhado';
+                }
+              }
+              // Mensagens de status como digitando, etc.
+              else if (messageType === 'MessageStatusCallback' || messageType === 'PresenceChatCallback') {
+                // Não mostrar essas mensagens de status na interface
+                return null;
+              }
+              
+              // Se ainda não temos conteúdo, usar o objeto JSON inteiro como fallback
+              if (!messageContent) {
+                messageContent = JSON.stringify(contentObj);
+              }
+            } catch (e) {
+              console.log("Erro ao processar mensagem JSON:", e);
+              messageContent = msg.content || "Mensagem não identificada";
+            }
+          } else {
+            // Se não for JSON, usar o conteúdo original
+            messageContent = msg.content || "";
+          }
+          
+          return {
+            id: messageId,
+            content: messageContent,
+            type: messageType,
+            sender: messageSender,
+            status: messageStatus,
+            timestamp: messageTimestamp,
+            metadata: messageMetadata,
+            hasMedia: hasMediaAttachment,
+            mediaType,
+            mediaUrl
+          };
+        }).filter(Boolean); // Remover mensagens nulas (como mensagens de status)
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
-        // Em caso de erro, carregar apenas a mensagem de boas-vindas
-        return [defaultWelcomeMessage];
+        return [{
+          id: "error-1",
+          content: "Não foi possível carregar as mensagens. Por favor, tente novamente.",
+          type: "system",
+          sender: "system",
+          status: "error",
+          timestamp: new Date(),
+          metadata: {},
+          hasMedia: false
+        }];
       }
     },
-    refetchInterval: 1500, // Atualizações mais frequentes a cada 1.5 segundos
+    refetchInterval: 3000, // Atualizações a cada 3 segundos
     refetchOnWindowFocus: true,
     staleTime: 0 // Sempre considerar os dados obsoletos para forçar refetch
   });
@@ -474,6 +581,62 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
                             ? 'bg-primary text-primary-foreground rounded-br-none' 
                             : 'bg-gray-100 dark:bg-gray-800 text-foreground rounded-bl-none'
                         }`}>
+                          {/* Exibir anexos de mídia, se houver */}
+                          {message.hasMedia && (
+                            <div className="mb-2">
+                              {message.mediaType === 'audio' && (
+                                <div className="mb-2">
+                                  <audio controls src={message.mediaUrl} className="max-w-full">
+                                    Seu navegador não suporta o elemento de áudio.
+                                  </audio>
+                                </div>
+                              )}
+                              
+                              {message.mediaType === 'image' && (
+                                <div className="mb-2">
+                                  <img 
+                                    src={message.mediaUrl} 
+                                    alt="Imagem compartilhada" 
+                                    className="rounded-md max-w-full max-h-[300px] object-contain"
+                                  />
+                                </div>
+                              )}
+                              
+                              {message.mediaType === 'video' && (
+                                <div className="mb-2">
+                                  <video 
+                                    controls 
+                                    src={message.mediaUrl}
+                                    className="rounded-md max-w-full max-h-[300px] object-contain"
+                                  >
+                                    Seu navegador não suporta o elemento de vídeo.
+                                  </video>
+                                </div>
+                              )}
+                              
+                              {message.mediaType === 'document' && (
+                                <div className="mb-2 flex items-center text-sm">
+                                  <a 
+                                    href={message.mediaUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center space-x-2 text-blue-500 hover:underline"
+                                  >
+                                    <span>📄</span>
+                                    <span>Baixar documento</span>
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {(message.mediaType === 'location' || message.mediaType === 'contact') && (
+                                <div className="mb-2 text-sm italic">
+                                  {message.mediaType === 'location' ? '📍 Localização compartilhada' : '👤 Contato compartilhado'}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Conteúdo da mensagem */}
                           {displayContent}
                         </div>
                         
@@ -482,7 +645,10 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
                           message.sender === 'user' ? 'justify-end' : 'justify-start'
                         }`}>
                           <span className="text-muted-foreground">
-                            {formatDistanceToNow(message.timestamp, { addSuffix: true, locale: ptBR })}
+                            {new Date(message.timestamp).toLocaleString('pt-BR', {
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
                           </span>
                           
                           {message.sender === 'user' && (
