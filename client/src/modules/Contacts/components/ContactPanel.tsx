@@ -66,16 +66,16 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
   return (
     <div className="h-full overflow-y-auto flex flex-col">
       {/* Cabeçalho */}
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Detalhes do Contato</h3>
+      <div className="p-3 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-semibold text-sm">Informações de Contato</h3>
           <Button variant="ghost" size="icon" className="h-7 w-7">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex flex-col items-center mb-3">
           <div className="relative mb-2">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+            <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
               {conversation.avatar ? (
                 <img 
                   src={conversation.avatar} 
@@ -83,7 +83,7 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
                   className="h-full w-full rounded-full object-cover" 
                 />
               ) : (
-                <User className="h-6 w-6 text-muted-foreground" />
+                <User className="h-5 w-5 text-muted-foreground" />
               )}
             </div>
             <div className={`absolute -right-1 -bottom-1 w-4 h-4 rounded-full border-2 border-background ${
@@ -96,33 +96,33 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
                     : 'bg-yellow-500'
             }`} />
           </div>
-          <h2 className="font-medium text-base">{conversation.name}</h2>
+          <h2 className="font-medium text-sm">{conversation.name}</h2>
           <p className="text-xs text-muted-foreground">{contactInfo.position}</p>
-          <div className="flex gap-1 mt-1">
+          <div className="flex flex-wrap gap-1 mt-1 justify-center">
             {contactInfo.tags.slice(0, 2).map((tag, index) => (
-              <Badge key={index} variant="secondary" className="text-xs px-2 py-0 h-5">
+              <Badge key={index} variant="secondary" className="text-xs px-1.5 py-0 h-5">
                 {tag}
               </Badge>
             ))}
             {contactInfo.tags.length > 2 && (
-              <Badge variant="outline" className="text-xs px-2 py-0 h-5">
+              <Badge variant="outline" className="text-xs px-1.5 py-0 h-5">
                 +{contactInfo.tags.length - 2}
               </Badge>
             )}
           </div>
         </div>
-        <div className="grid gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs">{contactInfo.email}</span>
+        <div className="grid gap-1.5 text-xs">
+          <div className="flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs break-words">{contactInfo.email}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs">{contactInfo.phone}</span>
+          <div className="flex items-center gap-1.5">
+            <Phone className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs break-words">{contactInfo.phone}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-xs">{contactInfo.company}</span>
+          <div className="flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs break-words">{contactInfo.company}</span>
           </div>
         </div>
       </div>
@@ -142,21 +142,21 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
                 <div className="grid gap-2 text-xs">
                   <div className="flex items-start gap-2">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                    <span className="text-xs">{contactInfo.address}</span>
+                    <span className="text-xs break-words">{contactInfo.address}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <CalendarClock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-xs">Primeiro contato:</span>
                     </div>
-                    <span className="text-xs">{contactInfo.firstContact.toLocaleDateString()}</span>
+                    <span className="text-xs ml-1">{contactInfo.firstContact.toLocaleDateString()}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                       <span className="text-xs">Último contato:</span>
                     </div>
-                    <span className="text-xs">{contactInfo.lastContact.toLocaleDateString()}</span>
+                    <span className="text-xs ml-1">{contactInfo.lastContact.toLocaleDateString()}</span>
                   </div>
                 </div>
               </Card>
@@ -165,16 +165,16 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
                 <h4 className="text-xs font-medium mb-2">Métricas do Cliente</h4>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="bg-muted/30 p-2 rounded">
-                    <div className="text-muted-foreground">Conversas</div>
-                    <div className="font-semibold">{contactInfo.totalConversations}</div>
+                    <div className="text-muted-foreground text-xs">Conversas</div>
+                    <div className="font-semibold text-xs">{contactInfo.totalConversations}</div>
                   </div>
                   <div className="bg-muted/30 p-2 rounded">
-                    <div className="text-muted-foreground">Compras</div>
-                    <div className="font-semibold">{contactInfo.totalPurchases}</div>
+                    <div className="text-muted-foreground text-xs">Compras</div>
+                    <div className="font-semibold text-xs">{contactInfo.totalPurchases}</div>
                   </div>
                   <div className="bg-primary/10 p-2 rounded col-span-2">
-                    <div className="text-muted-foreground">Valor Total</div>
-                    <div className="font-semibold text-primary">{contactInfo.lifetimeValue}</div>
+                    <div className="text-muted-foreground text-xs">Valor Total</div>
+                    <div className="font-semibold text-xs text-primary">{contactInfo.lifetimeValue}</div>
                   </div>
                 </div>
               </Card>
@@ -184,8 +184,8 @@ export const ContactPanel = ({ conversation }: ContactPanelProps) => {
                 <div className="grid gap-2 text-xs">
                   {additionalData.map((item, index) => (
                     <div key={index} className="flex items-center justify-between">
-                      <span className="text-muted-foreground">{item.label}:</span>
-                      <span>{item.value}</span>
+                      <span className="text-muted-foreground text-xs">{item.label}:</span>
+                      <span className="text-xs ml-1 text-right">{item.value}</span>
                     </div>
                   ))}
                 </div>
