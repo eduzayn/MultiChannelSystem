@@ -31,8 +31,6 @@ export async function getZapiContacts(
     
     console.log(`Obtendo contatos da instância Z-API (${cleanInstanceId})...`);
     
-    const url = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/contacts`;
-    
     // Preparando headers com ou sem Client-Token (opcional)
     const headers: Record<string, string> = {
       "Content-Type": "application/json"
@@ -42,39 +40,72 @@ export async function getZapiContacts(
       headers["Client-Token"] = clientToken.trim();
     }
     
-    const response = await axios.get(url, {
-      headers,
-      validateStatus: function (status) {
-        // Aceitar qualquer status para tratar erros adequadamente
-        return true;
-      }
-    });
+    // Array para armazenar todos os contatos
+    let allContacts: any[] = [];
+    let page = 1;
+    const pageSize = 100; // Valor máximo geralmente aceito pela Z-API
+    let hasMore = true;
     
-    console.log(`Resposta da Z-API contatos (Status ${response.status})`);
-    
-    if (response.status !== 200) {
-      console.error(`Erro na resposta da Z-API: ${response.status}`);
+    // Consultar páginas enquanto houver mais contatos
+    while (hasMore) {
+      const url = `https://api.z-api.io/instances/${cleanInstanceId}/token/${cleanToken}/contacts?page=${page}&pageSize=${pageSize}`;
+      console.log(`Buscando página ${page} de contatos...`);
       
-      let errorMessage = "Erro ao obter contatos";
-      if (response.data?.error || response.data?.message) {
-        errorMessage = response.data.error || response.data.message;
+      const response = await axios.get(url, {
+        headers,
+        validateStatus: function (status) {
+          // Aceitar qualquer status para tratar erros adequadamente
+          return true;
+        }
+      });
+    
+      console.log(`Resposta da Z-API contatos página ${page} (Status ${response.status})`);
+      
+      if (response.status !== 200) {
+        console.error(`Erro na resposta da Z-API: ${response.status}`);
+        
+        let errorMessage = "Erro ao obter contatos";
+        if (response.data?.error || response.data?.message) {
+          errorMessage = response.data.error || response.data.message;
+        }
+        
+        // Se for erro na primeira página, retorna erro
+        if (page === 1) {
+          return {
+            success: false,
+            message: errorMessage,
+          };
+        } else {
+          // Se já tivermos contatos de páginas anteriores, interrompe a paginação
+          console.warn(`Erro ao buscar página ${page}: ${errorMessage}. Usando contatos já obtidos.`);
+          hasMore = false;
+          break;
+        }
       }
       
-      return {
-        success: false,
-        message: errorMessage,
-      };
+      // Extrair contatos da resposta
+      const pageContacts = Array.isArray(response.data) ? response.data : 
+                        response.data?.contacts || response.data?.response || [];
+      
+      console.log(`Obtidos ${pageContacts.length} contatos na página ${page}`);
+      
+      // Adicionar ao array total
+      allContacts = [...allContacts, ...pageContacts];
+      
+      // Verificar se há mais páginas
+      if (pageContacts.length < pageSize) {
+        hasMore = false; // Última página
+        console.log(`Final da paginação atingido na página ${page}`);
+      } else {
+        page++; // Avançar para próxima página
+      }
     }
     
-    // Se a resposta for bem-sucedida, retornamos os contatos
-    const contacts = Array.isArray(response.data) ? response.data : 
-                    response.data?.contacts || response.data?.response || [];
-    
-    console.log(`Contatos obtidos com sucesso: ${contacts.length} contatos`);
+    console.log(`Total de contatos obtidos: ${allContacts.length}`);
     
     return {
       success: true,
-      contacts: contacts
+      contacts: allContacts
     };
   } catch (error) {
     console.error(`Erro ao obter contatos Z-API:`, error);
