@@ -40,20 +40,20 @@ export function QuickActions({ actions }: QuickActionsProps) {
 
   return (
     <Card className="border-0 shadow-sm">
-      <CardHeader className="pb-0">
-        <h2 className="text-lg font-medium">Ações Rápidas</h2>
+      <CardHeader className="pb-0 p-3 sm:p-4 md:p-6">
+        <h2 className="text-base sm:text-lg font-medium">Ações Rápidas</h2>
       </CardHeader>
-      <CardContent className="pt-4">
+      <CardContent className="pt-3 sm:pt-4 p-3 sm:p-4 md:p-6">
         <div className="grid grid-cols-2 gap-2">
           {actions.map((action, index) => {
             const { icon, color } = getIconForType(action.icon);
             
             return (
-              <button key={index} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 text-left">
+              <button key={index} className="p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 text-left">
                 <div className={color}>
                   {icon}
                 </div>
-                <div className="text-sm font-medium">{action.label}</div>
+                <div className="text-xs sm:text-sm font-medium">{action.label}</div>
               </button>
             );
           })}
