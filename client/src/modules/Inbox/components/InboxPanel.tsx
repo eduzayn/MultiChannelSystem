@@ -18,7 +18,12 @@ import {
   CheckCheck,
   MoreHorizontal,
   Smile,
-  Send
+  Send,
+  Paperclip,
+  Mic,
+  ArrowUpRight,
+  Calendar,
+  Forward
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -415,19 +420,72 @@ export const InboxPanel = () => {
             </div>
             
             {/* Área de composição de mensagem - Posicionada na parte inferior */}
-            <div className="border-t p-3 bg-background mt-auto shrink-0">
-              <div className="relative">
-                <Input 
+            <div className="border-t bg-background mt-auto shrink-0">
+              {/* Barra de ferramentas superior do editor */}
+              <div className="px-3 pt-2 flex justify-between items-center">
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" title="Anexar arquivo">
+                    <Paperclip className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" title="Mensagem de áudio">
+                    <Mic className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" title="Respostas Rápidas">
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                    <span>Respostas Rápidas</span>
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" title="Agendar Envio">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Agendar</span>
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs text-primary" title="Verificar com Prof. Ana">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-brain-circuit">
+                      <path d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0-1.32 4.24 3 3 0 0 0 .34 5.58 2.5 2.5 0 0 0 2.96 3.08 2.5 2.5 0 0 0 4.91.05L12 20V4.5Z"/>
+                      <path d="M16 8V5c0-1.1.9-2 2-2"/>
+                      <path d="M12 13h4"/>
+                      <path d="M12 18h6a2 2 0 0 1 2 2v1"/>
+                      <path d="M12 8h8"/>
+                      <path d="M20.5 8a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
+                      <path d="M16.5 13a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
+                      <path d="M20.5 21a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
+                      <path d="M2.5 14a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0Z"/>
+                    </svg>
+                    <span>Prof. Ana</span>
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Área de entrada de texto */}
+              <div className="p-3 relative">
+                <textarea 
                   placeholder="Digite sua mensagem..." 
-                  className="pr-20 min-h-[40px]"
+                  className="w-full px-3 py-2 resize-none rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
+                  rows={3}
                 />
-                <div className="absolute right-2 top-[50%] transform -translate-y-1/2 flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                    <Smile className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                  <Button size="icon" className="h-8 w-8 rounded-full bg-primary">
-                    <Send className="h-4 w-4 text-primary-foreground" />
-                  </Button>
+                
+                <div className="mt-2 flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" title="Adicionar emoji">
+                      <Smile className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-8 text-xs gap-1" title="Criar Mensagem Interativa">
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Interativa</span>
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="h-8 text-xs gap-1" title="Encaminhar para...">
+                      <Forward className="h-3.5 w-3.5" />
+                      <span>Encaminhar</span>
+                    </Button>
+                    <Button size="sm" className="h-8 gap-1 bg-primary text-primary-foreground">
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Enviar</span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
