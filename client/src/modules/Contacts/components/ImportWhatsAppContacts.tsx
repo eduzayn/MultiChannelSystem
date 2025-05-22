@@ -46,7 +46,25 @@ export function ImportWhatsAppContacts({ onImportComplete }: ImportWhatsAppConta
     setIsLoading(true);
     
     try {
-      // Chamar a API para importar contatos
+      // Primeiro verificar se o WhatsApp está conectado
+      const connectionResponse = await axios.post('/api/zapi/test-connection', {
+        instanceId: values.instanceId,
+        token: values.token,
+        clientToken: values.clientToken || undefined
+      });
+      
+      // Se não estiver conectado, mostrar mensagem de erro
+      if (!connectionResponse.data.success || connectionResponse.data.status !== "connected") {
+        toast({
+          title: "WhatsApp não conectado",
+          description: "Você precisa conectar o WhatsApp usando o QR code na tela de configurações de canais antes de importar contatos.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Se estiver conectado, prosseguir com a importação
       const response = await axios.post('/api/zapi/get-contacts', {
         instanceId: values.instanceId,
         token: values.token,
