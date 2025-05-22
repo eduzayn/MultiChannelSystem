@@ -36,9 +36,13 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   // Componente renomeado semanticamente para seu contexto específico: InboxMessagePanel
   // Mantemos o nome da exportação como MessagePanel para evitar quebrar as importações existentes
   const [messagesList, setMessagesList] = useState<MessageProps[]>([]);
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const [conversationStatus, setConversationStatus] = useState<string>("open");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  
+  // Configuração de limite de mensagens (para melhorar a performance)
+  const MESSAGE_LIMIT = 50; // Limite padrão de mensagens a exibir
   
   // Buscar mensagens do servidor quando uma conversa é selecionada
   const { data: fetchedMessages, isLoading, refetch } = useQuery({
@@ -240,6 +244,11 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
       clearInterval(intervalId);
     };
   }, [refetch, conversation.id]);
+  
+  // Função para carregar mais mensagens antigas
+  const handleLoadMoreMessages = () => {
+    setShowAllMessages(true);
+  };
   
   // Atualizar mensagens quando os dados são buscados - versão simplificada para evitar problemas
   useEffect(() => {

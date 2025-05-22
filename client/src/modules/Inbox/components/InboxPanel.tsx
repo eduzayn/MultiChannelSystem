@@ -77,6 +77,7 @@ export const InboxPanel = () => {
   const [agentStatus, setAgentStatus] = useState<AgentStatus>("online");
   const [activeSortOrder, setActiveSortOrder] = useState<string>("recent");
   const [contextPanelTab, setContextPanelTab] = useState<string>("profile");
+  const [showPreviousMessages, setShowPreviousMessages] = useState(false);
 
   // Estados dos filtros avançados
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
@@ -386,6 +387,7 @@ export const InboxPanel = () => {
                 variant="outline" 
                 size="sm" 
                 className="text-xs text-muted-foreground hover:text-primary"
+                onClick={() => setShowPreviousMessages(true)}
               >
                 Carregar mensagens anteriores
               </Button>
@@ -397,7 +399,7 @@ export const InboxPanel = () => {
                 <span className="px-3 py-1 rounded-full bg-muted">Início da conversa</span>
               </div>
               
-              {/* Mensagens do cliente - limitadas a 50 por padrão */}
+              {/* Mensagens do cliente - limitadas inicialmente, expandidas quando solicitado */}
               <div className="flex flex-col space-y-3">
                 {/* Mensagem do Cliente 1 */}
                 <div className="flex items-start gap-2 max-w-[70%]">
