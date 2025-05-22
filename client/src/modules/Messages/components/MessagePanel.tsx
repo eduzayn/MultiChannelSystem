@@ -467,9 +467,9 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   const isZapApiConnected = conversation.channel === 'whatsapp';
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col relative overflow-hidden">
       {/* Cabeçalho da conversa */}
-      <div className="px-3 py-2 border-b flex items-center justify-between">
+      <div className="px-3 py-2 border-b flex items-center justify-between shrink-0">
         <div className="flex items-center">
           <div className="mr-2">
             <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
@@ -797,11 +797,13 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         )}
       </div>
       
-      {/* Área de entrada de texto */}
-      <InputArea 
-        onSendMessage={handleSendMessage} 
-        isZapApiEnabled={conversation.channel === 'whatsapp' && isZapApiConnected} 
-      />
+      {/* Área de entrada de texto - posicionada na parte inferior */}
+      <div className="mt-auto border-t bg-background shrink-0">
+        <InputArea 
+          onSendMessage={handleSendMessage} 
+          isZapApiEnabled={conversation.channel === 'whatsapp' && isZapApiConnected} 
+        />
+      </div>
     </div>
   );
 };
