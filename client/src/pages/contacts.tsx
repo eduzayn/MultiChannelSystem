@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter, X, ChevronDown } from "lucide-react";
+import { Search, Plus, Filter, X, ChevronDown, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -27,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ContactDetail from "@/modules/Contacts/components/ContactDetail";
 import { ContactForm } from "@/modules/Contacts/components/ContactForm";
 import { ImportWhatsAppContacts } from "@/modules/Contacts/components/ImportWhatsAppContacts";
+import { useContacts, useCreateContact, useUpdateContact, Contact as ContactType } from "@/hooks/useContacts";
+import { useToast } from "@/hooks/use-toast";
 
 // Dados de exemplo para os contatos
 const MOCK_CONTACTS = [
