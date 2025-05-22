@@ -62,6 +62,43 @@ export const MessageBubble = ({
     return null;
   };
 
+  // Função para extrair texto da mensagem no formato JSON
+  const extractMessageText = (rawContent: string): string => {
+    // Se parecer JSON, tenta parsear
+    if (rawContent.startsWith('{') && rawContent.endsWith('}')) {
+      try {
+        const messageObj = JSON.parse(rawContent);
+        
+        // Campos comuns em objetos de mensagem Z-API/WhatsApp
+        if (messageObj.text) return messageObj.text;
+        if (messageObj.body) return messageObj.body;
+        if (messageObj.message) return messageObj.message;
+        if (messageObj.content) return messageObj.content;
+        
+        // Se for um objeto de callback de status
+        if (messageObj.type === 'MessageStatusCallback' || 
+            messageObj.type === 'PresenceChatCallback') {
+          return '[Atualização de Status]';
+        }
+        
+        // Se for uma mensagem do sistema
+        if (messageObj.system) return messageObj.system;
+        
+        // Se não encontrou nenhum dos campos, retorna um valor genérico
+        return 'Nova mensagem';
+      } catch (e) {
+        // Se falhar o parse JSON, retorna o conteúdo original
+        return rawContent;
+      }
+    }
+    
+    // Se não for JSON, retorna o conteúdo original
+    return rawContent;
+  };
+
+  // Processamento do conteúdo para renderização
+  const processedContent = extractMessageText(content);
+
   // Renderiza conteúdo de mídia ou especial
   const renderContent = () => {
     switch (type) {
@@ -70,7 +107,7 @@ export const MessageBubble = ({
           <div className="space-y-2">
             <div className="relative rounded-md overflow-hidden">
               <img 
-                src={content} 
+                src={processedContent} 
                 alt={caption || "Imagem"} 
                 className="w-full max-h-60 object-contain bg-muted/20"
               />
@@ -94,7 +131,7 @@ export const MessageBubble = ({
                 </Button>
               </div>
               <img 
-                src={content} 
+                src={processedContent} 
                 alt="Thumbnail do vídeo" 
                 className="w-full h-full object-cover opacity-80"
               />
@@ -110,7 +147,7 @@ export const MessageBubble = ({
               <FileText className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm truncate">{content}</div>
+              <div className="font-medium text-sm truncate">{processedContent}</div>
               <div className="text-xs text-muted-foreground">{fileSize || "Documento"}</div>
             </div>
             <Button size="icon" variant="ghost" className="h-8 w-8">
@@ -136,7 +173,7 @@ export const MessageBubble = ({
         if (interactiveData?.type === 'button') {
           return (
             <div className="space-y-2">
-              <p>{content}</p>
+              <p>{processedContent}</p>
               <div className="bg-muted/20 p-2 rounded-md">
                 <div className="text-xs text-muted-foreground mb-1">Botão pressionado:</div>
                 <div className="bg-accent/50 text-accent-foreground text-sm py-1 px-3 rounded-md">
@@ -148,7 +185,7 @@ export const MessageBubble = ({
         } else if (interactiveData?.type === 'list') {
           return (
             <div className="space-y-2">
-              <p>{content}</p>
+              <p>{processedContent}</p>
               <div className="bg-muted/20 p-2 rounded-md">
                 <div className="text-xs text-muted-foreground mb-1">Item selecionado:</div>
                 <div className="bg-accent/50 text-accent-foreground text-sm py-1 px-3 rounded-md">
@@ -158,7 +195,7 @@ export const MessageBubble = ({
             </div>
           );
         }
-        return content;
+        return processedContent;
         
       case 'location':
         return (
@@ -167,12 +204,20 @@ export const MessageBubble = ({
               <Image className="h-6 w-6 text-muted-foreground" />
               <span className="ml-2 text-sm text-muted-foreground">Localização compartilhada</span>
             </div>
-            <p className="text-sm">{content}</p>
+            <p className="text-sm">{processedContent}</p>
+          </div>
+        );
+        
+      case 'MessageStatusCallback':
+      case 'PresenceChatCallback':
+        return (
+          <div className="text-xs text-muted-foreground italic">
+            Atualização de status
           </div>
         );
         
       default:
-        return content;
+        return processedContent;
     }
   };
 
