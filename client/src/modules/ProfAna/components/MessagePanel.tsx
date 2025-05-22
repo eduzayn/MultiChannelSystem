@@ -22,6 +22,8 @@ export const MessagePanel = ({
   isRecording,
   recordingTime,
 }: MessagePanelProps) => {
+  // Componente renomeado semanticamente para seu contexto específico: ProfAnaMessagePanel
+  // Mantemos o nome da exportação como MessagePanel para evitar quebrar as importações existentes
   const [message, setMessage] = useState("");
   const messageEndRef = useRef<HTMLDivElement>(null);
 

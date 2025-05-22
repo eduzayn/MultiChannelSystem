@@ -33,6 +33,8 @@ interface MessagePanelProps {
 }
 
 export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePanelProps) => {
+  // Componente renomeado semanticamente para seu contexto específico: InboxMessagePanel
+  // Mantemos o nome da exportação como MessagePanel para evitar quebrar as importações existentes
   const [messagesList, setMessagesList] = useState<MessageProps[]>([]);
   const [conversationStatus, setConversationStatus] = useState<string>("open");
   const messagesEndRef = useRef<HTMLDivElement>(null);
