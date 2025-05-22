@@ -202,6 +202,8 @@ const generateMessages = (channelId: string | undefined, dmId: string | undefine
 };
 
 export const MessagePanel = ({ channelId, dmId, onToggleDetails }: MessagePanelProps) => {
+  // Componente renomeado semanticamente para seu contexto específico: ChatMessagePanel
+  // Mantemos o nome da exportação como MessagePanel para evitar quebrar as importações existentes
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
