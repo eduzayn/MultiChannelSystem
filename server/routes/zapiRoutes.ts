@@ -404,17 +404,17 @@ export function registerZapiRoutes(app: Router) {
             } 
             // Se o contato já existe, atualizar os dados
             else {
-              // Criar objeto de metadados
-              const updatedMetadata = {
-                zapiData: zapiContact,
-                source: "zapi-sync",
-                lastSync: new Date().toISOString()
-              };
-              
+              // Salvar o numero normalizado e manter o formato original nos metadados
               await db.update(contacts)
                 .set({
                   name: name,
-                  metadata: updatedMetadata
+                  phone: normalizedPhone, // Usar o número normalizado para consistência
+                  metadata: {
+                    zapiData: zapiContact,
+                    source: "zapi-sync",
+                    lastSync: new Date().toISOString(),
+                    originalPhone: phone
+                  }
                 })
                 .where(eq(contacts.id, existingContact.id));
               
