@@ -663,7 +663,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listContacts(): Promise<Contact[]> {
-    return await db.select().from(contacts);
+    // Ordem decrescente por id para mostrar os contatos mais recentes primeiro
+    return await db.select()
+      .from(contacts)
+      .orderBy(asc(contacts.name))
+      .limit(1000); // Limite aumentado para garantir que todos os contatos sejam exibidos
   }
   
   async createContact(insertContact: InsertContact): Promise<Contact> {
