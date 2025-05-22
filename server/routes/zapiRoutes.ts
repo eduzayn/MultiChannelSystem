@@ -60,8 +60,12 @@ export function registerZapiRoutes(app: Router) {
                                 JSON.stringify(webhookData.text || webhookData.content || {});
           
           // Verificar se já existe um contato com este número
+          // Padronizar o formato do número para garantir correspondência exata
+          const normalizedPhone = formattedPhone.replace(/^0+/, "").replace(/\D/g, "");
+          console.log(`Procurando contato com número normalizado: ${normalizedPhone}`);
+          
           let contact = await db.query.contacts.findFirst({
-            where: eq(contacts.phone, formattedPhone)
+            where: eq(contacts.phone, normalizedPhone)
           });
           
           // Se não existe contato, criar um novo
@@ -365,8 +369,12 @@ export function registerZapiRoutes(app: Router) {
             phone = phone.replace("@c.us", "");
             
             // Verificar se já existe um contato com este número
+            // Normalizar o número de telefone para garantir correspondência
+            const normalizedPhone = phone.replace(/^0+/, "").replace(/\D/g, "");
+            console.log(`Verificando contato com número normalizado: ${normalizedPhone}`);
+            
             const existingContact = await db.query.contacts.findFirst({
-              where: eq(contacts.phone, phone)
+              where: eq(contacts.phone, normalizedPhone)
             });
             
             // Obter o nome do contato
@@ -380,13 +388,14 @@ export function registerZapiRoutes(app: Router) {
               await db.insert(contacts)
                 .values({
                   name: name,
-                  phone: phone,
-                  email: "",
+                  phone: normalizedPhone, // Salvar o número normalizado
+                  email: null, // Email pode ser nulo
                   notes: "Contato importado automaticamente do WhatsApp",
                   metadata: {
                     zapiData: zapiContact,
                     source: "zapi-sync",
-                    lastSync: new Date().toISOString()
+                    lastSync: new Date().toISOString(),
+                    originalPhone: phone // Guardar o formato original do telefone no metadata
                   }
                 });
               

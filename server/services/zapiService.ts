@@ -83,9 +83,11 @@ export async function getZapiContacts(
         }
       }
       
-      // Extrair contatos da resposta
+      // Extrair contatos da resposta - Z-API pode retornar diferentes formatos
+      // Algumas vezes é um array direto, outras vezes está dentro de um objeto
       const pageContacts = Array.isArray(response.data) ? response.data : 
-                        response.data?.contacts || response.data?.response || [];
+                        response.data?.contacts || response.data?.response || 
+                        (response.data?.chats ? response.data.chats.filter((c: any) => !c.isGroup) : []);
       
       console.log(`Obtidos ${pageContacts.length} contatos na página ${page}`);
       
