@@ -360,7 +360,7 @@ export const InboxPanel = () => {
         {selectedConversation ? (
           <div className="h-full flex flex-col">
             {/* Cabeçalho da Conversa */}
-            <div className="border-b p-2 flex items-center justify-between bg-background">
+            <div className="border-b p-2 flex items-center justify-between bg-background sticky top-0 z-10">
               <div className="flex items-center">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mr-2">
                   <span className="text-xs font-medium text-primary">
@@ -411,16 +411,98 @@ export const InboxPanel = () => {
                 <span className="px-3 py-1 rounded-full bg-muted">Início da conversa</span>
               </div>
               
-              {/* Placeholder para exibição de mensagens */}
-              <div className="text-center p-4">
-                <p className="text-muted-foreground">
-                  O Histórico de Mensagens será reconstruído conforme novas orientações.
-                </p>
+              {/* Mensagens do cliente */}
+              <div className="flex flex-col space-y-3">
+                {/* Mensagem do Cliente 1 */}
+                <div className="flex items-start gap-2 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">
+                      {selectedConversation.name?.charAt(0) || "C"}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                      <p className="text-sm">Olá, gostaria de saber mais sobre o curso de licenciatura em Letras Português.</p>
+                    </div>
+                    <div className="flex items-center mt-1 ml-1">
+                      <span className="text-xs text-muted-foreground">11:35</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mensagem do Agente 1 */}
+                <div className="flex items-start gap-2 max-w-[80%] self-end flex-row-reverse">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-white">A</span>
+                  </div>
+                  <div>
+                    <div className="bg-primary text-primary-foreground rounded-2xl rounded-tr-sm p-3">
+                      <p className="text-sm">Olá! Claro, temos duas modalidades de licenciatura em Letras Português: presencial e EAD. 
+                      Qual delas você tem interesse?</p>
+                    </div>
+                    <div className="flex items-center justify-end mt-1 mr-1">
+                      <span className="text-xs text-muted-foreground mr-1">11:36</span>
+                      <span className="text-xs text-primary">✓✓</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mensagem do Cliente 2 */}
+                <div className="flex items-start gap-2 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">
+                      {selectedConversation.name?.charAt(0) || "C"}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                      <p className="text-sm">Gostaria de verificar as duas.</p>
+                    </div>
+                    <div className="flex items-center mt-1 ml-1">
+                      <span className="text-xs text-muted-foreground">11:42</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Marcador de tempo */}
+                <div className="text-center text-muted-foreground text-xs py-2">
+                  <span className="px-2 py-0.5 rounded-full bg-muted/60">Hoje</span>
+                </div>
+                
+                {/* Mensagem do Cliente 3 */}
+                <div className="flex items-start gap-2 max-w-[80%]">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex-shrink-0 flex items-center justify-center">
+                    <span className="text-xs font-medium text-primary">
+                      {selectedConversation.name?.charAt(0) || "C"}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="bg-muted rounded-2xl rounded-tl-sm p-3">
+                      <p className="text-sm">Se eu quiser fazer a segunda graduação em Licenciatura em Letras Português, é possível, né?</p>
+                    </div>
+                    <div className="flex items-center mt-1 ml-1">
+                      <span className="text-xs text-muted-foreground">16:04</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Nota Interna */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-2 mx-8">
+                  <div className="flex items-center mb-1">
+                    <div className="w-5 h-5 rounded-full bg-blue-500 flex-shrink-0 flex items-center justify-center mr-1">
+                      <span className="text-[10px] font-medium text-white">A</span>
+                    </div>
+                    <span className="text-xs font-medium">Nota Interna</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Cliente está interessado em fazer uma segunda graduação. Verificar se ele tem direito ao desconto de 20% para alunos que já possuem graduação.
+                  </p>
+                </div>
               </div>
             </div>
             
             {/* Área de composição de mensagem - Posicionada na parte inferior */}
-            <div className="border-t bg-background mt-auto shrink-0">
+            <div className="border-t bg-background sticky bottom-0 z-10">
               {/* Barra de ferramentas superior do editor */}
               <div className="px-3 pt-2 flex justify-between items-center">
                 <div className="flex items-center gap-1.5">
