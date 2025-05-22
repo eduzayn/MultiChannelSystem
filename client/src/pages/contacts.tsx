@@ -30,71 +30,26 @@ import { ImportWhatsAppContacts } from "@/modules/Contacts/components/ImportWhat
 import { useContacts, useCreateContact, useUpdateContact, Contact as ContactType } from "@/hooks/useContacts";
 import { useToast } from "@/hooks/use-toast";
 
-// Dados de exemplo para os contatos
-const MOCK_CONTACTS = [
-  { 
-    id: 1, 
-    name: "Maria Santos", 
-    email: "maria.santos@email.com", 
-    phone: "+55 11 91234-5678", 
-    type: "Cliente",
-    company: "ABC Tecnologia",
-    lastActivity: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(2023, 5, 15),
-    tags: ["VIP", "Suporte Premium"],
-    owner: "João da Silva"
-  },
-  { 
-    id: 2, 
-    name: "João Pereira", 
-    email: "joao.pereira@email.com", 
-    phone: "+55 11 98765-4321", 
-    type: "Lead",
-    company: "XYZ Marketing",
-    lastActivity: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(2023, 8, 22),
-    tags: ["Novo", "Prospecto"],
-    owner: "Ana Oliveira"
-  },
-  { 
-    id: 3, 
-    name: "Ana Oliveira", 
-    email: "ana.oliveira@email.com", 
-    phone: "+55 11 99876-5432", 
-    type: "Cliente",
-    company: "LMN Consultoria",
-    lastActivity: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(2022, 11, 10),
-    tags: ["VIP", "Parceiro"],
-    owner: "Carlos Gomes"
-  },
-  { 
-    id: 4, 
-    name: "Carlos Silva", 
-    email: "carlos.silva@email.com", 
-    phone: "+55 11 95432-1098", 
-    type: "Cliente",
-    company: "PQR Soluções",
-    lastActivity: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(2023, 2, 5),
-    tags: ["Ativo"],
-    owner: "João da Silva"
-  },
-  { 
-    id: 5, 
-    name: "Beatriz Lima", 
-    email: "beatriz.lima@email.com", 
-    phone: "+55 11 93210-9876", 
-    type: "Lead",
-    company: "STU Sistemas",
-    lastActivity: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(2023, 9, 30),
-    tags: ["Potencial", "E-commerce"],
-    owner: "Ana Oliveira"
-  },
-];
+// Interface para o contato na exibição - garantindo dados consistentes
+interface ContactDisplay extends Partial<ContactType> {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string;
+  company: string;
+  type: string;
+  tags: string[];
+  owner: string;
+  lastActivity: Date;
+}
 
 export default function ContactsPage() {
+  // Buscando contatos reais do banco com React Query
+  const { data: contactsData, isLoading, error } = useContacts();
+  const { toast } = useToast();
+  const createContact = useCreateContact();
+  const updateContact = useUpdateContact();
+  
   // Estado para o termo de busca
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -119,30 +74,43 @@ export default function ContactsPage() {
   // Estado para controlar a exibição do popover de filtros
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  // Preparar os contatos recebidos do banco de dados para exibição
+  const formattedContacts: ContactDisplay[] = contactsData?.map(contact => {
+    return {
+      ...contact,
+      // Garantir que todos os campos tenham valores padrão para evitar erros na UI
+      company: contact.company || "",
+      type: contact.type || "Contato", 
+      tags: contact.tags || [],
+      owner: contact.owner || "Não atribuído"
+    };
+  }) || [];
+  
+  // Obter o contato selecionado
   const selectedContact = selectedContactId 
-    ? MOCK_CONTACTS.find(contact => contact.id === selectedContactId) 
+    ? formattedContacts.find(contact => contact.id === selectedContactId) 
     : null;
   
   // Filtrar contatos com base na busca e nos filtros ativos
-  const filteredContacts = MOCK_CONTACTS.filter(contact => {
+  const filteredContacts = formattedContacts.filter(contact => {
     // Filtro da busca
     const matchesSearch = 
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (contact.email && contact.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
       contact.phone.includes(searchQuery) ||
-      contact.company.toLowerCase().includes(searchQuery.toLowerCase());
+      (contact.company && contact.company.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // Filtros de tipo
     const matchesType = activeFilters.type.length === 0 || 
-      activeFilters.type.includes(contact.type);
+      (contact.type && activeFilters.type.includes(contact.type));
     
     // Filtros de tags
     const matchesTags = activeFilters.tags.length === 0 || 
-      contact.tags.some(tag => activeFilters.tags.includes(tag));
+      (contact.tags && contact.tags.some(tag => activeFilters.tags.includes(tag)));
     
     // Filtros de proprietário
     const matchesOwner = activeFilters.owner.length === 0 || 
-      activeFilters.owner.includes(contact.owner);
+      (contact.owner && activeFilters.owner.includes(contact.owner));
     
     return matchesSearch && matchesType && matchesTags && matchesOwner;
   });
@@ -240,15 +208,56 @@ export default function ContactsPage() {
     activeFilters.owner.length;
 
   // Extrair todas as tags e proprietários únicos da lista de contatos para os filtros
-  const allTags = Array.from(new Set(MOCK_CONTACTS.flatMap(contact => contact.tags)));
-  const allOwners = Array.from(new Set(MOCK_CONTACTS.map(contact => contact.owner)));
+  const allTags = Array.from(new Set(formattedContacts.flatMap(contact => contact.tags || [])));
+  const allOwners = Array.from(new Set(formattedContacts.filter(c => c.owner).map(contact => contact.owner as string)));
   
-  // Simular salvar um contato
+  // Salvar um contato usando a API
   const handleSaveContact = (contactData: any) => {
     console.log('Salvando contato:', contactData);
-    setContactFormOpen(false);
-    setEditingContact(null);
-    // Aqui você faria uma chamada para a API para criar/atualizar o contato
+    
+    if (editingContact) {
+      // Atualizar contato existente
+      updateContact.mutate({
+        ...contactData,
+        id: editingContact.id
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Contato atualizado",
+            description: "O contato foi atualizado com sucesso.",
+          });
+          setContactFormOpen(false);
+          setEditingContact(null);
+        },
+        onError: (error) => {
+          toast({
+            title: "Erro",
+            description: "Não foi possível atualizar o contato.",
+            variant: "destructive",
+          });
+          console.error("Erro ao atualizar contato:", error);
+        }
+      });
+    } else {
+      // Criar novo contato
+      createContact.mutate(contactData, {
+        onSuccess: () => {
+          toast({
+            title: "Contato criado",
+            description: "O contato foi criado com sucesso.",
+          });
+          setContactFormOpen(false);
+        },
+        onError: (error) => {
+          toast({
+            title: "Erro",
+            description: "Não foi possível criar o contato.",
+            variant: "destructive",
+          });
+          console.error("Erro ao criar contato:", error);
+        }
+      });
+    }
   };
 
   return (
