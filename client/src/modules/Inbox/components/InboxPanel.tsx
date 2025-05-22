@@ -132,7 +132,7 @@ export const InboxPanel = () => {
   return (
     <div className="h-full w-full flex overflow-hidden">
       {/* Painel Esquerdo: Lista de Conversas (InboxPanel) */}
-      <div className="w-60 h-full border-r hidden md:flex md:flex-col">
+      <div className="w-52 h-full border-r hidden md:flex md:flex-col">
         {/* Cabeçalho do painel */}
         <div className="p-2 border-b flex-shrink-0">
           <div className="flex items-center justify-between mb-2">

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { ConversationItem, ConversationItemProps } from "./ConversationItem";
 import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 
 // Função para formatar a última mensagem, tratando objetos JSON
 const formatLastMessage = (lastMessage: string): string => {
@@ -187,7 +188,7 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
     <div className="h-full flex flex-col">
       {/* Lista de conversas */}
       <div 
-        className="flex-1 flex flex-col overflow-y-auto" 
+        className="flex-1 flex flex-col overflow-y-auto pb-2" 
         ref={scrollContainerRef}
       >
         {isLoading && !storedData.length && (

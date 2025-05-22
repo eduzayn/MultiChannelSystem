@@ -93,7 +93,7 @@ export const ConversationItem = ({
           </div>
           
           <div className="flex justify-between items-center">
-            <p className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-none">{lastMessage}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-[200px]">{lastMessage}</p>
             {unreadCount > 0 && (
               <Badge variant="default" className="bg-primary text-white ml-1 sm:ml-2 px-1.5 min-w-[20px] h-5 flex items-center justify-center">
                 {unreadCount}
