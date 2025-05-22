@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter, X, ChevronDown, Loader2 } from "lucide-react";
+import { Search, Plus, Filter, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -409,7 +409,25 @@ export default function ContactsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredContacts.length > 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={10} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                    <p className="text-muted-foreground">Carregando contatos...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={10} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <AlertCircle className="h-8 w-8 text-destructive mb-2" />
+                    <p className="text-muted-foreground">Erro ao carregar contatos. Tente novamente mais tarde.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : filteredContacts.length > 0 ? (
               filteredContacts.map(contact => (
                 <tr 
                   key={contact.id} 
