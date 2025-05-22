@@ -117,12 +117,22 @@ export const ConversationList = ({ onSelectConversation }: ConversationListProps
   // Atualizando dados preservando a posição de scroll
   useEffect(() => {
     if (conversations) {
-      saveScrollPosition();
-      setStoredData(conversations);
-      // Aguarde um tick para garantir que o DOM foi atualizado
-      setTimeout(() => {
-        restoreScrollPosition();
-      }, 0);
+      // Primeiro verificamos se os dados são diferentes para evitar atualizações desnecessárias
+      if (storedData.length !== conversations.length || 
+          JSON.stringify(storedData.map((c: ConversationItemProps) => c.id)) !== 
+          JSON.stringify(conversations.map((c: ConversationItemProps) => c.id))) {
+        
+        // Salvamos a posição de rolagem
+        saveScrollPosition();
+        
+        // Atualizamos os dados
+        setStoredData(conversations);
+        
+        // Aguardamos um tick para garantir que o DOM foi atualizado
+        setTimeout(() => {
+          restoreScrollPosition();
+        }, 0);
+      }
     }
   }, [conversations]);
   

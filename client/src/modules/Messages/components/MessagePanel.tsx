@@ -239,25 +239,31 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
     };
   }, [refetch, conversation.id]);
   
-  // Atualizar mensagens quando os dados são buscados
+  // Atualizar mensagens quando os dados são buscados - versão simplificada para evitar problemas
   useEffect(() => {
-    if (fetchedMessages) {
-      // Comparar se as mensagens realmente mudaram para evitar renders desnecessários
-      const currentMessagesIds = messagesList.map(msg => msg.id).join(',');
-      const newMessagesIds = fetchedMessages.map((msg: any) => msg.id).join(',');
+    if (fetchedMessages && fetchedMessages.length > 0) {
+      // Convertemos para string para simples comparação
+      const currentIds = JSON.stringify(messagesList.map(msg => msg.id).sort());
+      const newIds = JSON.stringify(fetchedMessages.map((msg: any) => msg.id).sort());
       
-      if (currentMessagesIds !== newMessagesIds || messagesList.length === 0) {
-        // Apenas log da quantidade de mensagens, não do conteúdo completo
-        console.log(`Atualizando ${fetchedMessages.length} mensagens para conversa ${conversation.id}`);
-        setMessagesList(fetchedMessages.length > 0 ? fetchedMessages : [defaultWelcomeMessage]);
+      // Só atualizamos se forem diferentes ou se não temos mensagens
+      if (currentIds !== newIds || messagesList.length === 0) {
+        setMessagesList(fetchedMessages);
       }
+    } else if (messagesList.length === 0) {
+      // Caso não tenhamos mensagens, mostramos a mensagem padrão
+      setMessagesList([defaultWelcomeMessage]);
     }
-  }, [fetchedMessages, conversation.id, messagesList]);
+  }, [fetchedMessages]);
 
   // Rolagem para o final da lista de mensagens quando novas mensagens são adicionadas
+  // Mas só faz isso quando mensagens são realmente adicionadas, não em qualquer renderização
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messagesList]);
+    // Usamos um ref para comparar com o último valor conhecido
+    if (messagesList.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messagesList.length]);
 
   // Extrai o número de telefone formatado da conversa
   const extractPhoneNumber = () => {
