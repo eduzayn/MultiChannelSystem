@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ConversationList } from "./ConversationList";
 import { ConversationItemProps } from "./ConversationItem";
+import { useConversationStore } from "../stores/conversationStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 

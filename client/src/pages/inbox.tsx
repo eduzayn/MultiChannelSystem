@@ -1,13 +1,16 @@
 import React from 'react';
+import { InboxPanel } from '@/modules/Inbox/components/InboxPanel';
+import ConversationView from '@/modules/Inbox/components/ConversationView';
+import ContextPanel from '@/modules/Inbox/components/ContextPanel';
 
 export default function Inbox() {
   return (
-    <div className="h-full flex items-center justify-center">
-      <div className="text-center">
-        <h2 className="text-2xl font-semibold mb-2">Página em construção</h2>
-        <p className="text-muted-foreground">
-          Esta página será reconstruída conforme novas orientações.
-        </p>
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Layout principal da Caixa de Entrada Unificada com 3 painéis */}
+      <div className="flex flex-1 overflow-hidden">
+        <InboxPanel />
+        <ConversationView />
+        <ContextPanel />
       </div>
     </div>
   );
