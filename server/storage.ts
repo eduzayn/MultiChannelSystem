@@ -474,11 +474,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async createMarketingChannel(insertChannel: InsertMarketingChannel): Promise<MarketingChannel> {
-    const [channel] = await db.insert(marketingChannels).values({
-      ...insertChannel,
+    // Remover campos que não existem na tabela
+    const safeData = {
+      name: insertChannel.name,
       description: insertChannel.description || null,
-      configuration: insertChannel.configuration || null
-    }).returning();
+      type: insertChannel.type,
+      configuration: insertChannel.configuration || null,
+      isActive: insertChannel.isActive
+    };
+    
+    // Inserir apenas os campos que existem na tabela
+    const [channel] = await db.insert(marketingChannels).values(safeData).returning();
     return channel;
   }
   
