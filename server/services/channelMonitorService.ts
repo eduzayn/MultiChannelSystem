@@ -100,14 +100,13 @@ class ChannelMonitorService {
       const previousStatus = this.channels.get(channel.id);
       
       try {
-        // Verificar status do canal na Z-API
+        // Verificar status do canal na Z-API usando o endpoint correto
         const response = await axios.get(
-          `https://api.z-api.io/instances/${instanceId}/status`, 
+          `https://api.z-api.io/instances/${instanceId}/token/${token}/status`, 
           { 
             headers: { 
               'Content-Type': 'application/json',
-              'Client-Token': clientToken || '', 
-              'Authorization': `Bearer ${token}`
+              ...(clientToken ? { 'Client-Token': clientToken } : {})
             } 
           }
         );

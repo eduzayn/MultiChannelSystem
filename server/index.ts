@@ -72,6 +72,9 @@ app.use(session({
   
   // Inicializar o serviço de Socket.IO com o servidor HTTP
   socketService.init(server);
+  
+  // Iniciar o serviço de monitoramento de canais
+  channelMonitorService.start();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
