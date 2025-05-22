@@ -332,7 +332,7 @@ export const InboxPanel = () => {
       </div>
 
       {/* Painel Central: Área da Conversa Ativa (ConversationView) */}
-      <div className="flex-1 h-full overflow-hidden flex flex-col" ref={messagesPanelRef}>
+      <div className="flex-1 h-full overflow-hidden flex flex-col pl-0" ref={messagesPanelRef}>
         {selectedConversation ? (
           <div className="h-full flex flex-col">
             {/* Cabeçalho da Conversa */}

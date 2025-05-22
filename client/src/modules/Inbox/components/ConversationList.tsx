@@ -226,12 +226,14 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
             
             {/* Botão para carregar mais conversas */}
             {hasMoreConversations && !showAllConversations && (
-              <button 
-                className="mx-auto my-2 text-xs text-muted-foreground hover:text-primary py-2 px-3"
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="mx-auto my-2 text-xs text-muted-foreground hover:text-primary"
                 onClick={handleLoadMore}
               >
                 Carregar mais conversas ({allConversations.length - (limit || 0)} restantes)
-              </button>
+              </Button>
             )}
           </>
         ) : (
