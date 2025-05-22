@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ConversationList } from "./ConversationList";
 import { ConversationItemProps } from "./ConversationItem";
-import { useConversationStore } from "../stores/conversationStore";
+// import { useConversationStore } from "../stores/conversationStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -71,7 +71,6 @@ interface AdvancedFilters {
 
 export const InboxPanel = () => {
   // Estados principais
-  const [selectedConversation, setSelectedConversation] = useState<ConversationItemProps | null>(null);
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -111,7 +110,8 @@ export const InboxPanel = () => {
   const totalFavorites = 4;
 
   const handleSelectConversation = (conversation: ConversationItemProps) => {
-    setSelectedConversation(conversation);
+    console.log("Conversa selecionada:", conversation);
+    // Implementação futura com o store
   };
 
   const handleTabChange = (tab: FilterTab) => {
