@@ -80,14 +80,14 @@ class ChannelMonitorService {
    */
   async checkWhatsAppChannel(channel: any) {
     try {
-      if (!channel.config) {
+      if (!channel.configuration) {
         console.warn(`Canal ${channel.id} não possui configuração`);
         return;
       }
 
-      const config = typeof channel.config === 'string' 
-        ? JSON.parse(channel.config) 
-        : channel.config;
+      const config = typeof channel.configuration === 'string' 
+        ? JSON.parse(channel.configuration) 
+        : channel.configuration;
 
       const { instanceId, token, clientToken } = config;
 
