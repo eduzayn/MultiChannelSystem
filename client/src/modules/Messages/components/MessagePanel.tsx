@@ -572,7 +572,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         ) : fetchedMessages && fetchedMessages.length > 0 ? (
           // Nova implementação para exibir mensagens
           <div className="space-y-3 py-4">
-            {fetchedMessages.map((message) => {
+            {fetchedMessages.map((message: any) => {
               // Processar conteúdo da mensagem
               let displayContent = message.content;
               let messageType = message.type;
@@ -581,20 +581,66 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
               if (typeof message.content === 'string' && message.content.startsWith('{') && message.content.endsWith('}')) {
                 try {
                   const contentObj = JSON.parse(message.content);
-                  // Extrair conteúdo de diferentes formatos de mensagem
-                  if (contentObj.text) displayContent = contentObj.text;
-                  else if (contentObj.body) displayContent = contentObj.body;
-                  else if (contentObj.message) displayContent = contentObj.message;
-                  else if (contentObj.content) displayContent = contentObj.content;
+                  
+                  // Extrair conteúdo do formato de mensagem Z-API
+                  if (contentObj.text && typeof contentObj.text === 'object' && contentObj.text.message) {
+                    displayContent = contentObj.text.message;
+                  } else if (contentObj.text) {
+                    displayContent = contentObj.text;
+                  } else if (contentObj.body) {
+                    displayContent = contentObj.body;
+                  } else if (contentObj.message) {
+                    displayContent = contentObj.message;
+                  } else if (contentObj.content) {
+                    displayContent = contentObj.content;
+                  }
                   
                   // Verificar tipos especiais de mensagem
                   if (messageType === 'MessageStatusCallback' || 
                       messageType === 'PresenceChatCallback') {
                     displayContent = '[Atualização de status]';
+                    messageType = 'system';
+                  }
+                  
+                  // Verificar mensagens de mídia
+                  if (contentObj.caption) {
+                    displayContent = contentObj.caption;
+                  }
+                  
+                  // Se ainda não temos conteúdo, usar informações de mídia
+                  if (!displayContent && message.hasMedia) {
+                    if (message.mediaType === 'audio') {
+                      displayContent = '🔊 Mensagem de áudio';
+                    } else if (message.mediaType === 'image') {
+                      displayContent = '🖼️ Imagem';
+                    } else if (message.mediaType === 'video') {
+                      displayContent = '🎥 Vídeo';
+                    } else if (message.mediaType === 'document') {
+                      displayContent = '📄 Documento';
+                    }
                   }
                 } catch (e) {
                   // Se falhar o parse, manter conteúdo original
                   console.log("Erro ao processar mensagem JSON:", e);
+                }
+              }
+              
+              // Conversão final de mensagens vazias
+              if (displayContent === "{}" || !displayContent) {
+                if (message.hasMedia) {
+                  if (message.mediaType === 'audio') {
+                    displayContent = '🔊 Mensagem de áudio';
+                  } else if (message.mediaType === 'image') {
+                    displayContent = '🖼️ Imagem';
+                  } else if (message.mediaType === 'video') {
+                    displayContent = '🎥 Vídeo';
+                  } else if (message.mediaType === 'document') {
+                    displayContent = '📄 Documento';
+                  } else {
+                    displayContent = 'Mensagem de mídia';
+                  }
+                } else {
+                  displayContent = "Nova mensagem";
                 }
               }
               
