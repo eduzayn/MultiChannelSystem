@@ -49,7 +49,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
         console.log("Mensagens recebidas:", response.data);
         
         // Processar as mensagens do servidor
-        return response.data.map((msg: any) => {
+        const processedMessages = response.data.map((msg: any) => {
           // Informações básicas da mensagem
           const messageId = msg.id.toString();
           const messageType = msg.type || "text";
@@ -58,88 +58,135 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
           const messageTimestamp = new Date(msg.timestamp);
           const messageMetadata = msg.metadata || {};
           
+          // Mensagens de status - não mostrar na interface
+          if (messageType === 'MessageStatusCallback' || messageType === 'PresenceChatCallback') {
+            return null;
+          }
+          
           // Processamento do conteúdo da mensagem
-          let messageContent: string = "";
+          let messageContent = "";
           let hasMediaAttachment = false;
           let mediaType = "";
           let mediaUrl = "";
           
-          // Processar conteúdo vindo como JSON string
-          if (typeof msg.content === 'string' && msg.content.startsWith('{') && msg.content.endsWith('}')) {
-            try {
-              const contentObj = JSON.parse(msg.content);
-              
-              // Extrair conteúdo textual baseado em diferentes formatos de mensagem
-              if (contentObj.text) {
-                messageContent = contentObj.text.message || contentObj.text;
-              } else if (contentObj.body) {
-                messageContent = contentObj.body;
-              } else if (contentObj.message) {
-                messageContent = contentObj.message;
-              } else if (contentObj.content) {
-                messageContent = contentObj.content;
-              }
-              
-              // Verificação de tipos especiais de mensagem
+          // Processar o conteúdo baseado no formato
+          if (typeof msg.content === 'string') {
+            // Converter conteúdos vazios para texto significativo
+            if (msg.content === "{}" || msg.content === "") {
+              // Para mensagens do tipo ReceivedCallback, provavelmente são mensagens de mídia
               if (messageType === 'ReceivedCallback') {
-                // Verificar se é uma mensagem de áudio
+                messageContent = "Nova mensagem";
+                
+                // Tentar identificar o tipo de mídia pelos metadados
+                if (messageMetadata.isAudio || (messageMetadata.zapiMessageId && messageType.includes('audio'))) {
+                  messageContent = "🔊 Mensagem de áudio";
+                  hasMediaAttachment = true;
+                  mediaType = "audio";
+                } 
+                else if (messageMetadata.isImage || (messageMetadata.zapiMessageId && messageType.includes('image'))) {
+                  messageContent = "🖼️ Imagem";
+                  hasMediaAttachment = true;
+                  mediaType = "image";
+                }
+                else if (messageMetadata.isVideo || (messageMetadata.zapiMessageId && messageType.includes('video'))) {
+                  messageContent = "🎥 Vídeo";
+                  hasMediaAttachment = true;
+                  mediaType = "video";
+                }
+                else if (messageMetadata.isFile || (messageMetadata.zapiMessageId && messageType.includes('document'))) {
+                  messageContent = "📄 Documento";
+                  hasMediaAttachment = true;
+                  mediaType = "document";
+                }
+              } 
+              else if (messageType === 'text') {
+                messageContent = "Mensagem de texto";
+              }
+              else {
+                // Mensagem genérica para outros tipos
+                messageContent = messageSender === 'contact' ? 
+                  "Mensagem recebida" : "Mensagem enviada";
+              }
+            }
+            // Processar conteúdo JSON
+            else if (msg.content.startsWith('{') && msg.content.endsWith('}')) {
+              try {
+                const contentObj = JSON.parse(msg.content);
+                
+                // Tentar extrair texto de diferentes formatos de mensagem Z-API
+                if (contentObj.text && typeof contentObj.text === 'object' && contentObj.text.message) {
+                  messageContent = contentObj.text.message;
+                } 
+                else if (contentObj.text) {
+                  messageContent = contentObj.text;
+                } 
+                else if (contentObj.body) {
+                  messageContent = contentObj.body;
+                } 
+                else if (contentObj.message) {
+                  messageContent = contentObj.message;
+                } 
+                else if (contentObj.content) {
+                  messageContent = contentObj.content;
+                }
+                
+                // Verificar se é uma mensagem de mídia
                 if (contentObj.audio) {
                   hasMediaAttachment = true;
                   mediaType = 'audio';
                   mediaUrl = contentObj.audio.audioUrl || '';
                   messageContent = messageContent || '🔊 Mensagem de áudio';
-                }
-                // Verificar se é uma mensagem de imagem
-                else if (contentObj.image || contentObj.caption) {
+                } 
+                else if (contentObj.image) {
                   hasMediaAttachment = true;
                   mediaType = 'image';
-                  mediaUrl = contentObj.image?.imageUrl || '';
+                  mediaUrl = contentObj.image.imageUrl || '';
                   messageContent = contentObj.caption || messageContent || '🖼️ Imagem';
-                }
-                // Verificar se é uma mensagem de vídeo
+                } 
                 else if (contentObj.video) {
                   hasMediaAttachment = true;
                   mediaType = 'video';
                   mediaUrl = contentObj.video.videoUrl || '';
                   messageContent = messageContent || '🎥 Vídeo';
-                }
-                // Verificar se é uma mensagem de documento
+                } 
                 else if (contentObj.document) {
                   hasMediaAttachment = true;
                   mediaType = 'document';
                   mediaUrl = contentObj.document.documentUrl || '';
                   messageContent = contentObj.document.fileName || messageContent || '📄 Documento';
                 }
-                // Verificar se é uma mensagem de localização
-                else if (contentObj.location) {
-                  hasMediaAttachment = true;
-                  mediaType = 'location';
-                  messageContent = '📍 Localização compartilhada';
+                
+                // Se ainda não encontramos nenhum conteúdo significativo
+                if (!messageContent) {
+                  if (contentObj.messageId) {
+                    messageContent = "Nova mensagem";
+                  } 
+                  else {
+                    // Usar JSON simplificado como último recurso
+                    const simpleObj = { ...contentObj };
+                    delete simpleObj.instanceId;
+                    delete simpleObj.photo;
+                    delete simpleObj.senderPhoto;
+                    
+                    // Se o objeto tiver muitas propriedades, usar um texto genérico
+                    if (Object.keys(simpleObj).length > 3) {
+                      messageContent = "Mensagem de mídia";
+                    } else {
+                      messageContent = JSON.stringify(simpleObj);
+                    }
+                  }
                 }
-                // Verificar se é uma mensagem de contato
-                else if (contentObj.contacts) {
-                  hasMediaAttachment = true;
-                  mediaType = 'contact';
-                  messageContent = '👤 Contato compartilhado';
-                }
+              } catch (e) {
+                console.log("Erro ao processar mensagem JSON:", e);
+                messageContent = "Mensagem com formato não reconhecido";
               }
-              // Mensagens de status como digitando, etc.
-              else if (messageType === 'MessageStatusCallback' || messageType === 'PresenceChatCallback') {
-                // Não mostrar essas mensagens de status na interface
-                return null;
-              }
-              
-              // Se ainda não temos conteúdo, usar o objeto JSON inteiro como fallback
-              if (!messageContent) {
-                messageContent = JSON.stringify(contentObj);
-              }
-            } catch (e) {
-              console.log("Erro ao processar mensagem JSON:", e);
-              messageContent = msg.content || "Mensagem não identificada";
+            }
+            // Texto simples
+            else {
+              messageContent = msg.content;
             }
           } else {
-            // Se não for JSON, usar o conteúdo original
-            messageContent = msg.content || "";
+            messageContent = "Mensagem sem conteúdo";
           }
           
           return {
@@ -154,7 +201,10 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
             mediaType,
             mediaUrl
           };
-        }).filter(Boolean); // Remover mensagens nulas (como mensagens de status)
+        });
+        
+        // Filtrar mensagens nulas (como notificações de status)
+        return processedMessages.filter((item: any) => item !== null);
       } catch (error) {
         console.error("Erro ao buscar mensagens:", error);
         return [{
