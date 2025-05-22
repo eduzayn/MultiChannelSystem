@@ -102,8 +102,8 @@ export const MessagePanel = ({
         <div ref={messageEndRef} />
       </div>
 
-      {/* Composer */}
-      <div className="border-t border-border p-4">
+      {/* Composer - fixado na parte inferior */}
+      <div className="border-t border-border p-4 mt-auto shrink-0">
         {isRecording ? (
           <div className="flex items-center space-x-2 bg-background border rounded-lg p-3">
             <div className="flex-1">
