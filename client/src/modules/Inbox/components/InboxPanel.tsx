@@ -381,17 +381,7 @@ export const InboxPanel = () => {
               </div>
             </div>
             
-            {/* Botão de carregar mensagens anteriores */}
-            <div className="p-2 text-center border-b bg-background sticky top-[44px] z-10">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-xs text-muted-foreground hover:text-primary"
-                onClick={() => setShowPreviousMessages(true)}
-              >
-                Carregar mensagens anteriores
-              </Button>
-            </div>
+            {/* Botão foi movido para o componente MessagePanel */}
             
             {/* Espaço para o histórico de mensagens */}
             <div className="flex-grow overflow-y-auto p-4 space-y-4 bg-muted/20">

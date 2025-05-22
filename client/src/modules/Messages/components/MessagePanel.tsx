@@ -42,7 +42,7 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
   const { toast } = useToast();
   
   // Configuração de limite de mensagens (para melhorar a performance)
-  const MESSAGE_LIMIT = 50; // Limite padrão de mensagens a exibir
+  const MESSAGE_LIMIT = 50; // Limite padrão de mensagens a exibir - similar ao concorrente
   
   // Buscar mensagens do servidor quando uma conversa é selecionada
   const { data: fetchedMessages, isLoading, refetch } = useQuery({
@@ -593,9 +593,24 @@ export const MessagePanel = ({ conversation, onToggleContactPanel }: MessagePane
             ))}
           </div>
         ) : fetchedMessages && fetchedMessages.length > 0 ? (
-          // Nova implementação para exibir mensagens
+          // Nova implementação para exibir mensagens com limitação
           <div className="space-y-3 py-4">
-            {fetchedMessages.map((message: any) => {
+            {/* Botão para carregar mensagens anteriores */}
+            {!showAllMessages && fetchedMessages.length > MESSAGE_LIMIT && (
+              <div className="text-center mb-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs"
+                  onClick={() => setShowAllMessages(true)}
+                >
+                  Carregar mensagens anteriores ({fetchedMessages.length - MESSAGE_LIMIT} mensagens)
+                </Button>
+              </div>
+            )}
+            
+            {/* Limitando a quantidade de mensagens exibidas */}
+            {(showAllMessages ? fetchedMessages : fetchedMessages.slice(-MESSAGE_LIMIT)).map((message: any) => {
               // Processar conteúdo da mensagem
               let displayContent = message.content;
               let messageType = message.type;
