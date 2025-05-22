@@ -63,14 +63,14 @@ export const ConversationItem = ({
   return (
     <div
       className={cn(
-        "p-3 border-b cursor-pointer transition-colors",
+        "p-2 sm:p-3 border-b cursor-pointer transition-colors",
         isActive
           ? "bg-accent border-l-4 border-l-primary"
           : "hover:bg-muted/50"
       )}
       onClick={onClick}
     >
-      <div className="flex gap-3">
+      <div className="flex gap-2 sm:gap-3">
         {/* Avatar com indicador de canal */}
         <div className="relative">
           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
@@ -86,16 +86,16 @@ export const ConversationItem = ({
         {/* Conteúdo da conversa */}
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-1">
-            <h4 className="font-medium text-sm truncate">{name}</h4>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
+            <h4 className="font-medium text-sm truncate max-w-[140px] sm:max-w-[200px]">{name}</h4>
+            <span className="text-xs text-muted-foreground whitespace-nowrap pl-1">
               {formatDistanceToNow(timestamp, { addSuffix: true, locale: ptBR })}
             </span>
           </div>
           
           <div className="flex justify-between items-center">
-            <p className="text-xs text-muted-foreground truncate">{lastMessage}</p>
+            <p className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-none">{lastMessage}</p>
             {unreadCount > 0 && (
-              <Badge variant="default" className="bg-primary text-white ml-2 px-1.5 min-w-[20px] h-5 flex items-center justify-center">
+              <Badge variant="default" className="bg-primary text-white ml-1 sm:ml-2 px-1.5 min-w-[20px] h-5 flex items-center justify-center">
                 {unreadCount}
               </Badge>
             )}
