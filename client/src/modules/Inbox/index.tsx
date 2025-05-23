@@ -161,10 +161,7 @@ const Inbox = () => {
   const [contextPanelTab, setContextPanelTab] = useState('info');
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [showCommands, setShowCommands] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [messagePreview, setMessagePreview] = useState<string | null>(null);
-  const [selectedMessageTone, setSelectedMessageTone] = useState<string>("normal");
   const [multipleAttachments, setMultipleAttachments] = useState<File[]>([]);
   
   // Estados para mensagens
@@ -922,23 +919,270 @@ const Inbox = () => {
               )}
             </div>
             
-            {/* Área de entrada de mensagem */}
-            <div className="bg-muted/25 border-t px-4 py-3">
-              <div className="flex items-end gap-2">
+            {/* Área de visualização de múltiplos anexos */}
+            {multipleAttachments.length > 0 && (
+              <div className="bg-muted/10 border-t px-4 py-2 flex gap-2 overflow-x-auto">
+                {multipleAttachments.map((file, index) => (
+                  <div key={index} className="relative group min-w-[120px]">
+                    <div className="bg-background border rounded-md p-2 flex items-center gap-2">
+                      {file.type.startsWith('image/') ? (
+                        <div className="w-10 h-10 relative">
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt={file.name} 
+                            className="w-full h-full object-cover rounded-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-sm">
+                          {file.type.startsWith('audio/') && <Mic className="h-5 w-5 text-muted-foreground" />}
+                          {file.type.startsWith('video/') && <Video className="h-5 w-5 text-muted-foreground" />}
+                          {file.type.includes('pdf') && <FileText className="h-5 w-5 text-muted-foreground" />}
+                          {file.type.includes('doc') && <FileText className="h-5 w-5 text-muted-foreground" />}
+                          {(!file.type.startsWith('audio/') && 
+                            !file.type.startsWith('video/') && 
+                            !file.type.includes('pdf') &&
+                            !file.type.includes('doc') &&
+                            !file.type.startsWith('image/')) && 
+                            <File className="h-5 w-5 text-muted-foreground" />
+                          }
+                        </div>
+                      )}
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="text-xs font-medium truncate max-w-[70px]">{file.name}</span>
+                        <span className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span>
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 absolute top-1 right-1 bg-background/80"
+                        onClick={() => {
+                          setMultipleAttachments(prev => prev.filter((_, i) => i !== index));
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Área de sugestão da IA */}
+            {aiSuggestion && (
+              <div className="px-4 py-2 border-t bg-accent/10 text-sm flex items-center gap-2">
                 <div className="flex-1">
-                  <Input
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="Digite uma mensagem..."
-                    className="min-h-10"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey && messageText.trim()) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
+                  <p className="font-medium text-accent-foreground flex items-center gap-1">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Sugestão da Prof. Ana:</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground">{aiSuggestion}</p>
                 </div>
+                <div className="flex gap-1">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setMessageText(aiSuggestion);
+                      setAiSuggestion(null);
+                    }}
+                  >
+                    Usar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-7 text-xs"
+                    onClick={() => setAiSuggestion(null)}
+                  >
+                    Ignorar
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Área de entrada de mensagem - Versão aprimorada */}
+            <div className="relative">
+              {/* Menu de comandos rápidos */}
+              {showCommands && (
+                <div className="absolute bottom-full left-4 mb-2 bg-background border rounded-md shadow-md w-72 max-h-60 overflow-y-auto z-10">
+                  <div className="p-2">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Comandos Rápidos</p>
+                    <div className="space-y-1">
+                      {[
+                        { command: '/notainterna', desc: 'Adiciona uma nota interna à conversa', example: '/notainterna Lembrar de verificar o status do pagamento' },
+                        { command: '/tarefa', desc: 'Cria uma tarefa relacionada à conversa', example: '/tarefa Enviar contrato @maria 24/05' },
+                        { command: '/resposta', desc: 'Insere uma resposta rápida salva', example: '/resposta saudacao' },
+                        { command: '/atribuir', desc: 'Atribui a conversa para outro atendente', example: '/atribuir @joao' },
+                        { command: '/resolver', desc: 'Marca a conversa como resolvida', example: '/resolver' },
+                        { command: '/traduzir', desc: 'Traduz o texto para outro idioma', example: '/traduzir Olá, como posso ajudar? para ingles' },
+                        { command: '/buscarfaq', desc: 'Busca na base de conhecimento', example: '/buscarfaq política de devolução' },
+                      ].map((cmd, i) => (
+                        <div 
+                          key={i} 
+                          className="p-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer"
+                          onClick={() => {
+                            setMessageText(prev => prev.replace(/\/\w*$/, cmd.command + ' '));
+                            setShowCommands(false);
+                          }}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="bg-primary/10 text-primary rounded-sm px-1.5 py-0.5 text-xs font-mono">
+                              {cmd.command}
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs">{cmd.desc}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 font-mono">Ex: {cmd.example}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Seletor de tom da mensagem */}
+              {selectedMessageTone !== 'normal' && (
+                <div className="flex items-center gap-2 px-4 py-1.5 border-t bg-muted/30 text-xs">
+                  <div className="flex-1 flex items-center gap-1.5">
+                    <Badge variant="outline" className="h-6 px-2 text-xs font-normal gap-1 items-center flex">
+                      {selectedMessageTone === 'formal' && <ClipboardCheck className="h-3.5 w-3.5" />}
+                      {selectedMessageTone === 'amigavel' && <Smile className="h-3.5 w-3.5" />}
+                      {selectedMessageTone === 'empatico' && <Heart className="h-3.5 w-3.5" />}
+                      {selectedMessageTone === 'direto' && <ArrowRight className="h-3.5 w-3.5" />}
+                      {selectedMessageTone === 'formal' && 'Tom Formal'}
+                      {selectedMessageTone === 'amigavel' && 'Tom Amigável'}
+                      {selectedMessageTone === 'empatico' && 'Tom Empático'}
+                      {selectedMessageTone === 'direto' && 'Tom Direto'}
+                    </Badge>
+                    {selectedMessageTone === 'formal' && <span>Comunicação profissional e estruturada</span>}
+                    {selectedMessageTone === 'amigavel' && <span>Comunicação leve e próxima</span>}
+                    {selectedMessageTone === 'empatico' && <span>Comunicação acolhedora e compreensiva</span>}
+                    {selectedMessageTone === 'direto' && <span>Comunicação objetiva e concisa</span>}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6" 
+                    onClick={() => setSelectedMessageTone('normal')}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Indicador de status do contato */}
+              <div className="flex items-center gap-2 px-4 py-2 text-xs text-muted-foreground border-t">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="h-5 gap-1 text-xs py-0 font-normal items-center flex">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                    <span>WhatsApp Zayn</span>
+                  </Badge>
+                </div>
+                
+                {selectedConversation?.channel === 'whatsapp' && (
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span>Visto por último às {new Date().getHours()}:{String(new Date().getMinutes()).padStart(2, '0')}</span>
+                  </div>
+                )}
+                
+                <div className="ml-auto">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 gap-1 text-xs">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Prof. Ana</span>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel className="text-xs flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span>Ajuda da Prof. Ana</span>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => setSelectedMessageTone('formal')}>
+                        <ClipboardCheck className="h-3.5 w-3.5" />
+                        <span>Tom Formal</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => setSelectedMessageTone('amigavel')}>
+                        <Smile className="h-3.5 w-3.5" />
+                        <span>Tom Amigável</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => setSelectedMessageTone('empatico')}>
+                        <Heart className="h-3.5 w-3.5" />
+                        <span>Tom Empático</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => setSelectedMessageTone('direto')}>
+                        <ArrowRight className="h-3.5 w-3.5" />
+                        <span>Tom Direto</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => {
+                        setAiSuggestion("Olá, tudo bem? Agradeço pelo seu contato com a Zayn Educacional. Estou à disposição para esclarecer quaisquer dúvidas sobre nossos cursos. Como posso te ajudar hoje?");
+                      }}>
+                        <Wand2 className="h-3.5 w-3.5" />
+                        <span>Sugerir resposta</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2">
+                        <Check className="h-3.5 w-3.5" />
+                        <span>Revisar texto</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-xs gap-2">
+                        <Languages className="h-3.5 w-3.5" />
+                        <span>Traduzir mensagem</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Área principal de digitação e botões */}
+              <div className="bg-muted/25 border-t px-4 py-3">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1 border rounded-md bg-background overflow-hidden">
+                    <Textarea
+                      value={messageText}
+                      onChange={(e) => {
+                        setMessageText(e.target.value);
+                        
+                        // Detecta comandos de barra e mostra o menu de comandos
+                        if (e.target.value.match(/\/\w*$/)) {
+                          setShowCommands(true);
+                        } else {
+                          setShowCommands(false);
+                        }
+                        
+                        // Simulação de sugestão da IA
+                        if ((e.target.value.toLowerCase().includes('bom dia') || 
+                            e.target.value.toLowerCase().includes('boa tarde') || 
+                            e.target.value.toLowerCase().includes('boa noite')) && 
+                            e.target.value.length > 10 && 
+                            !aiSuggestion && 
+                            Math.random() > 0.7) {
+                          setAiSuggestion("Que tal adicionar uma pergunta sobre como posso ajudar hoje?");
+                        }
+                      }}
+                      placeholder="Digite uma mensagem ou use '/' para comandos rápidos..."
+                      className="min-h-[40px] max-h-[120px] resize-none border-0 focus-visible:ring-0 p-2"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && messageText.trim()) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                        
+                        // Fecha o menu de comandos com Escape
+                        if (e.key === 'Escape' && showCommands) {
+                          e.preventDefault();
+                          setShowCommands(false);
+                        }
+                      }}
+                      rows={1}
+                    />
+                  </div>
                 
                 <Popover>
                   <PopoverTrigger asChild>
