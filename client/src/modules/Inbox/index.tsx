@@ -296,11 +296,13 @@ export default function Inbox() {
   };
   
   // Função para enviar uma mensagem
-  const handleSendMessage = async () => {
-    if (messageText.trim() && selectedConversation) {
+  const handleSendMessage = async (text: string) => {
+    if (text.trim() && selectedConversation) {
       setIsSending(true);
       
       try {
+        console.log('Preparando para enviar mensagem:', text, 'para conversa:', selectedConversation);
+        
         // Identificando o número de telefone a partir do identificador da conversa
         // Normalmente o identificador está no formato "WhatsApp 5511999999999"
         const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
@@ -312,8 +314,8 @@ export default function Inbox() {
         // Adiciona uma mensagem temporária na UI
         const newMessage = {
           id: Date.now(), // Temporário até receber o ID real do backend
-          conversationId: selectedConversation.id,
-          content: messageText,
+          conversationId: parseInt(selectedConversation.id), // Convertendo para número
+          content: text,
           type: 'text',
           sender: 'user',
           status: 'sending', // Status inicial
@@ -326,62 +328,104 @@ export default function Inbox() {
         setMessages(prev => [...prev, newMessage]);
         setDisplayedMessages(prev => [...prev, newMessage]);
         
-        // Limpa o input
-        setMessageText('');
-        
-        // Envia mensagem para o backend primeiro
-        const apiResponse = await fetch('/api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            conversationId: selectedConversation.id,
-            content: messageText,
-            type: 'text',
-            sender: 'user'
-          }),
-        });
-        
-        const savedMessage = await apiResponse.json();
-        
-        // Agora envia através da Z-API
-        const result = await sendTextMessage({
-          channelId: parseInt(selectedConversation.id),
-          to: phoneNumber,
-          message: messageText
-        });
-        
-        if (result.success) {
-          console.log('Mensagem enviada com sucesso via Z-API:', result);
+        try {
+          // Tenta enviar a mensagem através da Z-API diretamente
+          console.log('Enviando mensagem via Z-API para:', phoneNumber);
+          const result = await sendTextMessage({
+            channelId: parseInt(selectedConversation.id),
+            to: phoneNumber,
+            message: text
+          });
           
-          // Atualiza o status da mensagem para entregue
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
-                ? { 
-                    ...msg, 
-                    id: savedMessage.id || msg.id,
-                    status: 'delivered',
-                    messageId: result.messageId // Armazenar o ID retornado pela API
-                  } 
-                : msg
-            )
-          );
-          setDisplayedMessages(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
-                ? { 
-                    ...msg, 
-                    id: savedMessage.id || msg.id,
-                    status: 'delivered',
-                    messageId: result.messageId
-                  } 
-                : msg
-            )
-          );
-        } else {
-          console.error('Falha ao enviar mensagem via Z-API:', result.message);
+          console.log('Resultado do envio via Z-API:', result);
+          
+          if (result.success) {
+            console.log('Mensagem enviada com sucesso via Z-API:', result);
+            
+            // Agora salva a mensagem no backend
+            try {
+              const apiResponse = await fetch('/api/messages', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  conversationId: parseInt(selectedConversation.id),
+                  content: text,
+                  type: 'text',
+                  sender: 'user'
+                }),
+              });
+              
+              const savedMessage = await apiResponse.json();
+              console.log('Mensagem salva no backend:', savedMessage);
+              
+              // Atualiza o status da mensagem para entregue
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === newMessage.id 
+                    ? { 
+                        ...msg, 
+                        id: savedMessage.id || msg.id,
+                        status: 'delivered',
+                        messageId: result.messageId // Armazenar o ID retornado pela API
+                      } 
+                    : msg
+                )
+              );
+              setDisplayedMessages(prev => 
+                prev.map(msg => 
+                  msg.id === newMessage.id 
+                    ? { 
+                        ...msg, 
+                        id: savedMessage.id || msg.id,
+                        status: 'delivered',
+                        messageId: result.messageId
+                      } 
+                    : msg
+                )
+              );
+            } catch (saveError) {
+              console.error('Erro ao salvar mensagem no backend:', saveError);
+              // Mesmo com erro ao salvar, a mensagem foi enviada
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === newMessage.id 
+                    ? { ...msg, status: 'delivered' } 
+                    : msg
+                )
+              );
+              setDisplayedMessages(prev => 
+                prev.map(msg => 
+                  msg.id === newMessage.id 
+                    ? { ...msg, status: 'delivered' } 
+                    : msg
+                )
+              );
+            }
+          } else {
+            console.error('Falha ao enviar mensagem via Z-API:', result.message);
+            
+            // Atualiza o status da mensagem para erro
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === newMessage.id 
+                  ? { ...msg, status: 'error' } 
+                  : msg
+              )
+            );
+            setDisplayedMessages(prev => 
+              prev.map(msg => 
+                msg.id === newMessage.id 
+                  ? { ...msg, status: 'error' } 
+                  : msg
+              )
+            );
+            
+            alert(`Erro ao enviar a mensagem: ${result.message}`);
+          }
+        } catch (sendError) {
+          console.error('Erro ao enviar mensagem via Z-API:', sendError);
           
           // Atualiza o status da mensagem para erro
           setMessages(prev => 
@@ -399,14 +443,13 @@ export default function Inbox() {
             )
           );
           
-          alert(`Erro ao enviar a mensagem: ${result.message}`);
+          alert('Erro ao enviar a mensagem via WhatsApp. Tente novamente.');
         }
         
         setIsSending(false);
-        
       } catch (error) {
-        console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar a mensagem. Tente novamente.');
+        console.error('Erro geral ao enviar mensagem:', error);
+        alert('Erro ao enviar a mensagem. Verifique a conexão e tente novamente.');
         setIsSending(false);
       }
     }

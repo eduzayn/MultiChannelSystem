@@ -72,6 +72,7 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
 
   const handleSendMessage = () => {
     if (messageText.trim()) {
+      console.log("Enviando mensagem:", messageText);
       onSendMessage(messageText);
       setMessageText('');
       setAiSuggestion(null);
