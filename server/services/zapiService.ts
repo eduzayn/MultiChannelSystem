@@ -676,21 +676,23 @@ export async function sendTextMessage(
     console.log(`Enviando mensagem para ${cleanPhone} via Z-API: "${message.substring(0, 20)}${message.length > 20 ? '...' : ''}"`);
     
     try {
-      // Verificar se estamos usando as credenciais de demonstração
-      const isUsingDemoCredentials = 
-        instanceId === "3DF871A7ADFB20FB49998E66062CE0C1" && 
-        token === "F17CB66AC44697A25E";
-        
-      if (isUsingDemoCredentials) {
-        console.log("⚠️ ATENÇÃO: Usando credenciais de demonstração da Z-API!");
-        console.log("Para enviar mensagens em produção, configure credenciais válidas nas configurações de integração.");
+      // Verificar se as credenciais foram fornecidas
+      if (!instanceId || !token) {
+        console.log("⚠️ ATENÇÃO: Credenciais da Z-API ausentes ou inválidas!");
+        console.log("Para enviar mensagens, configure credenciais válidas no canal de WhatsApp.");
         
         // Retornar erro informativo
         return {
           success: false,
-          message: "Credenciais da Z-API não configuradas. Entre em contato com o administrador para configurar as credenciais Z-API válidas."
+          message: "Credenciais da Z-API não configuradas corretamente."
         };
       }
+      
+      // Para diagnóstico, vamos mostrar as credenciais exatas que estamos usando
+      console.log(`Enviando com credenciais:`);
+      console.log(`instanceId: [${instanceId}]`);
+      console.log(`token: [${token}]`);
+      console.log(`phone: [${cleanPhone}]`);
       
       // Realizando a requisição para a API Z-API com timeout de 15 segundos
       const response = await axios.post(

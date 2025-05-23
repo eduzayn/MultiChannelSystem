@@ -600,35 +600,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let instanceId, token, clientToken;
       try {
         const { db } = await import('./db');
-        const { integrations } = await import('../shared/schema');
-        const { eq } = await import('drizzle-orm');
         
-        // Buscar a integração associada ao canal
-        const integration = await db.query.integrations.findFirst({
-          where: eq(integrations.channelId, parseInt(channelId))
-        });
+        // Buscar as credenciais diretamente da tabela marketing_channels usando SQL nativo
+        const [channel] = await db.execute(
+          `SELECT * FROM marketing_channels WHERE id = $1 LIMIT 1`, 
+          [parseInt(channelId)]
+        );
         
-        if (integration && integration.credentials) {
-          const credentials = integration.credentials as any;
-          instanceId = credentials.instanceId || "3DF871A7ADFB20FB49998E66062CE0C1";
-          token = credentials.token || "F17CB66AC44697A25E";
-          clientToken = credentials.clientToken;
+        if (channel && channel.configuration) {
+          // Parseamos a configuração para extrair as credenciais
+          let config;
+          try {
+            config = typeof channel.configuration === 'string' 
+              ? JSON.parse(channel.configuration) 
+              : channel.configuration;
+          } catch (parseError) {
+            console.error('Erro ao processar configuração:', parseError);
+            config = channel.configuration;
+          }
           
-          console.log(`Usando credenciais da integração para o canal ${channelId}:`);
+          // Extrair as credenciais corretas da configuração
+          instanceId = config.instanceId;
+          token = config.token;
+          clientToken = config.clientToken;
+          
+          console.log(`Usando credenciais do canal WhatsApp ${channel.name}:`);
           console.log(`- Instance ID: ${instanceId}`);
           console.log(`- Token: ${token?.substring(0, 5)}...`);
+          
+          if (!instanceId || !token) {
+            throw new Error("Credenciais incompletas no canal de WhatsApp");
+          }
         } else {
-          // Credenciais default para o canal Z-API se não encontrar no banco
-          console.log(`Nenhuma integração encontrada para o canal ${channelId}, usando credenciais padrão`);
-          instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
-          token = "F17CB66AC44697A25E";
-          console.log("É necessário configurar credenciais Z-API válidas para enviar mensagens em produção");
+          // Se não encontrou o canal específico, busca o primeiro canal WhatsApp ativo
+          const [whatsappChannel] = await db.execute(
+            `SELECT * FROM marketing_channels WHERE type = 'whatsapp' AND is_active = true LIMIT 1`
+          );
+          
+          if (whatsappChannel && whatsappChannel.configuration) {
+            // Parse configuração
+            let config;
+            try {
+              config = typeof whatsappChannel.configuration === 'string' 
+                ? JSON.parse(whatsappChannel.configuration) 
+                : whatsappChannel.configuration;
+            } catch (parseError) {
+              console.error('Erro ao processar configuração:', parseError);
+              config = whatsappChannel.configuration;
+            }
+            
+            instanceId = config.instanceId;
+            token = config.token;
+            clientToken = config.clientToken;
+            
+            console.log(`Usando credenciais do canal WhatsApp alternativo: ${whatsappChannel.name}`);
+            console.log(`- Instance ID: ${instanceId}`);
+            console.log(`- Token: ${token?.substring(0, 5)}...`);
+            
+            if (!instanceId || !token) {
+              throw new Error("Credenciais incompletas no canal de WhatsApp alternativo");
+            }
+          } else {
+            throw new Error("Nenhum canal WhatsApp ativo encontrado");
+          }
         }
       } catch (dbError) {
         console.error('Erro ao buscar credenciais da Z-API:', dbError);
-        // Usar credenciais padrão em caso de erro
-        instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
-        token = "F17CB66AC44697A25E";
+        
+        // Retornar erro claro para o cliente
+        return res.status(400).json({
+          success: false,
+          message: "Erro nas credenciais da Z-API. Verifique as configurações do canal WhatsApp."
+        });
       }
       
       // Importar o serviço da Z-API
