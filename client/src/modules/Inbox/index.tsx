@@ -868,48 +868,62 @@ const Inbox = () => {
                 </div>
               )}
             </div>
-                        
-                            <div className="flex-shrink-0 mr-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback>
-                                  {selectedConversation?.name?.charAt(0) || 'C'}
-                                </AvatarFallback>
-                              </Avatar>
-                            </div>
-                          )}
-                          
-                          <div className={`${isConsecutive && isFromContact ? 'ml-10' : ''} max-w-[75%]`}>
-                            {/* Nome do contato (apenas para mensagens não consecutivas) */}
-                            {isFromContact && !isConsecutive && (
-                              <div className="text-xs font-medium ml-1 mb-1">
-                                {selectedConversation?.name || 'Contato'}
-                              </div>
-                            )}
-                            
-                            <div className="flex items-end">
-                              {/* Bolha da mensagem */}
-                              <div className={`p-3 rounded-lg ${
-                                isFromContact ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-                              }`}>
-                                {/* Conteúdo da mensagem */}
-                                <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>
-                                
-                                {/* Horário e status */}
-                                <div className="flex items-center justify-end mt-1">
-                                  <span className="text-[10px] opacity-70">
-                                    {format(messageDate, 'HH:mm', { locale: ptBR })}
-                                  </span>
-                                  
-                                  {/* Status de entrega para mensagens enviadas pelo usuário */}
-                                  {isFromUser && (
-                                    <span className="ml-1">
-                                      {message.status === 'sending' ? (
-                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-                                      ) : message.status === 'sent' ? (
-                                        <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />
-                                      ) : message.status === 'delivered' ? (
-                                        <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
-                                      ) : message.status === 'read' ? (
+            
+            {/* Área de entrada de mensagem */}
+            <div className="bg-muted/25 border-t px-4 py-3">
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Digite uma mensagem..."
+                    className="min-h-10"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && messageText.trim()) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                </div>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <Smile className="h-5 w-5" />
+                </Button>
+                
+                <Button 
+                  size="icon" 
+                  className="rounded-full" 
+                  disabled={!messageText.trim()}
+                  onClick={handleSendMessage}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Painel de contexto */}
+          <div className="w-80 border-l hidden md:block">
+            {selectedConversation && (
+              <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="info">Informações</TabsTrigger>
+                  <TabsTrigger value="notes">Anotações</TabsTrigger>
+                  <TabsTrigger value="history">Histórico</TabsTrigger>
+                </TabsList>
                                         <CheckCheck className="h-3.5 w-3.5 text-green-500" />
                                       ) : null}
                                     </span>
