@@ -278,113 +278,149 @@ const ConversationView = () => {
         </div>
       </div>
       
-      {/* Área de mensagens com rolagem */}
-      <div 
-        className="flex-1 overflow-y-auto p-4"
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-      >
-        {/* Indicador de carregamento no topo para mensagens mais antigas */}
-        {loadingMore && (
-          <div className="text-center p-2">
-            <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-            <p className="text-xs text-muted-foreground mt-1">Carregando mensagens anteriores...</p>
-          </div>
-        )}
-        
-        {/* Mensagem quando não há mais mensagens para carregar */}
-        {!hasMore && !loadingMore && messages && messages.length > 0 && (
-          <div className="text-center p-2">
-            <p className="text-xs text-muted-foreground">Início da conversa</p>
-          </div>
-        )}
-        
-        {/* Esqueleto de carregamento para mensagens */}
-        {isLoading && !messages && (
-          <div className="space-y-4">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                <div className={`animate-pulse max-w-[80%] ${i % 2 === 0 ? 'bg-primary/10' : 'bg-muted'} rounded-lg p-4`}>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
+      {/* Estrutura com layout fixo - área de mensagens e campo de entrada */}
+      <div className="flex flex-col h-full">
+        {/* Área de mensagens com rolagem - agora dentro de um container com flex-grow para permitir que o campo de entrada fique fixo */}
+        <div className="flex-grow overflow-hidden flex flex-col">
+          <div 
+            className="flex-grow overflow-y-auto p-4"
+            ref={scrollContainerRef}
+            onScroll={handleScroll}
+          >
+            {/* Indicador de carregamento no topo para mensagens mais antigas */}
+            {loadingMore && (
+              <div className="text-center p-2">
+                <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                <p className="text-xs text-muted-foreground mt-1">Carregando mensagens anteriores...</p>
               </div>
-            ))}
+            )}
+            
+            {/* Mensagem quando não há mais mensagens para carregar */}
+            {!hasMore && !loadingMore && messages && messages.length > 0 && (
+              <div className="text-center p-2">
+                <p className="text-xs text-muted-foreground">Início da conversa</p>
+              </div>
+            )}
+            
+            {/* Esqueleto de carregamento para mensagens */}
+            {isLoading && !messages && (
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`animate-pulse max-w-[80%] ${i % 2 === 0 ? 'bg-primary/10' : 'bg-muted'} rounded-lg p-4`}>
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Mensagem de erro */}
+            {error && (
+              <div className="text-center text-red-500 p-4">
+                Ocorreu um erro ao carregar as mensagens. Tente novamente.
+                <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
+                  <RefreshCw className="h-4 w-4 mr-2" /> Recarregar
+                </Button>
+              </div>
+            )}
+            
+            {/* Lista de mensagens - limitada a 2 mensagens caso não tenha mensagens suficientes */}
+            {messages && messages.length > 0 ? (
+              <div className="space-y-4">
+                {/* Mostrar um botão para carregar mais mensagens se houver mais que 2 */}
+                {messages.length > 2 && (
+                  <div className="text-center mb-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs"
+                      onClick={loadPreviousMessages}
+                      disabled={loadingMore || !hasMore}
+                    >
+                      {loadingMore ? (
+                        <>
+                          <span className="animate-spin mr-1">⭮</span> Carregando...
+                        </>
+                      ) : (
+                        'Ver mensagens anteriores'
+                      )}
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Exibir apenas as 2 mensagens mais recentes por padrão ou todas se o usuário rolou */}
+                {messages.map((message: Message, index: number) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    isConsecutive={
+                      index > 0 && 
+                      messages[index - 1].sender === message.sender &&
+                      (new Date(message.timestamp).getTime() - new Date(messages[index - 1].timestamp).getTime()) < 5 * 60 * 1000
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              !isLoading && (
+                <div className="text-center text-muted-foreground p-4">
+                  Nenhuma mensagem nesta conversa ainda.
+                </div>
+              )
+            )}
+            
+            {/* Marcador para rolar até o final */}
+            <div ref={messagesEndRef} />
           </div>
-        )}
-        
-        {/* Mensagem de erro */}
-        {error && (
-          <div className="text-center text-red-500 p-4">
-            Ocorreu um erro ao carregar as mensagens. Tente novamente.
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" /> Recarregar
-            </Button>
-          </div>
-        )}
-        
-        {/* Lista de mensagens */}
-        {messages && messages.length > 0 ? (
-          <div className="space-y-4">
-            {messages.map((message: Message, index: number) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isConsecutive={
-                  index > 0 && 
-                  messages[index - 1].sender === message.sender &&
-                  (new Date(message.timestamp).getTime() - new Date(messages[index - 1].timestamp).getTime()) < 5 * 60 * 1000
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          !isLoading && (
-            <div className="text-center text-muted-foreground p-4">
-              Nenhuma mensagem nesta conversa ainda.
-            </div>
-          )
-        )}
-        
-        {/* Marcador para rolar até o final */}
-        <div ref={messagesEndRef} />
-      </div>
-      
-      {/* Campo de entrada de mensagem */}
-      <div className="p-3 border-t">
-        {/* Indicador de digitação ou status */}
-        <div className="flex items-center text-xs text-muted-foreground mb-2 h-4">
-          <Clock className="h-3 w-3 mr-1" />
-          <span>Última mensagem enviada há {formatDistanceToNow(selectedConversation.timestamp, { locale: ptBR })}</span>
         </div>
         
-        <div className="flex items-end gap-2">
-          <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
-            <Paperclip className="h-5 w-5" />
-          </Button>
-          
-          <div className="flex-1 relative">
-            <Textarea
-              placeholder="Digite sua mensagem..."
-              className="min-h-[80px] resize-none pr-10"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-            <Button variant="ghost" size="icon" className="absolute bottom-2 right-2 h-6 w-6">
-              <Smile className="h-5 w-5" />
-            </Button>
+        {/* Campo de entrada de mensagem - agora fixo na parte inferior com flex-shrink-0 */}
+        <div className="flex-shrink-0 p-3 border-t bg-background">
+          {/* Indicador de digitação ou status */}
+          <div className="flex items-center text-xs text-muted-foreground mb-2 h-4">
+            {selectedConversation.channel === 'whatsapp' && selectedConversation.active && (
+              <span className="text-green-500 flex items-center">
+                <span className="h-2 w-2 rounded-full bg-green-500 mr-1" />
+                O cliente está digitando...
+              </span>
+            ) || (
+              <>
+                <Clock className="h-3 w-3 mr-1" />
+                <span>Última mensagem enviada há {formatDistanceToNow(selectedConversation.timestamp, { locale: ptBR })}</span>
+              </>
+            )}
           </div>
           
-          <Button 
-            variant="default" 
-            size="icon" 
-            className="rounded-full h-10 w-10"
-            disabled={!messageText.trim()}
-            onClick={sendMessage}
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+          <div className="flex items-end gap-2">
+            <Button variant="ghost" size="icon" className="rounded-full h-9 w-9">
+              <Paperclip className="h-5 w-5" />
+            </Button>
+            
+            <div className="flex-1 relative">
+              <Textarea
+                placeholder="Digite sua mensagem..."
+                className="min-h-[80px] resize-none pr-10"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              <Button variant="ghost" size="icon" className="absolute bottom-2 right-2 h-6 w-6">
+                <Smile className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <Button 
+              variant="default" 
+              size="icon" 
+              className="rounded-full h-10 w-10"
+              disabled={!messageText.trim()}
+              onClick={sendMessage}
+            >
+              <Send className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
