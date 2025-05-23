@@ -204,43 +204,36 @@ const Inbox = () => {
     try {
       setLoadingMessages(true);
       
-      // Implementar lógica de paginação baseada no ID ou timestamp da mensagem mais antiga
-      const oldestMessage = messages[messages.length - 1];
-      
-      // Parâmetros para paginação e limitação
-      const params: Record<string, any> = {
-        limit: 30 // Número de mensagens a carregar por vez
-      };
-      
-      // Se já temos mensagens, usamos a mais antiga como referência
-      if (oldestMessage) {
-        params.before = oldestMessage.id;
-        // Também podemos usar timestamp como alternativa
-        // params.beforeTimestamp = oldestMessage.timestamp.toISOString();
+      // Se já estamos exibindo todas as mensagens disponíveis, não faz nada
+      if (displayedMessages.length >= messages.length) {
+        setHasMoreMessages(false);
+        setLoadingMessages(false);
+        return;
       }
       
-      const response = await axios.get(`/api/conversations/${selectedConversation.id}/messages`, {
-        params
-      });
+      // Simular um pequeno atraso para feedback visual
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Converter timestamps para objetos Date
-      const formattedMessages = response.data.map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp),
-        createdAt: new Date(msg.createdAt),
-        updatedAt: new Date(msg.updatedAt)
-      }));
+      // Calcula quantas mensagens adicionais carregar (até 20 por vez)
+      const currentCount = displayedMessages.length;
+      const remainingMessages = messages.length - currentCount;
+      const messagesToAdd = Math.min(remainingMessages, 20);
       
-      // Adicionar as novas mensagens ao final do array
-      setMessages([...messages, ...formattedMessages]);
+      // Adiciona mais mensagens do início da lista (as mais antigas)
+      const startIndex = Math.max(0, messages.length - currentCount - messagesToAdd);
+      const newMessages = [
+        ...messages.slice(startIndex, messages.length - currentCount),
+        ...displayedMessages
+      ];
       
-      // Verificar se há mais mensagens para carregar
-      setHasMoreMessages(formattedMessages.length >= params.limit);
+      setDisplayedMessages(newMessages);
       
-      // Scroll suave para manter a posição do usuário
-      if (formattedMessages.length > 0) {
-        // Aqui poderíamos usar uma referência para scrollar para a posição correta
-        // mas vamos deixar o scroll natural por enquanto
+      // Verifica se há mais mensagens para carregar
+      setHasMoreMessages(newMessages.length < messages.length);
+      
+      // Incrementar página para futura implementação de paginação com API
+      if (messagePage === 1) {
+        setMessagePage(prev => prev + 1);
       }
     } catch (error) {
       console.error('Erro ao carregar mais mensagens:', error);
@@ -681,10 +674,14 @@ const Inbox = () => {
                   displayedMessages[index - 1].sender === message.sender && 
                   (message.timestamp.getTime() - displayedMessages[index - 1].timestamp.getTime() < 5 * 60 * 1000);
                 
+                // Determina se é a última mensagem para adicionar a referência
+                const isLastMessage = index === displayedMessages.length - 1;
+                
                 return (
                   <div 
                     key={message.id} 
                     className={`flex ${isFromContact ? 'justify-start' : 'justify-end'} ${isConsecutive ? 'mt-1' : 'mt-4'}`}
+                    ref={isLastMessage ? messagesEndRef : undefined}
                   >
                     {/* Mostrar avatar apenas se for a primeira mensagem de uma sequência */}
                     {isFromContact && !isConsecutive && (
