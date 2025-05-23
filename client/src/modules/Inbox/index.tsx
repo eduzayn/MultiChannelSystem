@@ -37,7 +37,11 @@ import {
   FileText,
   MailQuestion,
   Trash,
-  Copy
+  Copy,
+  Mic,
+  Video,
+  Image as ImageIcon,
+  Link as LinkIcon
 } from "lucide-react";
 import axios from 'axios';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
@@ -54,6 +58,11 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -911,13 +920,285 @@ const Inbox = () => {
                   />
                 </div>
                 
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <Paperclip className="h-5 w-5" />
-                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="top" align="end" className="w-56 p-2">
+                    <div className="grid gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="justify-start font-normal"
+                        onClick={() => document.getElementById('file-audio')?.click()}
+                      >
+                        <Mic className="h-4 w-4 mr-2" />
+                        Áudio
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="justify-start font-normal"
+                        onClick={() => document.getElementById('file-video')?.click()}
+                      >
+                        <Video className="h-4 w-4 mr-2" />
+                        Vídeo
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="justify-start font-normal"
+                        onClick={() => document.getElementById('file-document')?.click()}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Documento
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="justify-start font-normal"
+                        onClick={() => document.getElementById('file-image')?.click()}
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Imagem
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="justify-start font-normal"
+                        onClick={() => {
+                          const url = prompt('Digite a URL:');
+                          if (url && selectedConversation) {
+                            // TODO: Implementar envio de link
+                            alert('Envio de link será implementado em breve');
+                          }
+                        }}
+                      >
+                        <LinkIcon className="h-4 w-4 mr-2" />
+                        Link
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
+                {/* Inputs escondidos para upload de arquivos */}
+                <input 
+                  type="file" 
+                  id="file-audio" 
+                  accept="audio/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files?.[0] && selectedConversation) {
+                      const file = e.target.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      // Primeiro fazemos upload do arquivo para um serviço de armazenamento
+                      // (neste exemplo usamos um link direto, mas em produção seria um serviço como S3, Cloudinary, etc)
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        try {
+                          // Em um caso real, precisaríamos fazer upload do arquivo para um servidor
+                          // e obter a URL. Por agora, usaremos um alerta para simular o fluxo.
+                          
+                          // Simulando chamada à API Z-API para enviar áudio
+                          const channelData = JSON.parse(localStorage.getItem('selectedChannelData') || '{}');
+                          
+                          if (channelData.instanceId && channelData.token) {
+                            setIsSending(true);
+                            const isVoiceMessage = true; // Definido como mensagem de voz
+                            
+                            // Em um ambiente real, esta URL viria do upload do arquivo
+                            alert('Em um ambiente de produção, o arquivo seria enviado para um servidor e retornaria uma URL para ser usada com a Z-API');
+                            
+                            // Aqui implementaríamos o envio real do áudio via Z-API
+                            /*
+                            const response = await axios.post('/api/zapi/send-audio', {
+                              instanceId: channelData.instanceId,
+                              token: channelData.token,
+                              clientToken: channelData.clientToken,
+                              phone: selectedConversation.phone,
+                              audioUrl: uploadedAudioUrl,
+                              isVoiceMessage: isVoiceMessage
+                            });
+                            */
+                            
+                            // Simulação bem sucedida
+                            setTimeout(() => {
+                              setIsSending(false);
+                              // Atualizaríamos a lista de mensagens após o envio bem-sucedido
+                            }, 1000);
+                          } else {
+                            alert('Dados do canal não encontrados. Verifique se o canal está configurado corretamente.');
+                          }
+                        } catch (error) {
+                          console.error('Erro ao enviar áudio:', error);
+                          setIsSending(false);
+                          alert('Erro ao enviar áudio. Tente novamente mais tarde.');
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input 
+                  type="file" 
+                  id="file-video" 
+                  accept="video/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files?.[0] && selectedConversation) {
+                      const file = e.target.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        try {
+                          const channelData = JSON.parse(localStorage.getItem('selectedChannelData') || '{}');
+                          
+                          if (channelData.instanceId && channelData.token) {
+                            setIsSending(true);
+                            // Caption para o vídeo (opcional)
+                            const caption = prompt('Digite uma legenda para o vídeo (opcional):') || '';
+                            
+                            alert('Em um ambiente de produção, o vídeo seria enviado para um servidor e retornaria uma URL para ser usada com a Z-API');
+                            
+                            /*
+                            const response = await axios.post('/api/zapi/send-video', {
+                              instanceId: channelData.instanceId,
+                              token: channelData.token,
+                              clientToken: channelData.clientToken,
+                              phone: selectedConversation.phone,
+                              videoUrl: uploadedVideoUrl,
+                              caption: caption
+                            });
+                            */
+                            
+                            setTimeout(() => {
+                              setIsSending(false);
+                            }, 1000);
+                          } else {
+                            alert('Dados do canal não encontrados. Verifique se o canal está configurado corretamente.');
+                          }
+                        } catch (error) {
+                          console.error('Erro ao enviar vídeo:', error);
+                          setIsSending(false);
+                          alert('Erro ao enviar vídeo. Tente novamente mais tarde.');
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input 
+                  type="file" 
+                  id="file-document" 
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files?.[0] && selectedConversation) {
+                      const file = e.target.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        try {
+                          const channelData = JSON.parse(localStorage.getItem('selectedChannelData') || '{}');
+                          
+                          if (channelData.instanceId && channelData.token) {
+                            setIsSending(true);
+                            // Caption para o documento (opcional)
+                            const caption = prompt('Digite uma descrição para o documento (opcional):') || '';
+                            
+                            alert('Em um ambiente de produção, o documento seria enviado para um servidor e retornaria uma URL para ser usada com a Z-API');
+                            
+                            /*
+                            const response = await axios.post('/api/zapi/send-document', {
+                              instanceId: channelData.instanceId,
+                              token: channelData.token,
+                              clientToken: channelData.clientToken,
+                              phone: selectedConversation.phone,
+                              documentUrl: uploadedDocumentUrl,
+                              fileName: file.name,
+                              caption: caption
+                            });
+                            */
+                            
+                            setTimeout(() => {
+                              setIsSending(false);
+                            }, 1000);
+                          } else {
+                            alert('Dados do canal não encontrados. Verifique se o canal está configurado corretamente.');
+                          }
+                        } catch (error) {
+                          console.error('Erro ao enviar documento:', error);
+                          setIsSending(false);
+                          alert('Erro ao enviar documento. Tente novamente mais tarde.');
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <input 
+                  type="file" 
+                  id="file-image" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={(e) => {
+                    if (e.target.files?.[0] && selectedConversation) {
+                      const file = e.target.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      
+                      const reader = new FileReader();
+                      reader.onload = async (event) => {
+                        try {
+                          const channelData = JSON.parse(localStorage.getItem('selectedChannelData') || '{}');
+                          
+                          if (channelData.instanceId && channelData.token) {
+                            setIsSending(true);
+                            // Caption para a imagem (opcional)
+                            const caption = prompt('Digite uma legenda para a imagem (opcional):') || '';
+                            
+                            alert('Em um ambiente de produção, a imagem seria enviada para um servidor e retornaria uma URL para ser usada com a Z-API');
+                            
+                            /*
+                            // Na versão real, usaríamos o endpoint de envio de imagem
+                            const response = await axios.post('/api/zapi/send-image', {
+                              instanceId: channelData.instanceId,
+                              token: channelData.token,
+                              clientToken: channelData.clientToken,
+                              phone: selectedConversation.phone,
+                              imageUrl: uploadedImageUrl,
+                              caption: caption
+                            });
+                            */
+                            
+                            setTimeout(() => {
+                              setIsSending(false);
+                            }, 1000);
+                          } else {
+                            alert('Dados do canal não encontrados. Verifique se o canal está configurado corretamente.');
+                          }
+                        } catch (error) {
+                          console.error('Erro ao enviar imagem:', error);
+                          setIsSending(false);
+                          alert('Erro ao enviar imagem. Tente novamente mais tarde.');
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
                 
                 <Button 
                   variant="ghost" 
