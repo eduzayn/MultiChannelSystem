@@ -449,7 +449,7 @@ export default function Inbox() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar esquerda: Lista de conversas */}
-      <div className="w-72 border-r flex flex-col h-full shrink-0">
+      <div className="w-80 border-r flex flex-col h-full shrink-0 min-w-80">
         {/* Cabeçalho com opções de filtro e pesquisa */}
         <div className="p-3 border-b shrink-0">
           <div className="flex items-center gap-2 mb-3">
@@ -632,7 +632,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex-1 flex flex-col bg-muted/10 h-full">
+      <div className="flex flex-col bg-muted/10 h-full" style={{ width: 'calc(100vw - 640px)' }}>
         {selectedConversation ? (
           <div className="flex flex-col h-full">
             {/* Cabeçalho da conversa */}
@@ -870,7 +870,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel de contexto */}
-      <div className="w-72 border-l hidden md:block h-full bg-background shrink-0">
+      <div className="w-80 border-l hidden md:block h-full bg-background shrink-0 min-w-80">
         {selectedConversation && (
           <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
