@@ -61,6 +61,44 @@ interface Message {
   updatedAt: Date;
 }
 
+// Função auxiliar para extrair o conteúdo real da mensagem
+function extractMessageContent(message: Message): string {
+  try {
+    // Se não tiver conteúdo, retorna string vazia
+    if (!message.content) return '';
+    
+    // Verifica se o conteúdo parece ser JSON
+    if (typeof message.content === 'string' && 
+        (message.content.startsWith('{') || message.content.startsWith('['))) {
+      
+      // Tenta fazer o parse do JSON
+      const contentObj = JSON.parse(message.content);
+      
+      // Casos específicos baseados na estrutura de dados
+      if (contentObj.message) {
+        return contentObj.message;
+      } else if (contentObj.text && contentObj.text.message) {
+        return contentObj.text.message;
+      } else if (contentObj.caption) {
+        return contentObj.caption;
+      } else if (typeof contentObj === 'object' && Object.keys(contentObj).length > 0) {
+        // Tenta encontrar alguma propriedade com texto
+        for (const key of Object.keys(contentObj)) {
+          if (typeof contentObj[key] === 'string' && contentObj[key].length > 0) {
+            return contentObj[key];
+          }
+        }
+      }
+    }
+    
+    // Se não for um formato JSON ou não conseguiu extrair o texto, retorna o conteúdo original
+    return message.content;
+  } catch (error) {
+    console.error('Erro ao extrair conteúdo da mensagem:', error);
+    return message.content || '';
+  }
+};
+
 const Inbox = () => {
   // Estados para controle da interface
   const [activeTab, setActiveTab] = useState('all');
@@ -530,10 +568,10 @@ const Inbox = () => {
                               alt="Imagem" 
                               className="rounded-lg max-w-full max-h-[200px] object-cover mb-2"
                             />
-                            <p className="text-sm">{message.content}</p>
+                            <p className="text-sm">{extractMessageContent(message)}</p>
                           </div>
                         ) : (
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>
                         )}
                         
                         {/* Timestamp e status */}
