@@ -840,7 +840,7 @@ const Inbox = () => {
                  style={{ maxHeight: "calc(100vh - 230px)" }}>
               
               {/* Utilizando o componente MessageList para exibir as mensagens com todas as melhorias */}
-              {selectedConversation && (
+              {selectedConversation && displayedMessages.length > 0 && (
                 <MessageList
                   messages={displayedMessages}
                   messagesEndRef={messagesEndRef}
@@ -868,21 +868,7 @@ const Inbox = () => {
                 </div>
               )}
             </div>
-                    
-                    // Verificar se a mensagem é consecutiva (mesmo remetente e dentro de 5 minutos)
-                    const isConsecutive = index > 0 && 
-                      displayedMessages[index - 1].sender === message.sender && 
-                      (messageDate.getTime() - new Date(displayedMessages[index - 1].timestamp).getTime() < 5 * 60 * 1000) &&
-                      !showDateSeparator;
-                    
-                    return (
-                      <React.Fragment key={message.id}>
-                        {/* Separador de data quando necessário */}
-                        {showDateSeparator && <DateSeparator date={messageDate} />}
                         
-                        <div className={`flex ${isFromContact ? 'justify-start' : 'justify-end'} ${isConsecutive ? 'mt-1' : 'mt-4'} group`}>
-                          {/* Avatar para mensagens não consecutivas de contato */}
-                          {isFromContact && !isConsecutive && (
                             <div className="flex-shrink-0 mr-2">
                               <Avatar className="h-8 w-8">
                                 <AvatarFallback>
