@@ -151,12 +151,24 @@ const Inbox = () => {
     
     try {
       setLoadingMessages(true);
-      // Aqui você poderia implementar lógica de paginação baseada no ID ou timestamp da mensagem mais antiga
+      
+      // Implementar lógica de paginação baseada no ID ou timestamp da mensagem mais antiga
       const oldestMessage = messages[messages.length - 1];
+      
+      // Parâmetros para paginação e limitação
+      const params: Record<string, any> = {
+        limit: 30 // Número de mensagens a carregar por vez
+      };
+      
+      // Se já temos mensagens, usamos a mais antiga como referência
+      if (oldestMessage) {
+        params.before = oldestMessage.id;
+        // Também podemos usar timestamp como alternativa
+        // params.beforeTimestamp = oldestMessage.timestamp.toISOString();
+      }
+      
       const response = await axios.get(`/api/conversations/${selectedConversation.id}/messages`, {
-        params: {
-          before: oldestMessage.id
-        }
+        params
       });
       
       // Converter timestamps para objetos Date
@@ -167,8 +179,17 @@ const Inbox = () => {
         updatedAt: new Date(msg.updatedAt)
       }));
       
+      // Adicionar as novas mensagens ao final do array
       setMessages([...messages, ...formattedMessages]);
-      setHasMoreMessages(formattedMessages.length > 0);
+      
+      // Verificar se há mais mensagens para carregar
+      setHasMoreMessages(formattedMessages.length >= params.limit);
+      
+      // Scroll suave para manter a posição do usuário
+      if (formattedMessages.length > 0) {
+        // Aqui poderíamos usar uma referência para scrollar para a posição correta
+        // mas vamos deixar o scroll natural por enquanto
+      }
     } catch (error) {
       console.error('Erro ao carregar mais mensagens:', error);
     } finally {
@@ -565,12 +586,110 @@ const Inbox = () => {
                           <div>
                             <img 
                               src={message.metadata.url} 
-                              alt="Imagem" 
-                              className="rounded-lg max-w-full max-h-[200px] object-cover mb-2"
+                              alt="Imagem enviada" 
+                              className="rounded-lg max-w-full max-h-[200px] object-cover mb-2 cursor-pointer"
+                              onClick={() => window.open(message.metadata.url, '_blank')}
                             />
-                            <p className="text-sm">{extractMessageContent(message)}</p>
+                            {message.content && (
+                              <p className="text-sm">{extractMessageContent(message)}</p>
+                            )}
+                          </div>
+                        ) : message.type === 'video' && message.metadata?.url ? (
+                          <div>
+                            <div className="relative rounded-lg overflow-hidden mb-2">
+                              <video 
+                                src={message.metadata.url} 
+                                className="max-w-full max-h-[200px]" 
+                                controls
+                              />
+                            </div>
+                            {message.content && (
+                              <p className="text-sm">{extractMessageContent(message)}</p>
+                            )}
+                          </div>
+                        ) : message.type === 'audio' && message.metadata?.url ? (
+                          <div>
+                            <audio 
+                              src={message.metadata.url} 
+                              className="w-full max-w-[240px] my-1" 
+                              controls
+                            />
+                          </div>
+                        ) : message.type === 'file' && message.metadata?.url ? (
+                          <div className="flex items-center gap-2 bg-background/80 p-2 rounded-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <div className="flex-1 overflow-hidden">
+                              <div className="text-sm font-medium truncate">
+                                {message.metadata.filename || "Arquivo anexado"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {message.metadata.filesize ? 
+                                  (Math.round(message.metadata.filesize / 1024) + ' KB') : 
+                                  "Tamanho desconhecido"}
+                              </div>
+                            </div>
+                            <a 
+                              href={message.metadata.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-primary hover:text-primary/80"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                              </svg>
+                            </a>
+                          </div>
+                        ) : message.type === 'location' && message.metadata?.latitude && message.metadata?.longitude ? (
+                          <div>
+                            <div className="bg-background/80 p-2 rounded-md mb-1">
+                              <div className="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                  <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <span className="text-sm font-medium">Localização compartilhada</span>
+                              </div>
+                              <div className="mt-1">
+                                <a 
+                                  href={`https://maps.google.com/?q=${message.metadata.latitude},${message.metadata.longitude}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  Abrir no Google Maps
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        ) : message.type === 'contact' && message.metadata ? (
+                          <div className="bg-background/80 p-2 rounded-md">
+                            <div className="flex items-center gap-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                              </svg>
+                              <span className="text-sm font-medium">Contato compartilhado</span>
+                            </div>
+                            <div className="mt-1 text-sm">
+                              {message.metadata.name && <div>Nome: {message.metadata.name}</div>}
+                              {message.metadata.phone && <div>Telefone: {message.metadata.phone}</div>}
+                            </div>
+                          </div>
+                        ) : message.type === 'sticker' && message.metadata?.url ? (
+                          <div>
+                            <img 
+                              src={message.metadata.url} 
+                              alt="Sticker" 
+                              className="max-w-[120px] max-h-[120px]"
+                            />
                           </div>
                         ) : (
+                          // Mensagem de texto padrão
                           <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>
                         )}
                         
@@ -673,6 +792,7 @@ const Inbox = () => {
               
               <TabsContent value="profile" className="flex-1 overflow-auto p-3">
                 <div className="space-y-4">
+                  {/* Avatar e Informações Básicas */}
                   <div className="flex flex-col items-center text-center">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
                       <span className="text-lg font-medium text-primary">
@@ -685,22 +805,84 @@ const Inbox = () => {
                       selectedConversation.channel === 'instagram' ? 'Instagram' :
                       selectedConversation.channel === 'facebook' ? 'Facebook' : 'Email'}
                     </Badge>
+                    
+                    {/* Status do Contato */}
+                    <div className="flex items-center gap-1 mt-2">
+                      <span className={`h-2 w-2 rounded-full ${
+                        selectedConversation.isActive ? 'bg-green-500' : 'bg-gray-400'
+                      }`}></span>
+                      <span className="text-xs text-muted-foreground">
+                        {selectedConversation.isActive ? 'Online' : 'Offline'}
+                      </span>
+                    </div>
                   </div>
                   
+                  {/* Informações de Contato Detalhadas */}
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Informações de Contato</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Informações de Contato</h4>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                        Editar
+                      </Button>
+                    </div>
                     <div className="rounded-md border p-3 space-y-2">
                       <div className="grid grid-cols-[20px_1fr] gap-2 items-center">
                         <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{selectedConversation.identifier || "Não disponível"}</span>
+                        <div className="flex justify-between items-center w-full">
+                          <span className="text-sm">{selectedConversation.identifier || "Não disponível"}</span>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-5 w-5" 
+                            onClick={() => {
+                              if (selectedConversation.identifier) {
+                                navigator.clipboard.writeText(selectedConversation.identifier);
+                                // Poderia mostrar um toast de sucesso aqui
+                              }
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                          </Button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-[20px_1fr] gap-2 items-center">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">Cliente desde 15/03/2023</span>
                       </div>
+                      <div className="grid grid-cols-[20px_1fr] gap-2 items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                        </svg>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">
+                            {selectedConversation.identifier || "Telefone não cadastrado"}
+                          </span>
+                          {selectedConversation.identifier && selectedConversation.channel === 'whatsapp' && (
+                            <Button variant="outline" size="sm" className="h-6 px-2 text-xs gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M15.05 5A5 5 0 0 1 19 8.95M15.05 1A9 9 0 0 1 23 8.94m-1 7.98v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                              </svg>
+                              Ligar
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {selectedConversation.channel === 'email' && (
+                        <div className="grid grid-cols-[20px_1fr] gap-2 items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                          </svg>
+                          <span className="text-sm">{selectedConversation.identifier || "Email não cadastrado"}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
+                  {/* Tags */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium">Tags</h4>
@@ -711,6 +893,45 @@ const Inbox = () => {
                     <div className="flex flex-wrap gap-1">
                       <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">Cliente VIP</Badge>
                       <Badge variant="outline" className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">Suporte</Badge>
+                      <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">Whatsapp</Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Notas */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">Notas</h4>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
+                        Adicionar
+                      </Button>
+                    </div>
+                    <div className="rounded-md border p-3">
+                      <p className="text-sm text-muted-foreground italic">
+                        Nenhuma nota cadastrada para este contato.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Ações Rápidas */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Ações Rápidas</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                          <circle cx="8.5" cy="7" r="4"></circle>
+                          <line x1="20" y1="8" x2="20" y2="14"></line>
+                          <line x1="23" y1="11" x2="17" y2="11"></line>
+                        </svg>
+                        Add ao CRM
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                          <path d="M12 20h9"></path>
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        Editar Dados
+                      </Button>
                     </div>
                   </div>
                 </div>

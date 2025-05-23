@@ -13,8 +13,12 @@ export interface ConversationItemProps {
   channel: 'whatsapp' | 'instagram' | 'facebook' | 'email';
   identifier?: string; // Número de telefone, nome de usuário, email, etc.
   isActive?: boolean;
+  active?: boolean; // Status de conexão do contato (online/offline)
   status?: string; // open, resolved, closed
   contactId?: number; // ID do contato associado
+  phone?: string; // Número de telefone do contato
+  email?: string; // Email do contato
+  tags?: string[]; // Tags associadas à conversa
   onClick?: () => void;
 }
 
