@@ -512,4 +512,142 @@ export function registerZapiRoutes(app: Router) {
       });
     }
   });
+  
+  // Rota para enviar reação a uma mensagem via Z-API
+  app.post("/api/zapi/send-reaction", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, messageId, reaction } = req.body;
+      
+      if (!instanceId || !token || !phone || !messageId || !reaction) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone, ID da mensagem e emoji de reação são obrigatórios",
+        });
+      }
+      
+      const result = await sendReaction(instanceId, token, phone, messageId, reaction, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de reação:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para remover reação de uma mensagem via Z-API
+  app.post("/api/zapi/remove-reaction", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, messageId } = req.body;
+      
+      if (!instanceId || !token || !phone || !messageId) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e ID da mensagem são obrigatórios",
+        });
+      }
+      
+      const result = await removeReaction(instanceId, token, phone, messageId, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de remoção de reação:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar áudio via Z-API
+  app.post("/api/zapi/send-audio", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, audioUrl, isVoiceMessage = true } = req.body;
+      
+      if (!instanceId || !token || !phone || !audioUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e URL do áudio são obrigatórios",
+        });
+      }
+      
+      const result = await sendAudio(instanceId, token, phone, audioUrl, isVoiceMessage, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de áudio:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar vídeo via Z-API
+  app.post("/api/zapi/send-video", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, videoUrl, caption = "" } = req.body;
+      
+      if (!instanceId || !token || !phone || !videoUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e URL do vídeo são obrigatórios",
+        });
+      }
+      
+      const result = await sendVideo(instanceId, token, phone, videoUrl, caption, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de vídeo:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar documento via Z-API
+  app.post("/api/zapi/send-document", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, documentUrl, fileName, caption = "" } = req.body;
+      
+      if (!instanceId || !token || !phone || !documentUrl || !fileName) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone, URL do documento e nome do arquivo são obrigatórios",
+        });
+      }
+      
+      const result = await sendDocument(instanceId, token, phone, documentUrl, fileName, caption, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de documento:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar link com pré-visualização via Z-API
+  app.post("/api/zapi/send-link", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, url, linkTitle = "", linkDescription = "" } = req.body;
+      
+      if (!instanceId || !token || !phone || !url) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e URL são obrigatórios",
+        });
+      }
+      
+      const result = await sendLink(instanceId, token, phone, url, linkTitle, linkDescription, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de link:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
 }
