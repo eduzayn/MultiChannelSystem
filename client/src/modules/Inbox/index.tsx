@@ -310,7 +310,7 @@ export default function Inbox() {
         }
         
         // Adiciona uma mensagem temporária na UI
-        const newMessage: Message = {
+        const newMessage = {
           id: Date.now(), // Temporário até receber o ID real do backend
           conversationId: selectedConversation.id,
           content: messageText,
@@ -329,15 +329,31 @@ export default function Inbox() {
         // Limpa o input
         setMessageText('');
         
-        // Enviar mensagem através da API Z-API
+        // Envia mensagem para o backend primeiro
+        const apiResponse = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversationId: selectedConversation.id,
+            content: messageText,
+            type: 'text',
+            sender: 'user'
+          }),
+        });
+        
+        const savedMessage = await apiResponse.json();
+        
+        // Agora envia através da Z-API
         const result = await sendTextMessage({
           channelId: parseInt(selectedConversation.id),
           to: phoneNumber,
-          message: newMessage.content
+          message: messageText
         });
         
         if (result.success) {
-          console.log('Mensagem enviada com sucesso:', result);
+          console.log('Mensagem enviada com sucesso via Z-API:', result);
           
           // Atualiza o status da mensagem para entregue
           setMessages(prev => 
@@ -345,6 +361,7 @@ export default function Inbox() {
               msg.id === newMessage.id 
                 ? { 
                     ...msg, 
+                    id: savedMessage.id || msg.id,
                     status: 'delivered',
                     messageId: result.messageId // Armazenar o ID retornado pela API
                   } 
@@ -356,6 +373,7 @@ export default function Inbox() {
               msg.id === newMessage.id 
                 ? { 
                     ...msg, 
+                    id: savedMessage.id || msg.id,
                     status: 'delivered',
                     messageId: result.messageId
                   } 
@@ -363,7 +381,7 @@ export default function Inbox() {
             )
           );
         } else {
-          console.error('Falha ao enviar mensagem:', result.message);
+          console.error('Falha ao enviar mensagem via Z-API:', result.message);
           
           // Atualiza o status da mensagem para erro
           setMessages(prev => 
@@ -386,9 +404,9 @@ export default function Inbox() {
         
         setIsSending(false);
         
-      } catch (error: any) {
+      } catch (error) {
         console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar a mensagem: ' + (error.message || 'Tente novamente.'));
+        alert('Erro ao enviar a mensagem. Tente novamente.');
         setIsSending(false);
       }
     }
