@@ -130,33 +130,35 @@
 
 /* Estilo personalizado para scrollbar na lista de conversas */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(241, 241, 241, 0.2);
-  border-radius: 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
+  background: #b0b0b0;
+  border-radius: 4px;
+  border: 2px solid #f0f0f0;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #a1a1a1;
+  background: #888;
 }
 
 /* No modo escuro */
 .dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(40, 40, 40, 0.2);
+  background: #1a1a1a;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #555;
+  background: #444;
+  border: 2px solid #1a1a1a;
 }
 
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: #666;
 }

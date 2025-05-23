@@ -189,9 +189,10 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
 
   return (
     <div className="h-full flex flex-col">
-      {/* Lista de conversas - com scrollbar personalizada */}
+      {/* Lista de conversas - com scrollbar personalizada e forçadamente visível */}
       <div 
-        className="flex-1 flex flex-col overflow-y-auto pb-2 custom-scrollbar" 
+        className="flex-1 flex flex-col overflow-y-scroll pb-2 custom-scrollbar" 
+        style={{ maxHeight: "calc(100vh - 230px)" }}
         ref={scrollContainerRef}
       >
         {isLoading && !storedData.length && (
