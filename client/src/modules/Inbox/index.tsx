@@ -312,12 +312,12 @@ export default function Inbox() {
         }
         
         // Adiciona uma mensagem temporária na UI
-        const newMessage = {
+        const newMessage: Message = {
           id: Date.now(), // Temporário até receber o ID real do backend
           conversationId: parseInt(selectedConversation.id), // Convertendo para número
           content: text,
           type: 'text',
-          sender: 'user',
+          sender: 'user' as 'user', // Força o tipo correto
           status: 'sending', // Status inicial
           timestamp: new Date(),
           createdAt: new Date(),
@@ -353,7 +353,7 @@ export default function Inbox() {
                   conversationId: parseInt(selectedConversation.id),
                   content: text,
                   type: 'text',
-                  sender: 'user'
+                  sender: 'user' as 'user'
                 }),
               });
               
@@ -468,7 +468,7 @@ export default function Inbox() {
         // Adiciona uma mensagem de anexo no chat
         const fileMessage: Message = {
           id: Date.now(),
-          conversationId: selectedConversation.id,
+          conversationId: parseInt(selectedConversation.id),
           content: JSON.stringify({
             fileType: file.type,
             fileName: file.name,

@@ -30,10 +30,21 @@ export const sendTextMessage = async (params: SendTextMessageParams): Promise<{s
     
     console.log(`Enviando mensagem para ${to}: "${message}"`);
     
-    // Obter as credenciais do canal ou usar valores padrão para testes
-    // Em um sistema real, essas informações deveriam vir de uma API baseada no channelId
-    const instanceId = "3DF871A7ADFB20FB49998E66062CE0C1"; // Substituir pelo ID real da instância
-    const token = "F17CB66AC44697A25E"; // Substituir pelo token real
+    // Obter as credenciais do canal baseado no channelId
+    // Estamos obtendo as credenciais do backend para garantir acesso à instância correta
+    const response1 = await fetch(`/api/zapi/channels/${channelId}/credentials`);
+    const credentialsData = await response1.json();
+    
+    if (!credentialsData.success) {
+      console.error("Erro ao obter credenciais do canal:", credentialsData.message);
+      return {
+        success: false,
+        message: "Não foi possível obter as credenciais para este canal de WhatsApp"
+      };
+    }
+    
+    const instanceId = credentialsData.instanceId; 
+    const token = credentialsData.token;
     
     // Faz a chamada para a API do servidor
     const response = await fetch('/api/zapi/send-message', {

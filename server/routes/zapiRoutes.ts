@@ -16,6 +16,42 @@ import {
 } from "../services/zapiService";
 
 export function registerZapiRoutes(app: Router) {
+  // Rota para obter credenciais da Z-API para um canal específico
+  app.get("/api/zapi/channels/:channelId/credentials", async (req: Request, res: Response) => {
+    try {
+      const { channelId } = req.params;
+      
+      if (!channelId) {
+        return res.status(400).json({
+          success: false,
+          message: "ID do canal é obrigatório"
+        });
+      }
+      
+      console.log(`Obtendo credenciais Z-API para o canal ID: ${channelId}`);
+      
+      // Em um ambiente de produção, buscar as credenciais do banco de dados
+      // Aqui estamos usando credenciais de exemplo para teste
+      
+      // Credenciais da Z-API
+      const credentials = {
+        instanceId: "3DF871A7ADFB20FB49998E66062CE0C1",
+        token: "F17CB66AC44697A25E",
+        clientToken: ""
+      };
+      
+      res.json({
+        success: true,
+        ...credentials
+      });
+    } catch (error) {
+      console.error(`Erro ao obter credenciais Z-API:`, error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor"
+      });
+    }
+  });
   // Rota para receber webhooks da Z-API
   app.post("/api/zapi/webhook/:tenantId/:channelId", async (req: Request, res: Response) => {
     try {
