@@ -147,6 +147,11 @@ const Inbox = () => {
   const [contextPanelTab, setContextPanelTab] = useState('info');
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showCommands, setShowCommands] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [messagePreview, setMessagePreview] = useState<string | null>(null);
+  const [selectedMessageTone, setSelectedMessageTone] = useState<string>("normal");
+  const [multipleAttachments, setMultipleAttachments] = useState<File[]>([]);
   
   // Estados para mensagens
   const [messages, setMessages] = useState<Message[]>([]);
