@@ -3,6 +3,9 @@ import { ConversationList } from './components/ConversationList';
 import { ConversationItemProps } from './components/ConversationItem';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 import { 
   Filter, 
   Plus, 
@@ -21,10 +24,21 @@ import {
   Clock,
   User,
   Badge as BadgeIcon,
-  Loader2
+  Loader2,
+  Tag,
+  CalendarRange,
+  LifeBuoy,
+  ShoppingCart,
+  CircleOff,
+  Forward,
+  BellOff,
+  Archive,
+  X,
+  FileText,
+  MailQuestion
 } from "lucide-react";
 import axios from 'axios';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   DropdownMenu,
@@ -46,6 +60,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
+import { DateSeparator } from './components/DateSeparator';
 
 // Tipo para as mensagens
 interface Message {
