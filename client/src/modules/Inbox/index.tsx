@@ -104,6 +104,7 @@ const Inbox = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedConversation, setSelectedConversation] = useState<ConversationItemProps | null>(null);
   const [agentStatus, setAgentStatus] = useState('online');
+  // Estados para controle dos filtros e ordenação
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [contextPanelTab, setContextPanelTab] = useState('profile');
   const [messageText, setMessageText] = useState('');
@@ -125,20 +126,22 @@ const Inbox = () => {
     { label: 'WhatsApp', value: 'whatsapp' },
     { label: 'Email', value: 'email' },
     { label: 'Instagram', value: 'instagram' },
-    { label: 'Facebook', value: 'facebook' }
+    { label: 'Facebook', value: 'facebook' },
+    { label: 'SMS', value: 'sms' }
   ];
   
   const statusOptions = [
-    { label: 'Todos', value: 'all' },
     { label: 'Aberto', value: 'open' },
     { label: 'Resolvido', value: 'resolved' },
-    { label: 'Aguardando', value: 'pending' }
+    { label: 'Aguardando', value: 'pending' },
+    { label: 'Fechado', value: 'closed' }
   ];
   
   const sortOptions = [
-    { label: 'Mais recente', value: 'recent' },
-    { label: 'Mais antigo', value: 'oldest' },
-    { label: 'Não lidos', value: 'unread' }
+    { label: 'Mais Recentes', value: 'recent' },
+    { label: 'Mais Antigos', value: 'oldest' },
+    { label: 'Não Lidas', value: 'unread' },
+    { label: 'Prioridade', value: 'priority' }
   ];
 
   // Efeito para carregar mensagens quando a conversa é selecionada
@@ -434,50 +437,79 @@ const Inbox = () => {
             <div className="py-2 space-y-2 border-b">
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Canal de Origem</label>
-                <Select defaultValue="all">
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Todos os canais" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="all">Todos os Canais</SelectItem>
-                      <SelectItem value="whatsapp-api">WhatsApp API</SelectItem>
-                      <SelectItem value="whatsapp-zapi">WhatsApp Z-API</SelectItem>
-                      <SelectItem value="instagram">Instagram DM</SelectItem>
-                      <SelectItem value="facebook">Facebook Messenger</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="sms">SMS</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1">
+                  {channelOptions.map(option => (
+                    <Badge 
+                      key={option.value} 
+                      variant={selectedChannels.includes(option.value) ? "default" : "outline"} 
+                      className="cursor-pointer hover:bg-secondary transition-colors"
+                      onClick={() => toggleChannelFilter(option.value)}
+                    >
+                      {option.label}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               
               <div className="space-y-1">
                 <label className="text-xs text-muted-foreground">Status da Conversa</label>
-                <Select defaultValue="all">
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Todos os status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectItem value="all">Todos os Status</SelectItem>
-                      <SelectItem value="new">Nova</SelectItem>
-                      <SelectItem value="open">Aberta</SelectItem>
-                      <SelectItem value="pending-client">Pendente Cliente</SelectItem>
-                      <SelectItem value="pending-agent">Pendente Agente</SelectItem>
-                      <SelectItem value="ai-handling">Em Atendimento pela IA</SelectItem>
-                      <SelectItem value="resolved">Resolvida</SelectItem>
-                      <SelectItem value="closed">Fechada</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1">
+                  {statusOptions.map(option => (
+                    <Badge 
+                      key={option.value} 
+                      variant={selectedStatuses.includes(option.value) ? "default" : "outline"} 
+                      className="cursor-pointer hover:bg-secondary transition-colors"
+                      onClick={() => toggleStatusFilter(option.value)}
+                    >
+                      {option.label}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Ordenar por</label>
+                <div className="flex flex-wrap gap-1">
+                  {sortOptions.map(option => (
+                    <Badge 
+                      key={option.value} 
+                      variant={sortBy === option.value ? "default" : "outline"} 
+                      className="cursor-pointer hover:bg-secondary transition-colors"
+                      onClick={() => setSortBy(option.value)}
+                    >
+                      {option.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Indicador de filtros ativos */}
+              {isFiltering && (
+                <div className="pt-1">
+                  <p className="text-xs text-muted-foreground">
+                    Filtros ativos: {[
+                      selectedChannels.length > 0 && 'Canais',
+                      selectedStatuses.length > 0 && 'Status',
+                      sortBy !== 'recent' && 'Ordenação'
+                    ].filter(Boolean).join(', ')}
+                  </p>
+                </div>
+              )}
+              
               <div className="flex justify-between pt-1">
-                <Button variant="outline" size="sm" className="text-xs h-7">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-xs h-7"
+                  onClick={clearFilters}
+                >
                   Limpar Filtros
                 </Button>
-                <Button size="sm" className="text-xs h-7">
+                <Button 
+                  size="sm" 
+                  className="text-xs h-7"
+                  onClick={handleSearchFilter}
+                >
                   Aplicar Filtros
                 </Button>
               </div>
