@@ -609,8 +609,10 @@ const Inbox = () => {
               </div>
             </div>
             
-            {/* Área de mensagens (real do banco de dados) */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Área de mensagens (real do banco de dados) - com scrollbar personalizada e limitado a 20 mensagens inicialmente */}
+            <div className="flex-1 overflow-y-scroll p-4 space-y-4 custom-scrollbar" 
+                 style={{ maxHeight: "calc(100vh - 230px)" }}
+                 ref={messagesEndRef}>
               {/* Botão para carregar mensagens anteriores */}
               {hasMoreMessages && (
                 <div className="text-center text-xs text-muted-foreground py-2">
