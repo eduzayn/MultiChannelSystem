@@ -447,9 +447,9 @@ export default function Inbox() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="grid h-screen overflow-hidden bg-background" style={{gridTemplateColumns: '304px minmax(0, 1fr) 320px'}}>
       {/* Sidebar esquerda: Lista de conversas */}
-      <div className="border-r flex flex-col h-full shrink-0" style={{width: '304px', minWidth: '304px'}}>
+      <div className="border-r flex flex-col h-full overflow-hidden">
         {/* Cabeçalho com opções de filtro e pesquisa */}
         <div className="p-3 border-b shrink-0">
           <div className="flex items-center gap-2 mb-3">
@@ -632,7 +632,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex flex-col bg-muted/10 h-full flex-1" style={{ minWidth: '0' }}>
+      <div className="flex flex-col bg-muted/10 h-full overflow-hidden">
         {selectedConversation ? (
           <div className="flex flex-col h-full">
             {/* Cabeçalho da conversa */}
@@ -870,7 +870,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel de contexto */}
-      <div className="border-l hidden md:block h-full bg-background shrink-0" style={{width: '320px', minWidth: '320px'}}>
+      <div className="border-l hidden md:block h-full bg-background overflow-hidden">
         {selectedConversation && (
           <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
