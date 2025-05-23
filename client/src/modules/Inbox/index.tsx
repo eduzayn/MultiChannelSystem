@@ -632,7 +632,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex flex-col bg-muted/10 h-full" style={{ width: 'calc(100vw - 624px)' }}>
+      <div className="flex flex-col bg-muted/10 h-full" style={{ width: 'calc(100vw - 304px - 320px)' }}>
         {selectedConversation ? (
           <div className="flex flex-col h-full">
             {/* Cabeçalho da conversa */}
@@ -870,7 +870,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel de contexto */}
-      <div className="w-80 border-l hidden md:block h-full bg-background shrink-0 min-w-80">
+      <div className="border-l hidden md:block h-full bg-background shrink-0" style={{width: '320px', minWidth: '320px'}}>
         {selectedConversation && (
           <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
