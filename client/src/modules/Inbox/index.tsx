@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ConversationList } from './components/ConversationList';
 import { ConversationItemProps } from './components/ConversationItem';
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,12 @@ import {
   Paperclip,
   Clock,
   User,
-  Badge as BadgeIcon
+  Badge as BadgeIcon,
+  Loader2
 } from "lucide-react";
+import axios from 'axios';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +47,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 
+// Tipo para as mensagens
+interface Message {
+  id: number;
+  conversationId: number;
+  content: string;
+  type: string;
+  sender: 'user' | 'contact' | 'system';
+  status: string;
+  metadata?: any;
+  timestamp: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const Inbox = () => {
   // Estados para controle da interface
   const [activeTab, setActiveTab] = useState('all');
@@ -51,6 +69,74 @@ const Inbox = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [contextPanelTab, setContextPanelTab] = useState('profile');
   const [messageText, setMessageText] = useState('');
+  
+  // Estados para mensagens
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+
+  // Efeito para carregar mensagens quando a conversa é selecionada
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+    } else {
+      setMessages([]);
+    }
+  }, [selectedConversation]);
+
+  // Função para buscar mensagens do servidor
+  const fetchMessages = async (conversationId: string) => {
+    try {
+      setLoadingMessages(true);
+      const response = await axios.get(`/api/conversations/${conversationId}/messages`);
+      
+      // Converter timestamps para objetos Date
+      const formattedMessages = response.data.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+        createdAt: new Date(msg.createdAt),
+        updatedAt: new Date(msg.updatedAt)
+      }));
+      
+      setMessages(formattedMessages);
+      setHasMoreMessages(formattedMessages.length >= 30); // Assumindo que a API retorna no máximo 30 mensagens por vez
+    } catch (error) {
+      console.error('Erro ao buscar mensagens:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  // Função para carregar mais mensagens (mensagens anteriores)
+  const loadMoreMessages = async () => {
+    if (!selectedConversation || loadingMessages || !hasMoreMessages) return;
+    
+    try {
+      setLoadingMessages(true);
+      // Aqui você poderia implementar lógica de paginação baseada no ID ou timestamp da mensagem mais antiga
+      const oldestMessage = messages[messages.length - 1];
+      const response = await axios.get(`/api/conversations/${selectedConversation.id}/messages`, {
+        params: {
+          before: oldestMessage.id
+        }
+      });
+      
+      // Converter timestamps para objetos Date
+      const formattedMessages = response.data.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+        createdAt: new Date(msg.createdAt),
+        updatedAt: new Date(msg.updatedAt)
+      }));
+      
+      setMessages([...messages, ...formattedMessages]);
+      setHasMoreMessages(formattedMessages.length > 0);
+    } catch (error) {
+      console.error('Erro ao carregar mais mensagens:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   // Função para selecionar uma conversa
   const handleSelectConversation = (conversation: ConversationItemProps) => {
@@ -58,10 +144,37 @@ const Inbox = () => {
   };
 
   // Função para enviar uma mensagem
-  const handleSendMessage = () => {
-    if (!messageText.trim()) return;
-    console.log('Enviando mensagem:', messageText);
-    setMessageText('');
+  const handleSendMessage = async () => {
+    if (!messageText.trim() || !selectedConversation) return;
+    
+    try {
+      // Preparar dados da mensagem
+      const messageData = {
+        conversationId: Number(selectedConversation.id),
+        content: messageText,
+        type: 'text',
+        sender: 'user',
+        status: 'sent'
+      };
+      
+      // Enviar mensagem para o backend
+      const response = await axios.post('/api/messages', messageData);
+      
+      // Adicionar a nova mensagem à lista de mensagens
+      const newMessage = {
+        ...response.data,
+        timestamp: new Date(response.data.timestamp),
+        createdAt: new Date(response.data.createdAt),
+        updatedAt: new Date(response.data.updatedAt)
+      };
+      
+      setMessages([newMessage, ...messages]);
+      
+      // Limpar o campo de texto
+      setMessageText('');
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+    }
   };
 
   return (
@@ -330,43 +443,125 @@ const Inbox = () => {
               </div>
             </div>
             
-            {/* Área de mensagens (simulada) */}
+            {/* Área de mensagens (real do banco de dados) */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Mensagem de carregamento anterior */}
-              <div className="text-center text-xs text-muted-foreground py-2">
-                <Button variant="ghost" size="sm" className="text-xs">
-                  Carregar mensagens anteriores...
-                </Button>
-              </div>
-              
-              {/* Mensagens simuladas para demonstração */}
-              <div className="flex justify-start">
-                <div className="bg-muted p-3 rounded-lg max-w-[80%]">
-                  <p className="text-sm">Olá, preciso de ajuda com o sistema.</p>
-                  <div className="flex items-center justify-end mt-1">
-                    <span className="text-[10px] text-muted-foreground">14:30</span>
-                  </div>
+              {/* Botão para carregar mensagens anteriores */}
+              {hasMoreMessages && (
+                <div className="text-center text-xs text-muted-foreground py-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs"
+                    onClick={loadMoreMessages}
+                    disabled={loadingMessages}
+                  >
+                    {loadingMessages ? (
+                      <>
+                        <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 
+                        Carregando...
+                      </>
+                    ) : (
+                      'Carregar mensagens anteriores...'
+                    )}
+                  </Button>
                 </div>
-              </div>
+              )}
               
-              <div className="flex justify-end">
-                <div className="bg-primary text-primary-foreground p-3 rounded-lg max-w-[80%]">
-                  <p className="text-sm">Claro, em que posso ajudar?</p>
-                  <div className="flex items-center justify-end mt-1">
-                    <span className="text-[10px] text-primary-foreground/70">14:32</span>
-                    <CheckCheck className="h-3.5 w-3.5 ml-1 text-primary-foreground/70" />
-                  </div>
+              {/* Indicador de carregamento inicial */}
+              {loadingMessages && messages.length === 0 && (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-              </div>
+              )}
               
-              <div className="flex justify-start">
-                <div className="bg-muted p-3 rounded-lg max-w-[80%]">
-                  <p className="text-sm">Estou com dificuldade para acessar minha conta.</p>
-                  <div className="flex items-center justify-end mt-1">
-                    <span className="text-[10px] text-muted-foreground">14:35</span>
-                  </div>
+              {/* Mensagem se não houver mensagens */}
+              {!loadingMessages && messages.length === 0 && (
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>Nenhuma mensagem encontrada nesta conversa.</p>
+                  <p className="text-sm">Envie uma mensagem para iniciar.</p>
                 </div>
-              </div>
+              )}
+              
+              {/* Lista de mensagens reais */}
+              {messages.map((message, index) => {
+                const isFromContact = message.sender === 'contact';
+                const isFromUser = message.sender === 'user';
+                
+                // Verificar se a mensagem atual é do mesmo remetente e dentro de 5 minutos da anterior
+                const isConsecutive = index > 0 && 
+                  messages[index - 1].sender === message.sender && 
+                  (message.timestamp.getTime() - messages[index - 1].timestamp.getTime() < 5 * 60 * 1000);
+                
+                return (
+                  <div 
+                    key={message.id} 
+                    className={`flex ${isFromContact ? 'justify-start' : 'justify-end'} ${isConsecutive ? 'mt-1' : 'mt-4'}`}
+                  >
+                    {/* Mostrar avatar apenas se for a primeira mensagem de uma sequência */}
+                    {isFromContact && !isConsecutive && (
+                      <div className="flex-shrink-0 mr-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {selectedConversation?.name?.charAt(0) || 'C'}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                    )}
+                    
+                    <div className={`${isConsecutive && isFromContact ? 'ml-10' : ''}`}>
+                      {/* Nome do contato (apenas para a primeira mensagem do contato) */}
+                      {isFromContact && !isConsecutive && (
+                        <div className="text-xs font-medium ml-1 mb-1">
+                          {selectedConversation?.name || 'Contato'}
+                        </div>
+                      )}
+                      
+                      {/* Conteúdo da mensagem */}
+                      <div 
+                        className={`p-3 rounded-lg max-w-[80%] ${
+                          isFromContact ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
+                        }`}
+                      >
+                        {/* Renderizar conteúdo baseado no tipo de mensagem */}
+                        {message.type === 'image' && message.metadata?.url ? (
+                          <div>
+                            <img 
+                              src={message.metadata.url} 
+                              alt="Imagem" 
+                              className="rounded-lg max-w-full max-h-[200px] object-cover mb-2"
+                            />
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                        ) : (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        )}
+                        
+                        {/* Timestamp e status */}
+                        <div className="flex items-center justify-end mt-1">
+                          <span className={`text-[10px] ${
+                            isFromContact ? 'text-muted-foreground' : 'text-primary-foreground/70'
+                          }`}>
+                            {format(message.timestamp, 'HH:mm', { locale: ptBR })}
+                          </span>
+                          
+                          {/* Status da mensagem (apenas para mensagens enviadas pelo usuário) */}
+                          {isFromUser && (
+                            <CheckCheck 
+                              className={`h-3.5 w-3.5 ml-1 ${
+                                message.status === 'read' 
+                                  ? 'text-blue-400' 
+                                  : message.status === 'delivered' 
+                                    ? 'text-green-400' 
+                                    : 'text-primary-foreground/70'
+                              }`} 
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             
             {/* Área de entrada de mensagem */}
