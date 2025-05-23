@@ -95,11 +95,22 @@ const MessageList: React.FC<MessageListProps> = ({
         ? normalizedPhone 
         : `55${normalizedPhone}`;
       
+      // Extrair o ID da mensagem da Z-API corretamente
+      const zapiMessageId = messageToForward?.metadata?.zapiMessageId || 
+                           messageToForward?.metadata?.messageId || 
+                           messageToForward?.id;
+      
+      if (!zapiMessageId) {
+        throw new Error("ID da mensagem não encontrado para encaminhamento");
+      }
+      
+      console.log("Encaminhando mensagem com ID:", zapiMessageId);
+      
       const response = await axios.post('/api/zapi/forward-message', {
-        instanceId: '3DF871A7ADFB20FB49998E66062CE0C1', // Normalmente obtido da configuração
-        token: '5CD6CAB4A8DBCC35E1C4BB66', // Normalmente obtido da configuração
+        instanceId: '3DF871A7ADFB20FB49998E66062CE0C1', // ID da instância Z-API
+        token: '5CD6CAB4A8DBCC35E1C4BB66', // Token da instância Z-API
         phone: phoneWithCountryCode,
-        messageId: messageToForward?.metadata?.zapiMessageId || ''
+        messageId: zapiMessageId
       });
       
       if (response.data.success) {
@@ -344,6 +355,65 @@ const MessageList: React.FC<MessageListProps> = ({
 
   return (
     <>
+      {/* Diálogo para encaminhar mensagem */}
+      <Dialog open={showForwardDialog} onOpenChange={setShowForwardDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Encaminhar mensagem</DialogTitle>
+            <DialogDescription>
+              Digite o número de telefone para encaminhar esta mensagem.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Número de telefone</Label>
+              <Input
+                id="phone"
+                placeholder="(11) 99999-9999"
+                value={forwardPhone}
+                onChange={(e) => setForwardPhone(e.target.value)}
+                disabled={isForwarding}
+              />
+              <p className="text-xs text-muted-foreground">
+                Digite o número com DDD, sem o código do país.
+              </p>
+            </div>
+            
+            {messageToForward && (
+              <div className="border rounded-md p-3 bg-muted/20">
+                <p className="text-sm font-medium mb-1">Mensagem a ser encaminhada:</p>
+                <div className="text-sm opacity-80">
+                  {extractMessageContent(messageToForward)}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter className="sm:justify-between">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowForwardDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={isForwarding || !forwardPhone}
+              onClick={handleForwardMessage}
+            >
+              {isForwarding ? (
+                <>Encaminhando...</>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Encaminhar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Botão para carregar mensagens anteriores */}
       {hasMoreMessages && (
         <div className="text-center py-2">
@@ -449,12 +519,19 @@ const MessageList: React.FC<MessageListProps> = ({
                         <DropdownMenuItem onClick={() => alert('Responder à mensagem')}>
                           <MessageSquare className="h-4 w-4 mr-2" /> Responder
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => alert('Mensagem encaminhada')}>
+                        <DropdownMenuItem onClick={() => {
+                          setMessageToForward(message);
+                          setShowForwardDialog(true);
+                        }}>
                           <Forward className="h-4 w-4 mr-2" /> Encaminhar
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => {
                           navigator.clipboard.writeText(extractMessageContent(message));
-                          alert('Texto copiado para a área de transferência');
+                          toast({
+                            title: "Texto copiado",
+                            description: "O conteúdo da mensagem foi copiado para a área de transferência",
+                            variant: "default"
+                          });
                         }}>
                           <FileText className="h-4 w-4 mr-2" /> Copiar texto
                         </DropdownMenuItem>
