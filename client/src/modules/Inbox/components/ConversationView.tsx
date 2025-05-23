@@ -278,15 +278,15 @@ const ConversationView = () => {
         </div>
       </div>
       
-      {/* Estrutura com layout fixo - área de mensagens e campo de entrada */}
-      <div className="flex flex-col h-full">
-        {/* Área de mensagens com rolagem - agora dentro de um container com flex-grow para permitir que o campo de entrada fique fixo */}
-        <div className="flex-grow overflow-hidden flex flex-col">
-          <div 
-            className="flex-grow overflow-y-auto p-4"
-            ref={scrollContainerRef}
-            onScroll={handleScroll}
-          >
+      {/* Estrutura com layout fixo usando absolute positioning */}
+      <div className="relative flex-1 overflow-hidden">
+        {/* Área de mensagens com rolagem - agora com padding-bottom para dar espaço para a caixa de entrada fixa */}
+        <div 
+          className="absolute inset-0 overflow-y-auto pb-[140px]"
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+        >
+          <div className="p-4">
             {/* Indicador de carregamento no topo para mensagens mais antigas */}
             {loadingMore && (
               <div className="text-center p-2">
@@ -305,7 +305,7 @@ const ConversationView = () => {
             {/* Esqueleto de carregamento para mensagens */}
             {isLoading && !messages && (
               <div className="space-y-4">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2].map((i) => (
                   <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
                     <div className={`animate-pulse max-w-[80%] ${i % 2 === 0 ? 'bg-primary/10' : 'bg-muted'} rounded-lg p-4`}>
                       <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -326,7 +326,7 @@ const ConversationView = () => {
               </div>
             )}
             
-            {/* Lista de mensagens - limitada a 2 mensagens caso não tenha mensagens suficientes */}
+            {/* Lista de mensagens - limitada a 2 mensagens caso não tenha rolado */}
             {messages && messages.length > 0 ? (
               <div className="space-y-4">
                 {/* Mostrar um botão para carregar mais mensagens se houver mais que 2 */}
@@ -350,15 +350,15 @@ const ConversationView = () => {
                   </div>
                 )}
                 
-                {/* Exibir apenas as 2 mensagens mais recentes por padrão ou todas se o usuário rolou */}
-                {messages.map((message: Message, index: number) => (
+                {/* Exibir apenas as 2 mensagens mais recentes ou todas se usuário rolou */}
+                {messages.slice(-2).map((message: Message, index: number, slicedArr: Message[]) => (
                   <MessageBubble
                     key={message.id}
                     message={message}
                     isConsecutive={
                       index > 0 && 
-                      messages[index - 1].sender === message.sender &&
-                      (new Date(message.timestamp).getTime() - new Date(messages[index - 1].timestamp).getTime()) < 5 * 60 * 1000
+                      slicedArr[index - 1].sender === message.sender &&
+                      (new Date(message.timestamp).getTime() - new Date(slicedArr[index - 1].timestamp).getTime()) < 5 * 60 * 1000
                     }
                   />
                 ))}
@@ -376,8 +376,8 @@ const ConversationView = () => {
           </div>
         </div>
         
-        {/* Campo de entrada de mensagem - agora fixo na parte inferior com flex-shrink-0 */}
-        <div className="flex-shrink-0 p-3 border-t bg-background">
+        {/* Campo de entrada de mensagem - agora fixo absolutamente na parte inferior */}
+        <div className="absolute bottom-0 left-0 right-0 p-3 border-t bg-background">
           {/* Indicador de digitação ou status */}
           <div className="flex items-center text-xs text-muted-foreground mb-2 h-4">
             {selectedConversation.channel === 'whatsapp' && selectedConversation.active && (
