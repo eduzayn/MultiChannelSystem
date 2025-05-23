@@ -630,28 +630,79 @@ export async function sendTextMessage(
   message?: string;
 }> {
   try {
-    // Usar simulação em vez da API real enquanto resolvemos os problemas de conexão
-    console.log(`Simulando envio de mensagem para ${phone} via Z-API`);
+    // Logs para debug
+    console.log(`Preparando envio real de mensagem para ${phone}`);
+    console.log(`Usando instanceId: ${instanceId}`);
     console.log(`Texto: "${message}"`);
     
-    // Simula um delay de resposta realista
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Limpar o número de telefone removendo caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
     
-    // Simula um ID de mensagem único com timestamp
-    const simulatedMessageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    // URL para envio de mensagens de texto
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`;
     
-    console.log(`Mensagem enviada com sucesso (simulação). ID: ${simulatedMessageId}`);
-    
-    return {
-      success: true,
-      messageId: simulatedMessageId,
-      message: "Mensagem enviada com sucesso (simulação)"
+    // Preparando headers
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
     };
+    
+    // Adicionar Client-Token se fornecido
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    console.log(`Enviando mensagem para ${cleanPhone} via Z-API: "${message.substring(0, 20)}${message.length > 20 ? '...' : ''}"`);
+    
+    // Realizando a requisição para a API Z-API
+    const response = await axios.post(
+      url,
+      {
+        phone: cleanPhone,  // Número no formato DDD+número, por exemplo: 11999999999
+        message: message    // Conteúdo da mensagem
+      },
+      { headers }
+    );
+    
+    console.log(`Resposta da Z-API:`, response.data);
+    
+    if (response.data && (response.data.zaapId || response.data.id || response.data.messageId)) {
+      return {
+        success: true,
+        messageId: response.data.zaapId || response.data.id || response.data.messageId,
+        message: "Mensagem enviada com sucesso"
+      };
+    } else {
+      // Tratamento para resposta sem identificador de mensagem
+      console.warn(`Resposta da Z-API não contém ID de mensagem esperado:`, response.data);
+      return {
+        success: true,
+        messageId: `unknown_${Date.now()}`,
+        message: "Mensagem enviada, mas ID não identificado na resposta"
+      };
+    }
   } catch (error) {
-    console.error(`Erro ao simular envio de mensagem:`, error);
+    console.error(`Erro ao enviar mensagem via Z-API:`, error);
+    
+    // Log detalhado para diagnóstico
+    if (axios.isAxiosError(error)) {
+      console.error(`Status: ${error.response?.status}`);
+      console.error(`Resposta da API:`, error.response?.data);
+      
+      // Tentar extrair mensagem de erro mais detalhada
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          "Erro desconhecido";
+      
+      return {
+        success: false,
+        message: `Erro ao enviar mensagem: ${errorMessage}`
+      };
+    }
+    
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Erro na simulação de envio"
+      message: error instanceof Error ? error.message : "Erro desconhecido ao enviar mensagem"
     };
   }
 }

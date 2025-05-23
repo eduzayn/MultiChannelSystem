@@ -596,55 +596,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Credenciais fixas para o canal Z-API
-      const instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
-      const token = "F17CB66AC44697A25E";
+      // Buscar credenciais dinâmicas do banco de dados com base no channelId
+      let instanceId, token, clientToken;
+      try {
+        const { db } = await import('./db');
+        const { integrations } = await import('../shared/schema');
+        const { eq } = await import('drizzle-orm');
+        
+        // Buscar a integração associada ao canal
+        const integration = await db.query.integrations.findFirst({
+          where: eq(integrations.channelId, parseInt(channelId))
+        });
+        
+        if (integration && integration.credentials) {
+          const credentials = integration.credentials as any;
+          instanceId = credentials.instanceId || "3DF871A7ADFB20FB49998E66062CE0C1";
+          token = credentials.token || "F17CB66AC44697A25E";
+          clientToken = credentials.clientToken;
+          
+          console.log(`Usando credenciais da integração para o canal ${channelId}:`);
+          console.log(`- Instance ID: ${instanceId}`);
+          console.log(`- Token: ${token?.substring(0, 5)}...`);
+        } else {
+          // Credenciais default para o canal Z-API se não encontrar no banco
+          console.log(`Nenhuma integração encontrada para o canal ${channelId}, usando credenciais padrão`);
+          instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
+          token = "F17CB66AC44697A25E";
+        }
+      } catch (dbError) {
+        console.error('Erro ao buscar credenciais da Z-API:', dbError);
+        // Usar credenciais padrão em caso de erro
+        instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
+        token = "F17CB66AC44697A25E";
+      }
       
       // Importar o serviço da Z-API
       const { sendTextMessage } = await import('./services/zapiService');
       
       // Realizar o envio efetivo via Z-API
-      const result = await sendTextMessage(instanceId, token, phoneNumber, message);
+      console.log(`Enviando mensagem para ${phoneNumber} através da API Z-API`);
+      const result = await sendTextMessage(instanceId, token, phoneNumber, message, clientToken);
       
-      if (result.success) {
-        console.log(`Mensagem enviada com sucesso para ${phoneNumber} via Z-API`);
+      // Salvar a mensagem no banco de dados independente do resultado da API
+      // para garantir que a mensagem apareça na interface
+      try {
+        const { db } = await import('./db');
+        const { messages } = await import('../shared/schema');
         
-        // Também salvar a mensagem no banco de dados
-        try {
-          const { db } = await import('./db');
-          const { messages } = await import('../shared/schema');
-          
-          const newMessage = {
-            conversationId: parseInt(channelId),
-            content: message,
-            type: 'text',
-            sender: 'user',
-            status: 'delivered',
-            timestamp: new Date(),
-            metadata: {
-              zapiMessageId: result.messageId,
-              sentAt: new Date()
-            }
-          };
-          
-          await db.insert(messages).values(newMessage);
-          
-          console.log('Mensagem salva no banco de dados');
-        } catch (dbError) {
-          console.error('Erro ao salvar mensagem no banco:', dbError);
-          // Mesmo com erro no banco, a mensagem foi enviada
-        }
+        const newMessage = {
+          conversationId: parseInt(channelId),
+          content: message,
+          type: 'text',
+          sender: 'user',
+          status: result.success ? 'sent' : 'error',
+          timestamp: new Date(),
+          metadata: {
+            zapiMessageId: result.messageId || `local_${Date.now()}`,
+            sentAt: new Date(),
+            apiResponse: result.success ? 'success' : result.message
+          }
+        };
         
+        const [savedMessage] = await db.insert(messages).values(newMessage).returning();
+        console.log('Mensagem salva no banco de dados com ID:', savedMessage.id);
+        
+        // Responde com sucesso e inclui a mensagem salva para atualização da UI
         return res.json({
-          success: true,
-          messageId: result.messageId,
-          message: "Mensagem enviada com sucesso"
+          success: result.success,
+          messageId: result.messageId || `local_${Date.now()}`,
+          message: result.success ? "Mensagem enviada com sucesso" : result.message,
+          savedMessage
         });
-      } else {
-        console.error(`Erro ao enviar mensagem via Z-API: ${result.message}`);
+      } catch (dbError) {
+        console.error('Erro ao salvar mensagem no banco:', dbError);
+        // Mesmo com erro no banco, responder com o resultado da API
         return res.json({
-          success: false,
-          message: result.message || "Erro ao enviar mensagem"
+          success: result.success,
+          messageId: result.messageId,
+          message: result.success ? 
+            "Mensagem enviada, mas não salva localmente" : 
+            `Erro: ${result.message}`
         });
       }
     } catch (error) {
