@@ -447,7 +447,7 @@ export default function Inbox() {
   };
 
   return (
-    <div className="grid h-screen overflow-hidden bg-background" style={{gridTemplateColumns: '304px minmax(0, 1fr) 320px'}}>
+    <div className="grid h-screen overflow-hidden bg-background" style={{gridTemplateColumns: '340px minmax(0, 1fr) 280px'}}>
       {/* Sidebar esquerda: Lista de conversas */}
       <div className="border-r flex flex-col h-full overflow-hidden">
         {/* Cabeçalho com opções de filtro e pesquisa */}
