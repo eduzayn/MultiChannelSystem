@@ -632,7 +632,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex flex-col bg-muted/10 h-full" style={{ flex: '1 1 auto' }}>
+      <div className="flex flex-col bg-muted/10 h-full flex-1" style={{ minWidth: '0' }}>
         {selectedConversation ? (
           <div className="flex flex-col h-full">
             {/* Cabeçalho da conversa */}

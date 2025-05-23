@@ -135,6 +135,7 @@ const MessageList: React.FC<MessageListProps> = ({
       setIsForwarding(false);
     }
   };
+
   // Função para renderizar o status de entrega/leitura
   const renderDeliveryStatus = (status: string) => {
     switch(status) {
@@ -185,32 +186,6 @@ const MessageList: React.FC<MessageListProps> = ({
             )}
           </div>
         );
-      case 'video':
-        return (
-          <div className="media-message-container">
-            <div className="relative rounded-lg overflow-hidden mb-2 border border-muted">
-              <div className="aspect-video bg-black/10 flex items-center justify-center">
-                <video 
-                  src={message.metadata?.url || ''} 
-                  className="max-w-full max-h-[250px]" 
-                  controls
-                  poster={message.metadata?.thumbnail || ''}
-                  preload="metadata"
-                />
-              </div>
-            </div>
-            {message.content && (
-              <p className="text-sm">{extractMessageContent(message)}</p>
-            )}
-            <div className="flex items-center mt-1 text-xs text-muted-foreground">
-              <svg className="h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-              </svg>
-              <span>{message.metadata?.duration || 'Vídeo'}</span>
-            </div>
-          </div>
-        );
       case 'audio':
         return (
           <div className="media-message-container">
@@ -238,123 +213,13 @@ const MessageList: React.FC<MessageListProps> = ({
             )}
           </div>
         );
-      case 'document':
-        return (
-          <div className="media-message-container">
-            <div className="bg-background/80 p-3 rounded-md border border-muted/50 hover:bg-muted/30 transition-colors">
-              <a 
-                href={message.metadata?.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center rounded-md"
-              >
-                <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center mr-3 text-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">{message.metadata?.fileName || "Arquivo"}</div>
-                  <div className="text-xs text-muted-foreground flex items-center">
-                    <span className="truncate">{message.metadata?.fileSize || ""}</span>
-                    <span className="mx-1">•</span>
-                    <span className="whitespace-nowrap">Clique para baixar</span>
-                  </div>
-                </div>
-                <svg className="h-5 w-5 text-muted-foreground ml-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="7 10 12 15 17 10"></polyline>
-                  <line x1="12" x2="12" y1="15" y2="3"></line>
-                </svg>
-              </a>
-            </div>
-          </div>
-        );
-      case 'location':
-        return (
-          <div className="media-message-container">
-            <div className="bg-background/80 p-3 rounded-md border border-muted/50 hover:bg-muted/30 transition-colors">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                </div>
-                <div>
-                  <span className="text-sm font-medium">Localização compartilhada</span>
-                  <div className="text-xs text-muted-foreground">
-                    {message.metadata?.address || `${message.metadata?.latitude}, ${message.metadata?.longitude}`}
-                  </div>
-                </div>
-              </div>
-              <div className="relative rounded-md overflow-hidden h-[100px] bg-muted/30 mb-2">
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs text-muted-foreground">Pré-visualização do mapa</span>
-                </div>
-              </div>
-              <a 
-                href={`https://maps.google.com/?q=${message.metadata?.latitude},${message.metadata?.longitude}`} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-xs text-primary hover:underline flex items-center"
-              >
-                <svg className="h-3.5 w-3.5 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                  <polyline points="15 3 21 3 21 9"></polyline>
-                  <line x1="10" x2="21" y1="14" y2="3"></line>
-                </svg>
-                Abrir no Google Maps
-              </a>
-            </div>
-          </div>
-        );
-      case 'sticker':
-        return (
-          <div className="media-message-container">
-            <img 
-              src={message.metadata?.url || ''} 
-              alt="Sticker" 
-              className="max-w-[120px] max-h-[120px]"
-            />
-          </div>
-        );
-      case 'contact':
-        return (
-          <div className="media-message-container">
-            <div className="bg-background/80 p-3 rounded-md border border-muted/50">
-              <div className="flex items-center">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mr-3 text-primary">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{message.metadata?.name || "Contato"}</div>
-                  <div className="text-xs text-muted-foreground">{message.metadata?.phoneNumber || ""}</div>
-                </div>
-              </div>
-              <button className="mt-2 w-full text-xs flex items-center justify-center bg-muted/50 hover:bg-muted p-1.5 rounded-md text-muted-foreground">
-                <svg className="h-3.5 w-3.5 mr-1.5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <line x1="19" x2="19" y1="8" y2="14"></line>
-                  <line x1="22" x2="16" y1="11" y2="11"></line>
-                </svg>
-                Adicionar contato
-              </button>
-            </div>
-          </div>
-        );
       default:
         return <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>;
     }
   };
 
   return (
-    <>
+    <div className="h-full overflow-y-auto flex flex-col">
       {/* Diálogo para encaminhar mensagem */}
       <Dialog open={showForwardDialog} onOpenChange={setShowForwardDialog}>
         <DialogContent className="sm:max-w-md">
@@ -373,19 +238,15 @@ const MessageList: React.FC<MessageListProps> = ({
                   placeholder="(11) 99999-9999"
                   value={forwardPhone}
                   onChange={(e) => setForwardPhone(e.target.value)}
-                  disabled={isForwarding}
+                  className="flex-1"
                 />
                 <Button 
-                  variant="outline" 
-                  size="icon"
-                  type="button"
-                  disabled={isForwarding}
+                  variant="secondary" 
+                  size="icon" 
+                  title="Selecionar contato"
                   onClick={() => {
-                    toast({
-                      title: "Seleção de contatos",
-                      description: "Esta funcionalidade será implementada em breve.",
-                      variant: "default"
-                    });
+                    // Funcionalidade para selecionar um contato (a ser implementada)
+                    alert('Funcionalidade para selecionar contato será implementada futuramente');
                   }}
                 >
                   <MessageSquare className="h-4 w-4" />
@@ -405,25 +266,32 @@ const MessageList: React.FC<MessageListProps> = ({
               </div>
             )}
           </div>
-          <DialogFooter className="sm:justify-between">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowForwardDialog(false)}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowForwardDialog(false);
+                setForwardPhone('');
+              }}
+              disabled={isForwarding}
             >
               Cancelar
             </Button>
-            <Button
-              type="button"
-              disabled={isForwarding || !forwardPhone}
-              onClick={handleForwardMessage}
+            <Button 
+              onClick={handleForwardMessage} 
+              disabled={!forwardPhone || isForwarding}
             >
               {isForwarding ? (
-                <>Encaminhando...</>
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Encaminhando...
+                </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Encaminhar
+                  <Forward className="h-4 w-4 mr-2" /> Encaminhar
                 </>
               )}
             </Button>
@@ -439,144 +307,165 @@ const MessageList: React.FC<MessageListProps> = ({
             disabled={loadingMessages}
             className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 rounded-full"
           >
-            {loadingMessages ? 'Carregando...' : 'Carregar mensagens anteriores'}
+            {loadingMessages ? (
+              <>
+                <span className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground inline-block animate-spin mr-2 align-[-2px]"></span>
+                Carregando...
+              </>
+            ) : (
+              'Carregar mensagens anteriores'
+            )}
           </button>
         </div>
       )}
       
-      {/* Lista de mensagens com divisores de data */}
-      {messages.map((message, index) => {
-        const isFromContact = message.sender === 'contact';
-        const isFromUser = message.sender === 'user';
-        const isFromSystem = message.sender === 'system';
-        const isFromAI = message.sender === 'ai';
-        const messageDate = new Date(message.timestamp);
-        
-        // Verifica se precisamos exibir um separador de data
-        const showDateSeparator = index === 0 || 
-          !isSameDay(messageDate, new Date(messages[index - 1].timestamp));
-        
-        // Verifica se a mensagem é consecutiva (mesmo remetente e dentro de 5 minutos)
-        const isConsecutive = index > 0 && 
-          !showDateSeparator &&
-          messages[index - 1].sender === message.sender && 
-          (messageDate.getTime() - new Date(messages[index - 1].timestamp).getTime() < 5 * 60 * 1000);
-        
-        // Determina se é a última mensagem para adicionar a referência
-        const isLastMessage = index === messages.length - 1;
-
-        return (
-          <React.Fragment key={message.id}>
-            {/* Mostra o separador de data quando necessário */}
-            {showDateSeparator && (
-              <DateSeparator date={messageDate} />
-            )}
-            
-            {/* Container da mensagem */}
-            <div 
-              className={`flex ${isFromContact || isFromSystem || isFromAI ? 'justify-start' : 'justify-end'} 
-                ${isConsecutive ? 'mt-1' : 'mt-4'} group`}
-              ref={isLastMessage ? messagesEndRef : undefined}
-            >
-              {/* Avatar para mensagens não consecutivas de contato/sistema/AI */}
-              {(isFromContact || isFromSystem || isFromAI) && !isConsecutive && (
-                <div className="flex-shrink-0 mr-2">
-                  <Avatar className="h-8 w-8">
-                    {isFromAI ? (
-                      <AvatarFallback className="bg-blue-100 text-blue-600">IA</AvatarFallback>
-                    ) : isFromSystem ? (
-                      <AvatarFallback className="bg-yellow-100 text-yellow-600">SYS</AvatarFallback>
-                    ) : (
-                      <>
-                        <AvatarImage src={senderAvatar} alt={senderName} />
-                        <AvatarFallback>{senderName?.charAt(0) || 'C'}</AvatarFallback>
-                      </>
-                    )}
-                  </Avatar>
-                </div>
+      {/* Lista de mensagens */}
+      <div className="px-4 pt-2 flex-1">
+        {messages.map((message, index) => {
+          // Determinar o tipo de remetente
+          const isFromContact = message.sender === 'contact';
+          const isFromSystem = message.sender === 'system';
+          const isFromAI = message.sender === 'ai';
+          
+          // Verificar se esta mensagem é a última
+          const isLastMessage = index === messages.length - 1;
+          
+          // Determinar se há mudança de dia entre mensagens
+          const messageDate = new Date(message.timestamp);
+          const previousMessage = index > 0 ? messages[index - 1] : null;
+          const previousDate = previousMessage ? new Date(previousMessage.timestamp) : null;
+          const showDateSeparator = !previousDate || !isSameDay(messageDate, previousDate);
+          
+          // Verificar se é uma mensagem consecutiva do mesmo remetente
+          const isConsecutive = index > 0 && 
+                               messages[index - 1].sender === message.sender && 
+                               !showDateSeparator &&
+                               (new Date(message.timestamp).getTime() - new Date(messages[index - 1].timestamp).getTime() < 60 * 1000); // Menos de 1 minuto de diferença
+          
+          return (
+            <div key={message.id}>
+              {/* Mostra o separador de data quando necessário */}
+              {showDateSeparator && (
+                <DateSeparator date={messageDate} />
               )}
               
-              {/* Container do conteúdo da mensagem */}
-              <div className={`max-w-[75%] ${isConsecutive && (isFromContact || isFromSystem || isFromAI) ? 'ml-10' : ''}`}>
-                {/* Nome do remetente para primeira mensagem de uma sequência */}
+              {/* Container da mensagem */}
+              <div 
+                className={`flex ${isFromContact || isFromSystem || isFromAI ? 'justify-start' : 'justify-end'} 
+                  ${isConsecutive ? 'mt-1' : 'mt-4'} group`}
+                ref={isLastMessage ? messagesEndRef : undefined}
+              >
+                {/* Avatar para mensagens não consecutivas de contato/sistema/AI */}
                 {(isFromContact || isFromSystem || isFromAI) && !isConsecutive && (
-                  <div className="text-xs font-medium ml-1 mb-1">
-                    {isFromAI ? 'Assistente IA' : isFromSystem ? 'Sistema' : senderName || 'Contato'}
+                  <div className="flex-shrink-0 mr-2">
+                    <Avatar className="h-8 w-8">
+                      {isFromAI ? (
+                        <AvatarFallback className="bg-blue-100 text-blue-600">IA</AvatarFallback>
+                      ) : isFromSystem ? (
+                        <AvatarFallback className="bg-yellow-100 text-yellow-600">SYS</AvatarFallback>
+                      ) : (
+                        <>
+                          <AvatarImage src={senderAvatar} alt={senderName} />
+                          <AvatarFallback>{senderName?.charAt(0) || 'C'}</AvatarFallback>
+                        </>
+                      )}
+                    </Avatar>
                   </div>
                 )}
                 
-                <div className="flex items-end">
-                  {/* Bolha da mensagem */}
-                  <div className={`p-3 rounded-lg ${
-                    isFromContact ? 'bg-muted text-foreground' : 
-                    isFromSystem ? 'bg-yellow-100 dark:bg-yellow-950 text-foreground italic' :
-                    isFromAI ? 'bg-blue-100 dark:bg-blue-950 text-foreground' :
-                    'bg-primary text-primary-foreground'
-                  }`}>
-                    {renderMessageContent(message)}
-                    
-                    {/* Horário e status */}
-                    <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[10px] opacity-70">
-                        {format(messageDate, 'HH:mm', { locale: ptBR })}
-                      </span>
-                      {isFromUser && renderDeliveryStatus(message.status)}
+                {/* Container do conteúdo da mensagem */}
+                <div className={`max-w-[75%] ${isConsecutive && (isFromContact || isFromSystem || isFromAI) ? 'ml-10' : ''}`}>
+                  {/* Nome do remetente para primeira mensagem de uma sequência */}
+                  {(isFromContact || isFromSystem || isFromAI) && !isConsecutive && (
+                    <div className="text-xs font-medium ml-1 mb-1">
+                      {isFromAI ? 'Assistente IA' : isFromSystem ? 'Sistema' : senderName || 'Contato'}
                     </div>
-                  </div>
+                  )}
                   
-                  {/* Menu de ações contextual */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="p-1 rounded-full hover:bg-muted">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align={isFromUser ? "start" : "end"} className="w-40">
-                        <DropdownMenuItem onClick={() => alert('Responder à mensagem')}>
-                          <MessageSquare className="h-4 w-4 mr-2" /> Responder
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          setMessageToForward(message);
-                          setShowForwardDialog(true);
-                        }}>
-                          <Forward className="h-4 w-4 mr-2" /> Encaminhar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => {
-                          navigator.clipboard.writeText(extractMessageContent(message));
-                          toast({
-                            title: "Texto copiado",
-                            description: "O conteúdo da mensagem foi copiado para a área de transferência",
-                            variant: "default"
-                          });
-                        }}>
-                          <FileText className="h-4 w-4 mr-2" /> Copiar texto
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => alert('Reagir à mensagem')}>
-                          <Smile className="h-4 w-4 mr-2" /> Reagir
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => alert('Mensagem destacada')}>
-                          <Star className="h-4 w-4 mr-2" /> Destacar
-                        </DropdownMenuItem>
-                        {isFromUser && (
-                          <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => alert('Mensagem excluída')} className="text-destructive">
-                              <Trash className="h-4 w-4 mr-2" /> Excluir
-                            </DropdownMenuItem>
-                          </>
+                  <div className="flex items-end">
+                    {/* Bolha da mensagem */}
+                    <div className={`p-3 rounded-lg ${
+                      isFromContact ? 'bg-muted text-foreground' : 
+                      isFromSystem ? 'bg-yellow-100 dark:bg-yellow-950 text-foreground italic' :
+                      isFromAI ? 'bg-blue-100 dark:bg-blue-950 text-foreground' :
+                      'bg-primary text-primary-foreground'
+                    }`}>
+                      {renderMessageContent(message)}
+                      
+                      {/* Horário e status */}
+                      <div className="flex items-center justify-end gap-1 mt-1">
+                        <span className="text-[10px] opacity-70">
+                          {format(messageDate, 'HH:mm')}
+                        </span>
+                        {message.sender === 'user' && (
+                          <div className="ml-1">{renderDeliveryStatus(message.status)}</div>
                         )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      </div>
+                    </div>
+                    
+                    {/* Menu de ações */}
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 mb-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted">
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Star className="h-4 w-4 mr-2" /> Marcar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setMessageToForward(message);
+                            setShowForwardDialog(true);
+                          }}>
+                            <Forward className="h-4 w-4 mr-2" /> Encaminhar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            navigator.clipboard.writeText(extractMessageContent(message));
+                            toast({
+                              title: "Texto copiado",
+                              description: "O conteúdo da mensagem foi copiado para a área de transferência",
+                              variant: "default"
+                            });
+                          }}>
+                            <FileText className="h-4 w-4 mr-2" /> Copiar texto
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash className="h-4 w-4 mr-2" /> Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </React.Fragment>
-        );
-      })}
-    </>
+          );
+        })}
+        
+        {/* Estado de carregamento para a lista inteira */}
+        {loadingMessages && messages.length === 0 && (
+          <div className="flex justify-center items-center h-32">
+            <div className="flex flex-col items-center">
+              <span className="h-6 w-6 rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground animate-spin mb-2"></span>
+              <span className="text-sm text-muted-foreground">Carregando mensagens...</span>
+            </div>
+          </div>
+        )}
+        
+        {/* Mensagem de lista vazia */}
+        {!loadingMessages && messages.length === 0 && (
+          <div className="flex justify-center items-center h-32">
+            <div className="flex flex-col items-center">
+              <MessageSquare className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-sm text-muted-foreground">Nenhuma mensagem encontrada</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
