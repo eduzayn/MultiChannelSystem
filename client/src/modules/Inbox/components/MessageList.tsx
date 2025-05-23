@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,7 +10,8 @@ import {
   Smile,
   MoreHorizontal,
   CheckCheck,
-  Trash
+  Trash,
+  Send
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -18,8 +19,22 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { DateSeparator } from './DateSeparator';
+import axios from 'axios';
 
 interface MessageListProps {
   messages: Array<{
@@ -51,6 +66,64 @@ const MessageList: React.FC<MessageListProps> = ({
   senderAvatar,
   extractMessageContent
 }) => {
+  const [showForwardDialog, setShowForwardDialog] = useState(false);
+  const [messageToForward, setMessageToForward] = useState<any>(null);
+  const [forwardPhone, setForwardPhone] = useState('');
+  const [isForwarding, setIsForwarding] = useState(false);
+  const { toast } = useToast();
+  
+  // Função para encaminhar mensagem
+  const handleForwardMessage = async () => {
+    // Validar número de telefone
+    if (!forwardPhone || forwardPhone.length < 10) {
+      toast({
+        title: "Número inválido",
+        description: "Por favor, insira um número de telefone válido (com DDD)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsForwarding(true);
+    
+    try {
+      // Remover caracteres não numéricos
+      const normalizedPhone = forwardPhone.replace(/\D/g, '');
+      
+      // Adicionar código do país se não houver
+      const phoneWithCountryCode = normalizedPhone.startsWith('55') 
+        ? normalizedPhone 
+        : `55${normalizedPhone}`;
+      
+      const response = await axios.post('/api/zapi/forward-message', {
+        instanceId: '3DF871A7ADFB20FB49998E66062CE0C1', // Normalmente obtido da configuração
+        token: '5CD6CAB4A8DBCC35E1C4BB66', // Normalmente obtido da configuração
+        phone: phoneWithCountryCode,
+        messageId: messageToForward?.metadata?.zapiMessageId || ''
+      });
+      
+      if (response.data.success) {
+        toast({
+          title: "Mensagem encaminhada",
+          description: "A mensagem foi encaminhada com sucesso",
+          variant: "default"
+        });
+        setShowForwardDialog(false);
+        setForwardPhone('');
+      } else {
+        throw new Error(response.data.message || "Erro ao encaminhar mensagem");
+      }
+    } catch (error) {
+      console.error('Erro ao encaminhar mensagem:', error);
+      toast({
+        title: "Erro ao encaminhar",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao encaminhar a mensagem",
+        variant: "destructive"
+      });
+    } finally {
+      setIsForwarding(false);
+    }
+  };
   // Função para renderizar o status de entrega/leitura
   const renderDeliveryStatus = (status: string) => {
     switch(status) {

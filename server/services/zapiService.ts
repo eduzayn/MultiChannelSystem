@@ -559,6 +559,63 @@ export async function testZapiConnection(
 }
 
 /**
+ * Encaminha uma mensagem para outro contato via Z-API
+ */
+export async function forwardMessage(
+  instanceId: string,
+  token: string,
+  phone: string,
+  messageId: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/forward-message`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        messageId // ID da mensagem original a ser encaminhada
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao encaminhar mensagem via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
  * Envia uma mensagem de texto via Z-API
  */
 export async function sendTextMessage(

@@ -3,6 +3,7 @@ import {
   getZapiQRCode, 
   testZapiConnection, 
   sendTextMessage, 
+  forwardMessage,
   disconnectZapi,
   getZapiContacts,
   getZapiContactInfo
@@ -269,6 +270,29 @@ export function registerZapiRoutes(app: Router) {
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de envio de mensagem:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para encaminhar mensagem via Z-API
+  app.post("/api/zapi/forward-message", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, messageId } = req.body;
+      
+      if (!instanceId || !token || !phone || !messageId) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e ID da mensagem são obrigatórios",
+        });
+      }
+      
+      const result = await forwardMessage(instanceId, token, phone, messageId, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de encaminhamento de mensagem:", error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Erro interno do servidor",
