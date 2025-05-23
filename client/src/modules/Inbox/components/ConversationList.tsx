@@ -47,7 +47,12 @@ const mockConversations: ConversationItemProps[] = [
     lastMessage: "Olá, preciso de ajuda com meu pedido #1234",
     timestamp: new Date(Date.now() - 15 * 60000),
     unreadCount: 3,
-    channel: "whatsapp"
+    channel: "whatsapp",
+    status: "open",
+    priority: "high",
+    sla: 10,
+    waitingTime: 15,
+    tags: ["Urgente", "VIP"]
   },
   {
     id: "2",
@@ -55,7 +60,11 @@ const mockConversations: ConversationItemProps[] = [
     lastMessage: "Sim, isso resolve meu problema. Obrigado!",
     timestamp: new Date(Date.now() - 60 * 60000),
     unreadCount: 0,
-    channel: "instagram"
+    channel: "instagram",
+    status: "pending",
+    priority: "medium",
+    sla: 30,
+    tags: ["Suporte"]
   },
 ];
 
@@ -80,18 +89,45 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
         // Substituir log detalhado por um resumo da quantidade
         console.log(`Recebendo ${response.data.length} conversas do servidor`);
         
-        return response.data.map((conversation: any) => ({
-          id: conversation.id.toString(),
-          name: conversation.name,
-          lastMessage: formatLastMessage(conversation.lastMessage) || "Nova conversa",
-          timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : new Date(),
-          unreadCount: conversation.unreadCount || 0,
-          channel: conversation.channel,
-          status: conversation.status,
-          contactId: conversation.contactId,
-          identifier: conversation.identifier, // Adicionar o identificador
-          avatar: conversation.avatar // Adicionar avatar, se existir
-        }));
+        // Mapeamos e adicionamos propriedades extras para demonstração visual dos indicadores
+        return response.data.map((conversation: any, index: number) => {
+          // Propriedades extras para demonstração visual (na versão final seriam vindo do backend)
+          const priority = index % 10 === 0 ? 'high' : index % 5 === 0 ? 'low' : 'medium';
+          const sla = index % 7 === 0 ? 5 : index % 3 === 0 ? 12 : undefined;
+          const waitingTime = index % 11 === 0 ? 65 : index % 4 === 0 ? 35 : undefined;
+          const active = index % 6 === 0;
+          
+          // Tags baseadas em padrões para demonstração
+          const tags = [];
+          if (index % 8 === 0) tags.push('VIP');
+          if (index % 9 === 0) tags.push('Urgente');
+          if (index % 12 === 0) tags.push('Suporte');
+          if (index % 15 === 0) tags.push('Vendas');
+          
+          // Status da conversa para demonstração
+          const status = index % 13 === 0 ? 'resolved' : 
+                         index % 7 === 0 ? 'pending' : 
+                         index % 21 === 0 ? 'closed' : 'open';
+          
+          return {
+            id: conversation.id.toString(),
+            name: conversation.name,
+            lastMessage: formatLastMessage(conversation.lastMessage) || "Nova conversa",
+            timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : new Date(),
+            unreadCount: conversation.unreadCount || 0,
+            channel: conversation.channel,
+            status: conversation.status || status,
+            contactId: conversation.contactId,
+            identifier: conversation.identifier,
+            avatar: conversation.avatar,
+            // Propriedades extras
+            priority,
+            sla,
+            waitingTime,
+            active,
+            tags
+          };
+        });
       } catch (err) {
         console.error("Erro ao buscar conversas:", err);
         // Em caso de erro, retornar mock data para feedback visual
