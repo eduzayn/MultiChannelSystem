@@ -35,7 +35,9 @@ import {
   Archive,
   X,
   FileText,
-  MailQuestion
+  MailQuestion,
+  Trash,
+  Copy
 } from "lucide-react";
 import axios from 'axios';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
@@ -833,9 +835,23 @@ const Inbox = () => {
               )}
             </div>
             
-            {/* Área de mensagens com visualização cronológica, separadores por dia e status de entrega */}
+            {/* Área de mensagens com visualização cronológica e status de entrega */}
             <div className="flex-1 overflow-y-scroll p-4 space-y-4 custom-scrollbar" 
                  style={{ maxHeight: "calc(100vh - 230px)" }}>
+              
+              {/* Utilizando o componente MessageList para exibir as mensagens com todas as melhorias */}
+              {selectedConversation && (
+                <MessageList
+                  messages={displayedMessages}
+                  messagesEndRef={messagesEndRef}
+                  loadMoreMessages={loadMoreMessages}
+                  hasMoreMessages={hasMoreMessages}
+                  loadingMessages={loadingMessages}
+                  senderName={selectedConversation.name || 'Contato'}
+                  senderAvatar={selectedConversation.avatar}
+                  extractMessageContent={extractMessageContent}
+                />
+              )}
               
               {/* Indicador de carregamento inicial */}
               {loadingMessages && messages.length === 0 && (
@@ -851,30 +867,118 @@ const Inbox = () => {
                   <p className="text-sm">Envie uma mensagem para iniciar.</p>
                 </div>
               )}
-              
-              {/* Lista de mensagens com separadores de data, indicadores de status e ações contextuais */}
-              {messages.length > 0 && (
-                <div className="space-y-1">
-                  {/* Componente MessageList para exibir mensagens com todas as funcionalidades */}
-                  <MessageList 
-                    messages={displayedMessages}
-                    messagesEndRef={messagesEndRef}
-                    loadMoreMessages={loadMoreMessages}
-                    hasMoreMessages={hasMoreMessages}
-                    loadingMessages={loadingMessages}
-                    senderName={selectedConversation?.name || 'Contato'}
-                    senderAvatar={selectedConversation?.avatar}
-                    extractMessageContent={extractMessageContent}
-                  />
-                </div>
+            </div>
+                    
+                    // Verificar se a mensagem é consecutiva (mesmo remetente e dentro de 5 minutos)
+                    const isConsecutive = index > 0 && 
+                      displayedMessages[index - 1].sender === message.sender && 
+                      (messageDate.getTime() - new Date(displayedMessages[index - 1].timestamp).getTime() < 5 * 60 * 1000) &&
+                      !showDateSeparator;
+                    
+                    return (
+                      <React.Fragment key={message.id}>
+                        {/* Separador de data quando necessário */}
+                        {showDateSeparator && <DateSeparator date={messageDate} />}
+                        
+                        <div className={`flex ${isFromContact ? 'justify-start' : 'justify-end'} ${isConsecutive ? 'mt-1' : 'mt-4'} group`}>
+                          {/* Avatar para mensagens não consecutivas de contato */}
+                          {isFromContact && !isConsecutive && (
+                            <div className="flex-shrink-0 mr-2">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback>
+                                  {selectedConversation?.name?.charAt(0) || 'C'}
+                                </AvatarFallback>
+                              </Avatar>
+                            </div>
+                          )}
+                          
+                          <div className={`${isConsecutive && isFromContact ? 'ml-10' : ''} max-w-[75%]`}>
+                            {/* Nome do contato (apenas para mensagens não consecutivas) */}
+                            {isFromContact && !isConsecutive && (
+                              <div className="text-xs font-medium ml-1 mb-1">
+                                {selectedConversation?.name || 'Contato'}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-end">
+                              {/* Bolha da mensagem */}
+                              <div className={`p-3 rounded-lg ${
+                                isFromContact ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
+                              }`}>
+                                {/* Conteúdo da mensagem */}
+                                <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>
+                                
+                                {/* Horário e status */}
+                                <div className="flex items-center justify-end mt-1">
+                                  <span className="text-[10px] opacity-70">
+                                    {format(messageDate, 'HH:mm', { locale: ptBR })}
+                                  </span>
+                                  
+                                  {/* Status de entrega para mensagens enviadas pelo usuário */}
+                                  {isFromUser && (
+                                    <span className="ml-1">
+                                      {message.status === 'sending' ? (
+                                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block animate-pulse"></span>
+                                      ) : message.status === 'sent' ? (
+                                        <CheckCheck className="h-3.5 w-3.5 text-muted-foreground" />
+                                      ) : message.status === 'delivered' ? (
+                                        <CheckCheck className="h-3.5 w-3.5 text-blue-500" />
+                                      ) : message.status === 'read' ? (
+                                        <CheckCheck className="h-3.5 w-3.5 text-green-500" />
+                                      ) : null}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Menu de ações contextuais */}
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1 rounded-full hover:bg-muted">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align={isFromUser ? "start" : "end"} className="w-40">
+                                    <DropdownMenuItem onClick={() => alert('Responder à mensagem')}>
+                                      <MessageSquare className="h-4 w-4 mr-2" /> Responder
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => alert('Encaminhar mensagem')}>
+                                      <Forward className="h-4 w-4 mr-2" /> Encaminhar
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => {
+                                      navigator.clipboard.writeText(extractMessageContent(message));
+                                      alert('Texto copiado para a área de transferência');
+                                    }}>
+                                      <Copy className="h-4 w-4 mr-2" /> Copiar texto
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => alert('Reagir à mensagem')}>
+                                      <Smile className="h-4 w-4 mr-2" /> Reagir
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => alert('Mensagem destacada')}>
+                                      <Star className="h-4 w-4 mr-2" /> Destacar
+                                    </DropdownMenuItem>
+                                    {isFromUser && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem onClick={() => alert('Mensagem excluída')}
+                                          className="text-destructive">
+                                          <Trash className="h-4 w-4 mr-2" /> Excluir
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+                </>
               )}
-              
-              {/* Lista já substituída pelo componente MessageList */}
-                      <div 
-                        className={`p-3 rounded-lg max-w-[80%] ${
-                          isFromContact ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
-                        }`}
-                      >
                         {/* Renderizar conteúdo baseado no tipo de mensagem */}
                         {message.type === 'image' && message.metadata?.url ? (
                           <div>
