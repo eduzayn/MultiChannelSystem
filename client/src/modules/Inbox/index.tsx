@@ -870,7 +870,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel de contexto */}
-      <div className="w-80 border-l hidden md:block h-full">
+      <div className="w-72 border-l hidden md:block h-full">
         {selectedConversation && (
           <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
