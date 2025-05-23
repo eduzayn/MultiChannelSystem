@@ -449,7 +449,7 @@ export default function Inbox() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar esquerda: Lista de conversas */}
-      <div className="w-76 border-r flex flex-col h-full shrink-0" style={{width: '304px', minWidth: '304px'}}>
+      <div className="border-r flex flex-col h-full shrink-0" style={{width: '304px', minWidth: '304px'}}>
         {/* Cabeçalho com opções de filtro e pesquisa */}
         <div className="p-3 border-b shrink-0">
           <div className="flex items-center gap-2 mb-3">
@@ -632,7 +632,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex flex-col bg-muted/10 h-full" style={{ width: 'calc(100vw - 304px - 320px)' }}>
+      <div className="flex flex-col bg-muted/10 h-full" style={{ flex: '1 1 auto' }}>
         {selectedConversation ? (
           <div className="flex flex-col h-full">
             {/* Cabeçalho da conversa */}
