@@ -622,6 +622,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Nenhuma integração encontrada para o canal ${channelId}, usando credenciais padrão`);
           instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
           token = "F17CB66AC44697A25E";
+          console.log("É necessário configurar credenciais Z-API válidas para enviar mensagens em produção");
         }
       } catch (dbError) {
         console.error('Erro ao buscar credenciais da Z-API:', dbError);
