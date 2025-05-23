@@ -146,6 +146,7 @@ const Inbox = () => {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [contextPanelTab, setContextPanelTab] = useState('info');
   const [messageText, setMessageText] = useState('');
+  const [isSending, setIsSending] = useState(false);
   
   // Estados para mensagens
   const [messages, setMessages] = useState<Message[]>([]);
