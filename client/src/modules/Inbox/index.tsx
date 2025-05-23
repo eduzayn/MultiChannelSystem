@@ -112,6 +112,34 @@ const Inbox = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  
+  // Estados para filtros de conversas
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState('recent');
+  const [isFiltering, setIsFiltering] = useState(false);
+  
+  // Opções para os filtros
+  const channelOptions = [
+    { label: 'WhatsApp', value: 'whatsapp' },
+    { label: 'Email', value: 'email' },
+    { label: 'Instagram', value: 'instagram' },
+    { label: 'Facebook', value: 'facebook' }
+  ];
+  
+  const statusOptions = [
+    { label: 'Todos', value: 'all' },
+    { label: 'Aberto', value: 'open' },
+    { label: 'Resolvido', value: 'resolved' },
+    { label: 'Aguardando', value: 'pending' }
+  ];
+  
+  const sortOptions = [
+    { label: 'Mais recente', value: 'recent' },
+    { label: 'Mais antigo', value: 'oldest' },
+    { label: 'Não lidos', value: 'unread' }
+  ];
 
   // Efeito para carregar mensagens quando a conversa é selecionada
   useEffect(() => {
@@ -197,6 +225,46 @@ const Inbox = () => {
     }
   };
 
+  // Funções para filtros
+  const toggleChannelFilter = (channel: string) => {
+    setSelectedChannels(prev => 
+      prev.includes(channel) 
+        ? prev.filter(c => c !== channel) 
+        : [...prev, channel]
+    );
+  };
+  
+  const toggleStatusFilter = (status: string) => {
+    setSelectedStatuses(prev => 
+      prev.includes(status) 
+        ? prev.filter(s => s !== status) 
+        : [...prev, status]
+    );
+  };
+  
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedChannels([]);
+    setSelectedStatuses([]);
+    setSortBy('recent');
+    setIsFiltering(false);
+  };
+  
+  const handleSearchFilter = () => {
+    // Aqui você implementaria a lógica de busca e filtro no backend
+    // Por enquanto, apenas marcamos que estamos filtrando
+    setIsFiltering(true);
+    console.log('Aplicando filtros:', {
+      searchQuery,
+      channels: selectedChannels,
+      statuses: selectedStatuses,
+      sortBy
+    });
+    
+    // Normalmente você faria uma chamada para algo como:
+    // fetchFilteredConversations(searchQuery, selectedChannels, selectedStatuses, sortBy);
+  };
+  
   // Função para selecionar uma conversa
   const handleSelectConversation = (conversation: ConversationItemProps) => {
     setSelectedConversation(conversation);
@@ -309,14 +377,21 @@ const Inbox = () => {
               <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input 
                 placeholder="Buscar..." 
-                className="pl-7 h-7 text-sm" 
+                className="pl-7 h-7 text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchFilter();
+                  }
+                }}
               />
             </div>
             <Button 
               variant="outline" 
               size="icon"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`h-7 w-7 ${showAdvancedFilters ? "bg-accent" : ""}`}
+              className={`h-7 w-7 ${showAdvancedFilters ? "bg-accent" : ""} ${isFiltering ? "text-primary border-primary" : ""}`}
               title="Filtros Avançados"
             >
               <Filter className="h-3.5 w-3.5" />
