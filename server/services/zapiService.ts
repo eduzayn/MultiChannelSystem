@@ -630,10 +630,31 @@ export async function sendTextMessage(
   message?: string;
 }> {
   try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      return {
+        success: false,
+        message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
+      };
+    }
+
+    if (!phone) {
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar mensagem"
+      };
+    }
+
+    if (!message || message.trim() === '') {
+      return {
+        success: false,
+        message: "Conteúdo da mensagem não pode estar vazio"
+      };
+    }
+    
     // Logs para debug
-    console.log(`Preparando envio real de mensagem para ${phone}`);
+    console.log(`Preparando envio de mensagem para ${phone}`);
     console.log(`Usando instanceId: ${instanceId}`);
-    console.log(`Texto: "${message}"`);
     
     // Limpar o número de telefone removendo caracteres não numéricos
     const cleanPhone = phone.replace(/\D/g, '');
@@ -653,56 +674,137 @@ export async function sendTextMessage(
     
     console.log(`Enviando mensagem para ${cleanPhone} via Z-API: "${message.substring(0, 20)}${message.length > 20 ? '...' : ''}"`);
     
-    // Realizando a requisição para a API Z-API
-    const response = await axios.post(
-      url,
-      {
-        phone: cleanPhone,  // Número no formato DDD+número, por exemplo: 11999999999
-        message: message    // Conteúdo da mensagem
-      },
-      { headers }
-    );
-    
-    console.log(`Resposta da Z-API:`, response.data);
-    
-    if (response.data && (response.data.zaapId || response.data.id || response.data.messageId)) {
-      return {
-        success: true,
-        messageId: response.data.zaapId || response.data.id || response.data.messageId,
-        message: "Mensagem enviada com sucesso"
-      };
-    } else {
-      // Tratamento para resposta sem identificador de mensagem
-      console.warn(`Resposta da Z-API não contém ID de mensagem esperado:`, response.data);
-      return {
-        success: true,
-        messageId: `unknown_${Date.now()}`,
-        message: "Mensagem enviada, mas ID não identificado na resposta"
-      };
+    try {
+      // Realizando a requisição para a API Z-API com timeout de 15 segundos
+      const response = await axios.post(
+        url,
+        {
+          phone: cleanPhone,  // Número no formato DDD+número, por exemplo: 11999999999
+          message: message    // Conteúdo da mensagem
+        },
+        { 
+          headers,
+          timeout: 15000, // 15 segundos de timeout
+          validateStatus: (status) => true // Aceita qualquer status para tratamento manual
+        }
+      );
+      
+      // Verificar se a resposta é HTML (indicando erro de autenticação ou redirecionamento)
+      const contentType = response.headers['content-type'] || '';
+      if (contentType.includes('text/html') || 
+          (typeof response.data === 'string' && response.data.includes('<!DOCTYPE'))) {
+        console.error('Z-API retornou HTML em vez de JSON - provável erro de autenticação');
+        return {
+          success: false,
+          message: 'Erro de autenticação com a Z-API. Verifique o instanceId e token.'
+        };
+      }
+      
+      // Verificar códigos de status
+      if (response.status !== 200 && response.status !== 201) {
+        console.error(`Z-API retornou status ${response.status}`);
+        let errorMsg = 'Erro ao enviar mensagem';
+        
+        if (response.data && typeof response.data === 'object') {
+          errorMsg += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+        }
+        
+        return {
+          success: false,
+          message: errorMsg
+        };
+      }
+      
+      console.log(`Resposta da Z-API:`, response.data);
+      
+      if (response.data && (response.data.zaapId || response.data.id || response.data.messageId)) {
+        return {
+          success: true,
+          messageId: response.data.zaapId || response.data.id || response.data.messageId,
+          message: "Mensagem enviada com sucesso"
+        };
+      } else {
+        // Tratamento para resposta sem identificador de mensagem
+        console.warn(`Resposta da Z-API não contém ID de mensagem esperado:`, response.data);
+        
+        // Se for um objeto, podemos estar recebendo alguma confirmação
+        if (response.data && typeof response.data === 'object') {
+          return {
+            success: true,
+            messageId: `api_${Date.now()}`,
+            message: "Mensagem processada pela API, mas sem ID"
+          };
+        } else {
+          return {
+            success: false,
+            message: "Resposta da Z-API não está no formato esperado"
+          };
+        }
+      }
+    } catch (axiosError) {
+      if (axios.isAxiosError(axiosError)) {
+        console.error(`Erro na requisição para Z-API:`, axiosError.message);
+        
+        // Erros específicos de rede/timeout
+        if (axiosError.code === 'ECONNABORTED') {
+          return {
+            success: false,
+            message: 'Tempo limite excedido ao tentar conectar com a Z-API'
+          };
+        }
+        
+        if (axiosError.code === 'ECONNREFUSED') {
+          return {
+            success: false,
+            message: 'Conexão recusada pela Z-API. Verifique se o serviço está disponível.'
+          };
+        }
+        
+        // Verificar se obtivemos uma resposta HTML
+        if (axiosError.response?.headers['content-type']?.includes('text/html') ||
+            (typeof axiosError.response?.data === 'string' && 
+             axiosError.response.data.includes('<!DOCTYPE'))) {
+          return {
+            success: false,
+            message: 'Provável erro de autenticação. Verifique as credenciais Z-API (instanceId e token).'
+          };
+        }
+        
+        // Tentar extrair mensagem de erro mais detalhada
+        let errorDetail = '';
+        if (axiosError.response?.data) {
+          if (typeof axiosError.response.data === 'object') {
+            errorDetail = axiosError.response.data.error || 
+                         axiosError.response.data.message || 
+                         JSON.stringify(axiosError.response.data);
+          } else if (typeof axiosError.response.data === 'string') {
+            // Tentar extrair mensagem de erro de strings HTML ou JSON mal formatado
+            const errorMatch = axiosError.response.data.match(/"error":"([^"]+)"/);
+            if (errorMatch && errorMatch[1]) {
+              errorDetail = errorMatch[1];
+            } else {
+              errorDetail = axiosError.response.data.substring(0, 100) + '...';
+            }
+          }
+        }
+        
+        return {
+          success: false,
+          message: `Erro ao enviar mensagem: ${errorDetail || axiosError.message}`
+        };
+      }
+      
+      // Repassar o erro para o tratamento genérico
+      throw axiosError;
     }
   } catch (error) {
     console.error(`Erro ao enviar mensagem via Z-API:`, error);
     
-    // Log detalhado para diagnóstico
-    if (axios.isAxiosError(error)) {
-      console.error(`Status: ${error.response?.status}`);
-      console.error(`Resposta da API:`, error.response?.data);
-      
-      // Tentar extrair mensagem de erro mais detalhada
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.message || 
-                          error.message || 
-                          "Erro desconhecido";
-      
-      return {
-        success: false,
-        message: `Erro ao enviar mensagem: ${errorMessage}`
-      };
-    }
-    
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Erro desconhecido ao enviar mensagem"
+      message: error instanceof Error 
+        ? `Erro ao enviar mensagem: ${error.message}` 
+        : "Erro desconhecido ao enviar mensagem"
     };
   }
 }
