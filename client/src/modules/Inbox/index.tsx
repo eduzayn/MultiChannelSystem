@@ -224,108 +224,52 @@ export default function Inbox() {
     try {
       setLoadingMessages(true);
       
-      // Simulação de API para carregar mensagens
-      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-      await delay(800);
+      // Chamada real para a API
+      const response = await axios.get(`/api/conversations/${conversation.id}/messages?page=${page}&limit=20`);
       
-      // Aqui você faria uma chamada real para sua API
-      // const response = await axios.get(`/api/conversations/${conversation.id}/messages?page=${page}`);
-      
-      // Simulando mensagens recebidas da API
-      const mockMessages: Message[] = [];
-      const startIndex = (page - 1) * 15;
-      const endIndex = startIndex + 15;
-      
-      // Gera mensagens simuladas com timestamps diferentes
-      for (let i = startIndex; i < endIndex && i < 50; i++) {
-        const isFromContact = i % 2 === 0;
-        const date = new Date();
-        date.setHours(date.getHours() - (50 - i));
+      if (response.status === 200) {
+        const apiMessages = response.data;
         
-        // Para testar o tratamento de diferentes estruturas de mensagem
-        let messageContent;
-        if (isFromContact) {
-          // Simula uma mensagem de texto do WhatsApp
-          messageContent = JSON.stringify({
-            text: {
-              message: `Mensagem ${i + 1} do contato. Isso é um exemplo de texto mais longo para testar quebra de linha e layout de mensagens em mensageiros.`
-            }
-          });
+        // Processa as mensagens recebidas
+        const formattedMessages: Message[] = apiMessages.map((msg: any) => {
+          // Garante que as datas sejam objetos Date válidos
+          const timestampValue = msg.timestamp || msg.createdAt;
+          const timestamp = new Date(timestampValue);
+          const createdAt = new Date(msg.createdAt);
+          const updatedAt = new Date(msg.updatedAt);
+          
+          return {
+            ...msg,
+            timestamp,
+            createdAt,
+            updatedAt
+          };
+        });
+        
+        // Ordena as mensagens pela data
+        formattedMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        
+        // Atualiza o estado
+        if (append) {
+          setMessages(prev => [...prev, ...formattedMessages]);
+          setDisplayedMessages(prev => [...prev, ...formattedMessages]);
         } else {
-          // Mensagem simples de texto (enviada pelo usuário)
-          messageContent = `Resposta ${i + 1} do atendente. Este é um exemplo de mensagem enviada pelo usuário da plataforma.`;
+          setMessages(formattedMessages);
+          setDisplayedMessages(formattedMessages);
+          setPage(1);
         }
         
-        mockMessages.push({
-          id: i + 1,
-          conversationId: conversation.id,
-          content: messageContent,
-          type: 'text',
-          sender: isFromContact ? 'contact' : 'user',
-          status: 'delivered',
-          timestamp: date,
-          createdAt: date,
-          updatedAt: date
-        });
-      }
-      
-      // Adiciona mensagens simuladas para testar diferentes tipos de mensagem
-      if (page === 1) {
-        // Exemplo de mensagem de sistema/nota (apenas para a primeira página)
-        const systemDate = new Date();
-        systemDate.setHours(systemDate.getHours() - 2);
-        
-        mockMessages.push({
-          id: 9998,
-          conversationId: conversation.id,
-          content: 'Conversa transferida para o departamento de Vendas',
-          type: 'system',
-          sender: 'system',
-          status: 'delivered',
-          timestamp: systemDate,
-          createdAt: systemDate,
-          updatedAt: systemDate
-        });
-        
-        // Exemplo de mensagem com sugestão de AI
-        const aiDate = new Date();
-        aiDate.setHours(aiDate.getHours() - 1);
-        
-        mockMessages.push({
-          id: 9999,
-          conversationId: conversation.id,
-          content: JSON.stringify({
-            message: 'Sugerindo resposta com base nas últimas mensagens...',
-            suggestions: [
-              'Podemos agendar uma demonstração do produto para a próxima semana.',
-              'Temos diversas opções de planos que podem atender suas necessidades.',
-              'Nosso time de suporte pode ajudar a resolver este problema rapidamente.'
-            ]
-          }),
-          type: 'ai_suggestion',
-          sender: 'ai',
-          status: 'delivered',
-          timestamp: aiDate,
-          createdAt: aiDate,
-          updatedAt: aiDate
-        });
-      }
-      
-      // Ordena as mensagens pela data
-      mockMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      
-      // Atualiza o estado
-      if (append) {
-        setMessages(prev => [...prev, ...mockMessages]);
-        setDisplayedMessages(prev => [...prev, ...mockMessages]);
+        // Verifica se há mais mensagens
+        setHasMoreMessages(formattedMessages.length === 20);
       } else {
-        setMessages(mockMessages);
-        setDisplayedMessages(mockMessages);
-        setPage(1);
+        console.error('Erro ao carregar mensagens:', response);
+        
+        // Estado vazio em caso de erro
+        if (!append) {
+          setMessages([]);
+          setDisplayedMessages([]);
+        }
       }
-      
-      // Verifica se há mais mensagens
-      setHasMoreMessages(endIndex < 50);
       
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);

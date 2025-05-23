@@ -40,8 +40,44 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
   const isFromSystem = message.sender === 'system';
   const isFromUser = message.sender === 'user';
 
+  // Função para extrair e processar o conteúdo da mensagem
+  const processMessageContent = () => {
+    // Para mensagens Z-API, tenta extrair o conteúdo JSON
+    let parsedContent = message.content;
+    
+    if (typeof message.content === 'string') {
+      try {
+        // Tenta parsear o conteúdo como JSON
+        if (message.content.startsWith('{') && message.content.endsWith('}')) {
+          const jsonContent = JSON.parse(message.content);
+          
+          // Verifica se é uma mensagem de texto do Z-API
+          if (jsonContent.text && jsonContent.text.message) {
+            return jsonContent.text.message;
+          }
+          
+          // Verifica se é uma mensagem com campo 'message' direto
+          if (jsonContent.message) {
+            return jsonContent.message;
+          }
+          
+          // Se for outro tipo de conteúdo estruturado, retorna uma representação formatada
+          return JSON.stringify(jsonContent, null, 2);
+        }
+      } catch (error) {
+        // Se ocorrer erro no parsing, retorna o conteúdo original
+        console.log("Erro ao parsear mensagem:", error);
+      }
+    }
+    
+    return parsedContent;
+  };
+
   // Função para renderizar o conteúdo baseado no tipo de mensagem
   const renderMessageContent = () => {
+    // Processa o conteúdo primeiro
+    const processedContent = processMessageContent();
+    
     switch(message.type) {
       case 'image':
         return (
@@ -51,7 +87,7 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
               alt="Imagem" 
               className="rounded-lg max-w-full max-h-[300px] object-cover"
             />
-            <p className="mt-1 text-sm">{message.content}</p>
+            <p className="mt-1 text-sm">{processedContent}</p>
           </div>
         );
       case 'video':
@@ -64,14 +100,14 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
                 className="max-w-full max-h-[240px]"
               />
             </div>
-            <p className="mt-1 text-sm">{message.content}</p>
+            <p className="mt-1 text-sm">{processedContent}</p>
           </div>
         );
       case 'audio':
         return (
           <div className="w-[240px]">
             <audio src={message.metadata?.url} controls className="w-full" />
-            <p className="mt-1 text-sm">{message.content}</p>
+            <p className="mt-1 text-sm">{processedContent}</p>
           </div>
         );
       case 'document':
@@ -98,13 +134,13 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
                 <circle cx="12" cy="10" r="3"/>
               </svg>
             </div>
-            <p className="text-sm">{message.content || "Localização compartilhada"}</p>
+            <p className="text-sm">{processedContent || "Localização compartilhada"}</p>
           </div>
         );
       case 'interactive':
         return (
           <div className="p-3 bg-muted/60 rounded-lg max-w-[240px]">
-            <p className="text-sm font-medium mb-2">{message.content || "Mensagem interativa"}</p>
+            <p className="text-sm font-medium mb-2">{processedContent || "Mensagem interativa"}</p>
             {message.metadata?.options && (
               <div className="space-y-1">
                 {message.metadata.options.map((option: string, index: number) => (
@@ -116,8 +152,13 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
             )}
           </div>
         );
+      case 'ReceivedCallback':
+      case 'MessageStatusCallback':
+      case 'PresenceChatCallback':
+        // Tipos específicos do Z-API
+        return <p className="text-sm whitespace-pre-wrap">{processedContent || "Status atualizado"}</p>;
       default:
-        return <p className="text-sm whitespace-pre-wrap">{message.content}</p>;
+        return <p className="text-sm whitespace-pre-wrap">{processedContent}</p>;
     }
   };
 
