@@ -437,9 +437,9 @@ const Inbox = () => {
   return (
     <div className="flex h-screen bg-background">
       {/* Painel da esquerda: Lista de conversas */}
-      <div className="w-80 border-r flex flex-col">
+      <div className="w-[350px] border-r flex flex-col">
         {/* Cabeçalho do painel esquerdo */}
-        <div className="p-3 border-b">
+        <div className="p-3 border-b min-w-[350px]">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center space-x-2">
               <DropdownMenu>
@@ -512,7 +512,7 @@ const Inbox = () => {
         </div>
         
         {/* Filtros para as conversas (abas) */}
-        <div className="border-b p-1 flex items-center">
+        <div className="border-b p-1 flex items-center min-w-[350px]">
           <div className="flex-1 grid grid-cols-3 gap-1">
             <Button 
               variant={activeTab === 'all' ? "default" : "ghost"}
@@ -549,7 +549,7 @@ const Inbox = () => {
         
         {/* Filtros avançados (expansível) */}
         {showAdvancedFilters && (
-          <div className="p-3 border-b space-y-3 bg-muted/30">
+          <div className="p-3 border-b space-y-3 bg-muted/30 min-w-[350px]">
             <div className="space-y-1.5">
               <label className="text-xs font-medium">Canais</label>
               <div className="grid grid-cols-3 gap-1">
