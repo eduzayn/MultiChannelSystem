@@ -707,7 +707,9 @@ const Inbox = () => {
                       <span>•</span>
                       
                       <span>
-                        {selectedConversation.lastActivity ? format(new Date(selectedConversation.lastActivity), 'dd/MM/yyyy HH:mm') : 'Sem atividade'}
+                        {selectedConversation.lastActivity && isValidDate(selectedConversation.lastActivity) 
+                          ? format(new Date(selectedConversation.lastActivity), 'dd/MM/yyyy HH:mm') 
+                          : 'Sem atividade'}
                       </span>
                       
                       {selectedConversation.sla && (
@@ -1005,12 +1007,16 @@ const Inbox = () => {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Criado em:</span>
-                      <span className="font-medium">{format(new Date(selectedConversation.createdAt), 'dd/MM/yyyy')}</span>
+                      <span className="font-medium">
+                        {selectedConversation.createdAt && isValidDate(selectedConversation.createdAt) 
+                          ? format(new Date(selectedConversation.createdAt), 'dd/MM/yyyy')
+                          : 'Data indisponível'}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Última atividade:</span>
                       <span className="font-medium">
-                        {selectedConversation.lastActivity ? 
+                        {selectedConversation.lastActivity && isValidDate(selectedConversation.lastActivity) ? 
                           format(new Date(selectedConversation.lastActivity), 'dd/MM/yyyy HH:mm') : 
                           'Sem atividade'}
                       </span>
