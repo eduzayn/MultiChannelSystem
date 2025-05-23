@@ -659,7 +659,7 @@ const Inbox = () => {
         )}
         
         {/* Lista de conversas */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar min-w-[350px]">
           <ConversationList 
             activeTab={activeTab}
             onSelectConversation={handleSelectConversation}
