@@ -82,6 +82,15 @@ interface Message {
   updatedAt: Date;
 }
 
+// Função auxiliar para verificar se um valor de data é válido
+function isValidDate(dateValue: any): boolean {
+  if (!dateValue) return false;
+  
+  // Tenta converter para data e verifica se é um valor válido
+  const date = new Date(dateValue);
+  return !isNaN(date.getTime());
+}
+
 // Função auxiliar para extrair o conteúdo legível da mensagem dependendo do tipo
 function extractMessageContent(message: Message): string {
   try {
@@ -192,12 +201,22 @@ const Inbox = () => {
       
       // Se a resposta for bem-sucedida
       if (response.status === 200) {
-        const newMessages = response.data.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp || msg.createdAt),
-          createdAt: new Date(msg.createdAt),
-          updatedAt: new Date(msg.updatedAt)
-        }));
+        const newMessages = response.data.messages.map((msg: any) => {
+          // Verifica se os valores de data são válidos
+          const timestampValue = msg.timestamp || msg.createdAt;
+          const createdAtValue = msg.createdAt;
+          const updatedAtValue = msg.updatedAt;
+          
+          // Utiliza valores padrão se as datas forem inválidas
+          const currentTime = new Date();
+          
+          return {
+            ...msg,
+            timestamp: isValidDate(timestampValue) ? new Date(timestampValue) : currentTime,
+            createdAt: isValidDate(createdAtValue) ? new Date(createdAtValue) : currentTime,
+            updatedAt: isValidDate(updatedAtValue) ? new Date(updatedAtValue) : currentTime
+          };
+        });
         
         // Se for para anexar ou substituir as mensagens atuais
         if (append) {
@@ -224,7 +243,7 @@ const Inbox = () => {
         
         return {
           id: i + 1,
-          conversationId: conversation.id,
+          conversationId: Number(conversation.id), // Garantir que o ID seja um número
           content: isEven 
             ? `Mensagem do contato ${conversation.name} (${i + 1}). Esta é uma mensagem de teste mais longa para verificar como o layout se comporta com textos maiores que ocupam várias linhas.`
             : `Resposta do atendente (${i + 1})`,
@@ -241,7 +260,7 @@ const Inbox = () => {
       if (page === 1) {
         newMessages.push({
           id: 101,
-          conversationId: conversation.id,
+          conversationId: Number(conversation.id),
           content: JSON.stringify({ message: "Olha esta imagem que encontrei!" }),
           type: 'image',
           sender: 'contact',
@@ -258,7 +277,7 @@ const Inbox = () => {
         
         newMessages.push({
           id: 102,
-          conversationId: conversation.id,
+          conversationId: Number(conversation.id),
           content: JSON.stringify({ message: "Veja este documento importante" }),
           type: 'document',
           sender: 'user',
@@ -275,7 +294,7 @@ const Inbox = () => {
         
         newMessages.push({
           id: 103,
-          conversationId: conversation.id,
+          conversationId: Number(conversation.id),
           content: JSON.stringify({ message: "Mensagem do sistema" }),
           type: 'text',
           sender: 'system',
@@ -320,7 +339,7 @@ const Inbox = () => {
     
     const newMessage: Message = {
       id: Date.now(),
-      conversationId: selectedConversation.id,
+      conversationId: Number(selectedConversation.id),
       content: messageText,
       type: 'text',
       sender: 'user',

@@ -109,11 +109,24 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
                          index % 7 === 0 ? 'pending' : 
                          index % 21 === 0 ? 'closed' : 'open';
           
+          // Verificar se lastMessageAt é uma data válida
+          let timestamp;
+          try {
+            if (conversation.lastMessageAt) {
+              const date = new Date(conversation.lastMessageAt);
+              timestamp = !isNaN(date.getTime()) ? date : new Date();
+            } else {
+              timestamp = new Date();
+            }
+          } catch (error) {
+            timestamp = new Date(); // Fallback para data atual em caso de erro
+          }
+          
           return {
             id: conversation.id.toString(),
             name: conversation.name,
             lastMessage: formatLastMessage(conversation.lastMessage) || "Nova conversa",
-            timestamp: conversation.lastMessageAt ? new Date(conversation.lastMessageAt) : new Date(),
+            timestamp: timestamp,
             unreadCount: conversation.unreadCount || 0,
             channel: conversation.channel,
             status: conversation.status || status,
