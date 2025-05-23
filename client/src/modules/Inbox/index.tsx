@@ -162,6 +162,9 @@ const Inbox = () => {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [messagePreview, setMessagePreview] = useState<string | null>(null);
+  const [selectedMessageTone, setSelectedMessageTone] = useState<string>("normal");
+  const [showCommands, setShowCommands] = useState(false);
   const [multipleAttachments, setMultipleAttachments] = useState<File[]>([]);
   
   // Estados para mensagens
@@ -1482,7 +1485,7 @@ const Inbox = () => {
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
             <MailQuestion className="h-12 w-12 text-muted-foreground mb-4" />
