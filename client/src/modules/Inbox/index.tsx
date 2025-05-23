@@ -228,7 +228,7 @@ const Inbox = () => {
     }
   };
 
-  // Funções para filtros
+  // Funções para filtros de conversas
   const toggleChannelFilter = (channel: string) => {
     setSelectedChannels(prev => 
       prev.includes(channel) 
