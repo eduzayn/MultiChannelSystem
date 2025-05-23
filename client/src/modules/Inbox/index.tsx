@@ -61,6 +61,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { DateSeparator } from './components/DateSeparator';
+import MessageList from './components/MessageList';
 
 // Tipo para as mensagens
 interface Message {
@@ -832,31 +833,9 @@ const Inbox = () => {
               )}
             </div>
             
-            {/* Área de mensagens (real do banco de dados) - com scrollbar personalizada e limitado a 20 mensagens inicialmente */}
+            {/* Área de mensagens com visualização cronológica, separadores por dia e status de entrega */}
             <div className="flex-1 overflow-y-scroll p-4 space-y-4 custom-scrollbar" 
-                 style={{ maxHeight: "calc(100vh - 230px)" }}
-                 ref={messagesEndRef}>
-              {/* Botão para carregar mensagens anteriores */}
-              {hasMoreMessages && (
-                <div className="text-center text-xs text-muted-foreground py-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-xs"
-                    onClick={loadMoreMessages}
-                    disabled={loadingMessages}
-                  >
-                    {loadingMessages ? (
-                      <>
-                        <Loader2 className="h-3 w-3 mr-1 animate-spin" /> 
-                        Carregando...
-                      </>
-                    ) : (
-                      'Carregar mensagens anteriores...'
-                    )}
-                  </Button>
-                </div>
-              )}
+                 style={{ maxHeight: "calc(100vh - 230px)" }}>
               
               {/* Indicador de carregamento inicial */}
               {loadingMessages && messages.length === 0 && (
@@ -873,45 +852,24 @@ const Inbox = () => {
                 </div>
               )}
               
-              {/* Lista de mensagens reais - limitada a 20 mensagens inicialmente */}
-              {displayedMessages.map((message, index) => {
-                const isFromContact = message.sender === 'contact';
-                const isFromUser = message.sender === 'user';
-                
-                // Verificar se a mensagem atual é do mesmo remetente e dentro de 5 minutos da anterior
-                const isConsecutive = index > 0 && 
-                  displayedMessages[index - 1].sender === message.sender && 
-                  (message.timestamp.getTime() - displayedMessages[index - 1].timestamp.getTime() < 5 * 60 * 1000);
-                
-                // Determina se é a última mensagem para adicionar a referência
-                const isLastMessage = index === displayedMessages.length - 1;
-                
-                return (
-                  <div 
-                    key={message.id} 
-                    className={`flex ${isFromContact ? 'justify-start' : 'justify-end'} ${isConsecutive ? 'mt-1' : 'mt-4'}`}
-                    ref={isLastMessage ? messagesEndRef : undefined}
-                  >
-                    {/* Mostrar avatar apenas se for a primeira mensagem de uma sequência */}
-                    {isFromContact && !isConsecutive && (
-                      <div className="flex-shrink-0 mr-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>
-                            {selectedConversation?.name?.charAt(0) || 'C'}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                    )}
-                    
-                    <div className={`${isConsecutive && isFromContact ? 'ml-10' : ''}`}>
-                      {/* Nome do contato (apenas para a primeira mensagem do contato) */}
-                      {isFromContact && !isConsecutive && (
-                        <div className="text-xs font-medium ml-1 mb-1">
-                          {selectedConversation?.name || 'Contato'}
-                        </div>
-                      )}
-                      
-                      {/* Conteúdo da mensagem */}
+              {/* Lista de mensagens com separadores de data, indicadores de status e ações contextuais */}
+              {messages.length > 0 && (
+                <div className="space-y-1">
+                  {/* Componente MessageList para exibir mensagens com todas as funcionalidades */}
+                  <MessageList 
+                    messages={displayedMessages}
+                    messagesEndRef={messagesEndRef}
+                    loadMoreMessages={loadMoreMessages}
+                    hasMoreMessages={hasMoreMessages}
+                    loadingMessages={loadingMessages}
+                    senderName={selectedConversation?.name || 'Contato'}
+                    senderAvatar={selectedConversation?.avatar}
+                    extractMessageContent={extractMessageContent}
+                  />
+                </div>
+              )}
+              
+              {/* Lista já substituída pelo componente MessageList */}
                       <div 
                         className={`p-3 rounded-lg max-w-[80%] ${
                           isFromContact ? 'bg-muted text-foreground' : 'bg-primary text-primary-foreground'
