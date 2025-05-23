@@ -617,68 +617,204 @@ const Inbox = () => {
         {selectedConversation ? (
           <div className="h-full flex flex-col">
             {/* Cabeçalho da Conversa */}
-            <div className="p-3 border-b flex items-center justify-between sticky top-0 bg-background z-10">
-              <div className="flex items-center">
-                <Avatar className="h-10 w-10 mr-3">
-                  <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.name} />
-                  <AvatarFallback>{selectedConversation.name?.charAt(0) || "C"}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium">{selectedConversation.name}</h3>
-                    <Badge variant="outline" className="text-xs px-1.5">
-                      {selectedConversation.channel === 'whatsapp' ? 'WhatsApp' : 
-                       selectedConversation.channel === 'instagram' ? 'Instagram' :
-                       selectedConversation.channel === 'facebook' ? 'Facebook' : 'Email'}
-                    </Badge>
+            <div className="border-b sticky top-0 bg-background z-10">
+              {/* Linha superior: Informações básicas e ferramentas */}
+              <div className="p-3 flex items-center justify-between">
+                <div className="flex items-center">
+                  <Avatar className="h-10 w-10 mr-3">
+                    <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.name} />
+                    <AvatarFallback>{selectedConversation.name?.charAt(0) || "C"}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium">{selectedConversation.name}</h3>
+                      <Badge variant="outline" className="text-xs px-1.5">
+                        {selectedConversation.channel === 'whatsapp' ? 'WhatsApp' : 
+                         selectedConversation.channel === 'instagram' ? 'Instagram' :
+                         selectedConversation.channel === 'facebook' ? 'Facebook' : 'Email'}
+                      </Badge>
+                      
+                      {/* Indicador de status da conversa */}
+                      <Badge 
+                        className={cn(
+                          "text-xs px-1.5",
+                          selectedConversation.status === 'open' ? "bg-blue-500 hover:bg-blue-600" :
+                          selectedConversation.status === 'pending' ? "bg-yellow-500 hover:bg-yellow-600" :
+                          selectedConversation.status === 'resolved' ? "bg-green-500 hover:bg-green-600" :
+                          "bg-gray-500 hover:bg-gray-600"
+                        )}
+                      >
+                        {selectedConversation.status === 'open' ? "Aberta" :
+                         selectedConversation.status === 'pending' ? "Pendente" :
+                         selectedConversation.status === 'resolved' ? "Resolvida" :
+                         selectedConversation.status === 'closed' ? "Fechada" : "Aberta"}
+                      </Badge>
+                      
+                      {/* Indicador de prioridade */}
+                      {selectedConversation.priority && (
+                        <Badge 
+                          variant="outline"
+                          className={cn(
+                            "text-xs px-1.5 border-2",
+                            selectedConversation.priority === 'high' ? "border-red-500 text-red-500" :
+                            selectedConversation.priority === 'medium' ? "border-yellow-500 text-yellow-500" :
+                            "border-green-500 text-green-500"
+                          )}
+                        >
+                          {selectedConversation.priority === 'high' ? "Alta" :
+                           selectedConversation.priority === 'medium' ? "Média" : "Baixa"}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs text-muted-foreground">
+                        {selectedConversation.identifier || "Cliente"}
+                      </p>
+                      
+                      {/* Indicador de SLA, se disponível */}
+                      {selectedConversation.sla !== undefined && selectedConversation.sla <= 15 && (
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs gap-1 px-1.5",
+                            selectedConversation.sla <= 5 ? "text-red-500" : "text-yellow-500"
+                          )}
+                        >
+                          <Clock className="h-3 w-3" />
+                          SLA: {selectedConversation.sla}min
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {selectedConversation.identifier || "Cliente"}
-                  </p>
+                </div>
+                
+                {/* Barra de ferramentas da conversa */}
+                <div className="flex items-center gap-1.5">
+                  <Button 
+                    variant={selectedConversation.status === 'resolved' ? "secondary" : "outline"} 
+                    size="sm" 
+                    className="h-8 text-xs gap-1"
+                    onClick={() => alert(`Conversa ${selectedConversation.id} marcada como ${selectedConversation.status === 'resolved' ? 'aberta' : 'resolvida'}`)}
+                  >
+                    <CheckCheck className="h-4 w-4" /> 
+                    {selectedConversation.status === 'resolved' ? 'Reabrir' : 'Resolver'}
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                        <Users className="h-4 w-4" /> Atribuir
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Atribuir para</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => alert(`Conversa atribuída para você`)}>
+                        <User className="h-4 w-4 mr-2" /> Mim
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => alert(`Conversa atribuída para equipe de Suporte`)}>
+                        <LifeBuoy className="h-4 w-4 mr-2" /> Suporte
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => alert(`Conversa atribuída para equipe de Vendas`)}>
+                        <ShoppingCart className="h-4 w-4 mr-2" /> Vendas
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => alert(`Conversa não atribuída`)}>
+                        <CircleOff className="h-4 w-4 mr-2" /> Remover atribuição
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <Button variant="outline" size="sm" className="h-8 gap-1 text-xs" onClick={() => alert('Agendamento em desenvolvimento')}>
+                    <CalendarRange className="h-4 w-4" /> Agendar
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
+                        <Tag className="h-4 w-4" /> Tags
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Gerenciar Tags</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <div className="p-2 space-y-1.5 max-h-48 overflow-y-auto">
+                        {['Suporte', 'Vendas', 'Dúvida', 'Reclamação', 'Elogio', 'VIP', 'Urgente', 'Bug', 'Financeiro'].map(tag => (
+                          <div key={tag} className="flex items-center">
+                            <Checkbox id={`tag-${tag}`} className="mr-2" />
+                            <label htmlFor={`tag-${tag}`} className="text-sm cursor-pointer">{tag}</label>
+                          </div>
+                        ))}
+                      </div>
+                      <DropdownMenuSeparator />
+                      <div className="p-2">
+                        <Input placeholder="Nova tag..." className="h-7 text-xs" />
+                      </div>
+                      <DropdownMenuSeparator />
+                      <div className="p-1.5 flex justify-end">
+                        <Button size="sm" variant="default" className="h-7 text-xs">
+                          Salvar Tags
+                        </Button>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => alert('Conversa marcada como não lida')}>
+                        <Eye className="h-4 w-4 mr-2" /> Marcar como não lida
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => alert('Conversa adicionada aos favoritos')}>
+                        <Star className="h-4 w-4 mr-2" /> Adicionar aos favoritos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => alert('Notificações silenciadas')}>
+                        <BellOff className="h-4 w-4 mr-2" /> Silenciar notificações
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => alert('Transferir conversa')}>
+                        <Forward className="h-4 w-4 mr-2" /> Transferir conversa
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => alert('Mencionar colega')}>
+                        <AtSign className="h-4 w-4 mr-2" /> Mencionar colega
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-red-600" onClick={() => alert('Conversa arquivada')}>
+                        <Archive className="h-4 w-4 mr-2" /> Arquivar conversa
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               
-              {/* Barra de ferramentas da conversa */}
-              <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
-                  <CheckCheck className="h-4 w-4" /> Resolver
-                </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
-                      <Users className="h-4 w-4" /> Atribuir
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Atribuir para</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Mim</DropdownMenuItem>
-                    <DropdownMenuItem>Suporte</DropdownMenuItem>
-                    <DropdownMenuItem>Vendas</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="h-4 w-4 mr-2" /> Marcar como Não Lida
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Star className="h-4 w-4 mr-2" /> Adicionar aos Favoritos
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <AtSign className="h-4 w-4 mr-2" /> Mencionar Colega
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              {/* Linha inferior: Tags ativas */}
+              {selectedConversation.tags && selectedConversation.tags.length > 0 && (
+                <div className="px-3 pb-2 flex items-center">
+                  <span className="text-xs text-muted-foreground mr-2">Tags:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedConversation.tags.map((tag, index) => (
+                      <Badge 
+                        key={index} 
+                        variant="secondary" 
+                        className="text-xs px-1.5 h-5 flex items-center gap-1"
+                      >
+                        {tag}
+                        <X 
+                          className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            alert(`Tag ${tag} removida`);
+                          }}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Área de mensagens (real do banco de dados) - com scrollbar personalizada e limitado a 20 mensagens inicialmente */}
