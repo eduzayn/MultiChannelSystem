@@ -675,7 +675,7 @@ const Inbox = () => {
       </div>
       
       {/* Painel central: Exibição da conversa selecionada */}
-      <div className="flex-1 flex flex-col bg-muted/10">
+      <div className="flex-1 flex flex-col bg-muted/10 h-full">
         {selectedConversation ? (
           <>
             {/* Cabeçalho da conversa */}
@@ -950,16 +950,16 @@ const Inbox = () => {
       </div>
       
       {/* Painel de contexto */}
-      <div className="w-80 border-l hidden md:block">
+      <div className="w-80 border-l hidden md:block h-full">
         {selectedConversation && (
-          <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full">
+          <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="info">Informações</TabsTrigger>
               <TabsTrigger value="notes">Anotações</TabsTrigger>
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="info" className="p-4">
+            <TabsContent value="info" className="p-4 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium">Detalhes do Contato</h3>
@@ -1043,7 +1043,7 @@ const Inbox = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="notes" className="p-4">
+            <TabsContent value="notes" className="p-4 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium mb-2">Anotações</h3>
@@ -1080,7 +1080,7 @@ const Inbox = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="history" className="p-4">
+            <TabsContent value="history" className="p-4 flex-1 overflow-y-auto">
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium">Histórico de Interações</h3>
