@@ -408,26 +408,31 @@ const Inbox = () => {
           </div>
         </div>
 
-        {/* Área de filtros e ordenação */}
+        {/* Área de filtros e navegação */}
         <div className="p-3 border-b">
-          <div className="flex flex-wrap gap-1 mb-2">
-            <Badge variant="outline" className="gap-1 py-0 text-xs px-1.5">
-              <MessageSquare className="h-3 w-3" />
+          {/* Contadores visuais - badges informativos */}
+          <div className="flex flex-wrap gap-1 mb-3">
+            <Badge variant="outline" className="gap-1 py-0.5 text-xs px-2">
+              <MessageSquare className="h-3 w-3 mr-1" />
               <span>12 ativas</span>
             </Badge>
-            <Badge variant="outline" className="gap-1 py-0 text-xs px-1.5">
-              <Users className="h-3 w-3" />
+            <Badge variant="outline" className="gap-1 py-0.5 text-xs px-2">
+              <Users className="h-3 w-3 mr-1" />
               <span>5 não atr.</span>
+            </Badge>
+            <Badge variant="outline" className="gap-1 py-0.5 text-xs px-2">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>3 SLA</span>
             </Badge>
           </div>
 
-          {/* Barra de pesquisa universal e filtros */}
-          <div className="flex gap-1">
+          {/* Barra de pesquisa universal */}
+          <div className="flex gap-1 mb-3">
             <div className="relative flex-1">
               <Search className="absolute left-2 top-1.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input 
-                placeholder="Buscar..." 
-                className="pl-7 h-7 text-sm"
+                placeholder="Buscar por nome, número, conteúdo..." 
+                className="pl-7 h-8 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
@@ -441,49 +446,52 @@ const Inbox = () => {
               variant="outline" 
               size="icon"
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`h-7 w-7 ${showAdvancedFilters ? "bg-accent" : ""} ${isFiltering ? "text-primary border-primary" : ""}`}
+              className={`h-8 w-8 ${showAdvancedFilters ? "bg-accent" : ""} ${isFiltering ? "text-primary border-primary" : ""}`}
               title="Filtros Avançados"
             >
-              <Filter className="h-3.5 w-3.5" />
+              <Filter className="h-4 w-4" />
             </Button>
           </div>
           
           {/* Abas de Filtros Rápidos */}
           <Tabs 
             value={activeTab} 
-            onValueChange={setActiveTab}
-            className="mt-1"
+            onValueChange={(value) => {
+              setActiveTab(value);
+              // Aqui poderia ter lógica adicional para filtrar com base na aba selecionada
+            }}
+            className="mb-2"
           >
-            <TabsList className="w-full h-7 grid grid-cols-3 mb-1">
-              <TabsTrigger value="all" className="text-xs h-6 px-1">
-                Todas (12)
+            <TabsList className="w-full h-8 grid grid-cols-3 mb-1">
+              <TabsTrigger value="all" className="text-xs py-1 px-1 h-full">
+                Todas (312)
               </TabsTrigger>
-              <TabsTrigger value="mine" className="text-xs h-6 px-1">
-                Minhas (6)
+              <TabsTrigger value="mine" className="text-xs py-1 px-1 h-full">
+                Minhas (42)
               </TabsTrigger>
-              <TabsTrigger value="unassigned" className="text-xs h-6 px-1">
-                Não Atr. (5)
+              <TabsTrigger value="unassigned" className="text-xs py-1 px-1 h-full">
+                Não Atr. (58)
               </TabsTrigger>
             </TabsList>
-            <TabsList className="w-full h-7 grid grid-cols-3 mb-1">
-              <TabsTrigger value="mentioned" className="text-xs h-6 px-1">
+            <TabsList className="w-full h-8 grid grid-cols-3">
+              <TabsTrigger value="mentioned" className="text-xs py-1 px-1 h-full">
                 @Menções (3)
               </TabsTrigger>
-              <TabsTrigger value="unread" className="text-xs h-6 px-1">
-                Não Lidas (8)
+              <TabsTrigger value="unread" className="text-xs py-1 px-1 h-full">
+                Não Lidas (24)
               </TabsTrigger>
-              <TabsTrigger value="favorites" className="text-xs h-6 px-1">
+              <TabsTrigger value="favorites" className="text-xs py-1 px-1 h-full flex items-center justify-center">
                 <Star className="h-3 w-3 mr-1" />
-                Favoritas
+                Favoritas (5)
               </TabsTrigger>
             </TabsList>
           </Tabs>
           
           {/* Filtros avançados (expandidos) */}
           {showAdvancedFilters && (
-            <div className="py-2 space-y-2 border-b">
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Canal de Origem</label>
+            <div className="py-2 space-y-3 border-t border-b mb-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Canal de Origem</label>
                 <div className="flex flex-wrap gap-1">
                   {channelOptions.map(option => (
                     <Badge 
@@ -498,8 +506,8 @@ const Inbox = () => {
                 </div>
               </div>
               
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Status da Conversa</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Status da Conversa</label>
                 <div className="flex flex-wrap gap-1">
                   {statusOptions.map(option => (
                     <Badge 
@@ -514,30 +522,41 @@ const Inbox = () => {
                 </div>
               </div>
               
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Ordenar por</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium">Prioridade</label>
                 <div className="flex flex-wrap gap-1">
-                  {sortOptions.map(option => (
-                    <Badge 
-                      key={option.value} 
-                      variant={sortBy === option.value ? "default" : "outline"} 
-                      className="cursor-pointer hover:bg-secondary transition-colors"
-                      onClick={() => setSortBy(option.value)}
-                    >
-                      {option.label}
-                    </Badge>
-                  ))}
+                  <Badge 
+                    variant={sortBy === 'high' ? "default" : "outline"} 
+                    className="cursor-pointer hover:bg-secondary transition-colors"
+                    onClick={() => setSortBy('high')}
+                  >
+                    Alta
+                  </Badge>
+                  <Badge 
+                    variant={sortBy === 'medium' ? "default" : "outline"} 
+                    className="cursor-pointer hover:bg-secondary transition-colors"
+                    onClick={() => setSortBy('medium')}
+                  >
+                    Média
+                  </Badge>
+                  <Badge 
+                    variant={sortBy === 'low' ? "default" : "outline"} 
+                    className="cursor-pointer hover:bg-secondary transition-colors"
+                    onClick={() => setSortBy('low')}
+                  >
+                    Baixa
+                  </Badge>
                 </div>
               </div>
               
               {/* Indicador de filtros ativos */}
               {isFiltering && (
-                <div className="pt-1">
+                <div className="pt-1 pb-1">
                   <p className="text-xs text-muted-foreground">
                     Filtros ativos: {[
                       selectedChannels.length > 0 && 'Canais',
                       selectedStatuses.length > 0 && 'Status',
-                      sortBy !== 'recent' && 'Ordenação'
+                      sortBy !== 'recent' && 'Prioridade'
                     ].filter(Boolean).join(', ')}
                   </p>
                 </div>
@@ -547,14 +566,14 @@ const Inbox = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="text-xs h-7"
+                  className="text-xs h-8"
                   onClick={clearFilters}
                 >
                   Limpar Filtros
                 </Button>
                 <Button 
                   size="sm" 
-                  className="text-xs h-7"
+                  className="text-xs h-8"
                   onClick={handleSearchFilter}
                 >
                   Aplicar Filtros
@@ -564,18 +583,24 @@ const Inbox = () => {
           )}
           
           {/* Seletor de ordenação */}
-          <div className="flex items-center justify-between pt-2 pb-1 border-t mt-1">
-            <span className="text-xs text-muted-foreground">Ordenar por:</span>
-            <Select defaultValue="recent">
-              <SelectTrigger className="h-6 text-xs w-32">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Ordenar por:</span>
+            <Select 
+              defaultValue="recent"
+              onValueChange={(value) => {
+                setSortBy(value);
+                handleSearchFilter();
+              }}
+            >
+              <SelectTrigger className="h-7 text-xs w-36">
                 <SelectValue placeholder="Mais Recente" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="recent">Mais Recente</SelectItem>
                 <SelectItem value="oldest">Mais Antiga</SelectItem>
                 <SelectItem value="priority">Prioridade</SelectItem>
-                <SelectItem value="waiting-time">Maior Tempo de Espera</SelectItem>
-                <SelectItem value="sla">SLA mais próximo</SelectItem>
+                <SelectItem value="waiting-time">Tempo de Espera</SelectItem>
+                <SelectItem value="sla">SLA em Risco</SelectItem>
               </SelectContent>
             </Select>
           </div>
