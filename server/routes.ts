@@ -583,6 +583,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Falha ao criar mensagem" });
     }
   });
+  
+  // Nova rota para envio de mensagens via Z-API
+  app.post("/api/messages/send", async (req, res) => {
+    try {
+      const { phoneNumber, message, channelId } = req.body;
+      
+      if (!phoneNumber || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Número de telefone e mensagem são obrigatórios" 
+        });
+      }
+      
+      // Credenciais fixas para o canal Z-API
+      const instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
+      const token = "F17CB66AC44697A25E";
+      
+      // Importar o serviço da Z-API
+      const { sendTextMessage } = await import('./services/zapiService');
+      
+      // Realizar o envio efetivo via Z-API
+      const result = await sendTextMessage(instanceId, token, phoneNumber, message);
+      
+      if (result.success) {
+        console.log(`Mensagem enviada com sucesso para ${phoneNumber} via Z-API`);
+        
+        // Também salvar a mensagem no banco de dados
+        try {
+          const { db } = await import('./db');
+          const { messages } = await import('../shared/schema');
+          
+          const newMessage = {
+            conversationId: parseInt(channelId),
+            content: message,
+            type: 'text',
+            sender: 'user',
+            status: 'delivered',
+            timestamp: new Date(),
+            metadata: {
+              zapiMessageId: result.messageId,
+              sentAt: new Date()
+            }
+          };
+          
+          await db.insert(messages).values(newMessage);
+          
+          console.log('Mensagem salva no banco de dados');
+        } catch (dbError) {
+          console.error('Erro ao salvar mensagem no banco:', dbError);
+          // Mesmo com erro no banco, a mensagem foi enviada
+        }
+        
+        return res.json({
+          success: true,
+          messageId: result.messageId,
+          message: "Mensagem enviada com sucesso"
+        });
+      } else {
+        console.error(`Erro ao enviar mensagem via Z-API: ${result.message}`);
+        return res.json({
+          success: false,
+          message: result.message || "Erro ao enviar mensagem"
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao processar envio de mensagem:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error instanceof Error ? error.message : "Erro interno ao enviar mensagem" 
+      });
+    }
+  });
 
   app.put("/api/messages/:id/status", async (req, res) => {
     try {
