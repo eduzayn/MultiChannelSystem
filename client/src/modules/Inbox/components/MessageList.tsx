@@ -101,7 +101,7 @@ const MessageList: React.FC<MessageListProps> = ({
                            messageToForward?.id;
       
       if (!zapiMessageId) {
-        throw new Error("ID da mensagem não encontrado para encaminhamento");
+        throw new Error("ID da mensagem não encontrado para encaminhamento. Verifique se a mensagem é do WhatsApp.");
       }
       
       console.log("Encaminhando mensagem com ID:", zapiMessageId);
@@ -367,15 +367,32 @@ const MessageList: React.FC<MessageListProps> = ({
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="phone">Número de telefone</Label>
-              <Input
-                id="phone"
-                placeholder="(11) 99999-9999"
-                value={forwardPhone}
-                onChange={(e) => setForwardPhone(e.target.value)}
-                disabled={isForwarding}
-              />
+              <div className="flex space-x-2">
+                <Input
+                  id="phone"
+                  placeholder="(11) 99999-9999"
+                  value={forwardPhone}
+                  onChange={(e) => setForwardPhone(e.target.value)}
+                  disabled={isForwarding}
+                />
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  type="button"
+                  disabled={isForwarding}
+                  onClick={() => {
+                    toast({
+                      title: "Seleção de contatos",
+                      description: "Esta funcionalidade será implementada em breve.",
+                      variant: "default"
+                    });
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Digite o número com DDD, sem o código do país.
+                Digite o número com DDD, sem o código do país, ou selecione um contato.
               </p>
             </div>
             
