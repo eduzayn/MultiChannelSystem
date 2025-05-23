@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ConversationList } from './components/ConversationList';
 import { ConversationItemProps } from './components/ConversationItem';
 import { Button } from "@/components/ui/button";
@@ -111,8 +111,10 @@ const Inbox = () => {
   
   // Estados para mensagens
   const [messages, setMessages] = useState<Message[]>([]);
+  const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Estados para filtros de conversas
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,8 +152,27 @@ const Inbox = () => {
       fetchMessages(selectedConversation.id);
     } else {
       setMessages([]);
+      setDisplayedMessages([]);
     }
   }, [selectedConversation]);
+  
+  // Efeito para limitar as mensagens exibidas inicialmente a 20
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Exibe apenas as últimas 20 mensagens inicialmente
+      const initialMessages = messages.length <= 20 
+        ? messages 
+        : messages.slice(messages.length - 20);
+      
+      setDisplayedMessages(initialMessages);
+      setHasMoreMessages(messages.length > 20);
+      
+      // Rolamento suave para a última mensagem após carregar
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [messages]);
 
   // Função para buscar mensagens do servidor
   const fetchMessages = async (conversationId: string) => {
@@ -650,15 +671,15 @@ const Inbox = () => {
                 </div>
               )}
               
-              {/* Lista de mensagens reais */}
-              {messages.map((message, index) => {
+              {/* Lista de mensagens reais - limitada a 20 mensagens inicialmente */}
+              {displayedMessages.map((message, index) => {
                 const isFromContact = message.sender === 'contact';
                 const isFromUser = message.sender === 'user';
                 
                 // Verificar se a mensagem atual é do mesmo remetente e dentro de 5 minutos da anterior
                 const isConsecutive = index > 0 && 
-                  messages[index - 1].sender === message.sender && 
-                  (message.timestamp.getTime() - messages[index - 1].timestamp.getTime() < 5 * 60 * 1000);
+                  displayedMessages[index - 1].sender === message.sender && 
+                  (message.timestamp.getTime() - displayedMessages[index - 1].timestamp.getTime() < 5 * 60 * 1000);
                 
                 return (
                   <div 
