@@ -673,6 +673,362 @@ export async function sendTextMessage(
 }
 
 /**
+ * Envia uma reação a uma mensagem via Z-API
+ */
+export async function sendReaction(
+  instanceId: string,
+  token: string,
+  phone: string,
+  messageId: string,
+  reaction: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/messages/reaction`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        messageId, // ID da mensagem a receber a reação
+        reaction // Emoji da reação, ex: "❤️", "👍", "😂", etc.
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar reação via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Remove uma reação de uma mensagem via Z-API
+ */
+export async function removeReaction(
+  instanceId: string,
+  token: string,
+  phone: string,
+  messageId: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/messages/reaction/remove`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        messageId // ID da mensagem para remover a reação
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao remover reação via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Envia um áudio via Z-API
+ */
+export async function sendAudio(
+  instanceId: string,
+  token: string,
+  phone: string,
+  audioUrl: string,
+  isVoiceMessage: boolean = true,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-audio`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        audio: audioUrl, // URL do áudio a ser enviado
+        isVoice: isVoiceMessage // Se true, envia como mensagem de voz (PTT), se false, envia como áudio normal
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar áudio via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Envia um vídeo via Z-API
+ */
+export async function sendVideo(
+  instanceId: string,
+  token: string,
+  phone: string,
+  videoUrl: string, 
+  caption: string = "", 
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-video`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        video: videoUrl, // URL do vídeo a ser enviado
+        caption // Legenda/texto opcional a ser enviado junto com o vídeo
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar vídeo via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Envia um documento via Z-API
+ */
+export async function sendDocument(
+  instanceId: string,
+  token: string,
+  phone: string,
+  documentUrl: string,
+  fileName: string,
+  caption: string = "",
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-document`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        document: documentUrl, // URL do documento a ser enviado
+        fileName, // Nome do arquivo com extensão (ex: "documento.pdf")
+        caption // Legenda/texto opcional a ser enviado junto com o documento
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar documento via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Envia um link com pré-visualização via Z-API
+ */
+export async function sendLink(
+  instanceId: string,
+  token: string,
+  phone: string,
+  url: string,
+  linkTitle: string = "",
+  linkDescription: string = "",
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    const apiUrl = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-link`;
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      apiUrl,
+      {
+        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        url, // URL a ser enviada (com previsualização)
+        title: linkTitle, // Título opcional 
+        description: linkDescription // Descrição opcional
+      },
+      {
+        headers
+      }
+    );
+    
+    return {
+      success: true,
+      messageId: response.data?.messageId || response.data?.id
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar link via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
  * Desconecta o WhatsApp da instância Z-API
  * @param instanceId ID da instância Z-API
  * @param token Token da instância Z-API

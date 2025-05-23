@@ -6,7 +6,13 @@ import {
   forwardMessage,
   disconnectZapi,
   getZapiContacts,
-  getZapiContactInfo
+  getZapiContactInfo,
+  sendReaction,
+  removeReaction,
+  sendAudio,
+  sendVideo,
+  sendDocument,
+  sendLink
 } from "../services/zapiService";
 
 export function registerZapiRoutes(app: Router) {
