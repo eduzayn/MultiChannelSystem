@@ -449,7 +449,7 @@ export default function Inbox() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar esquerda: Lista de conversas */}
-      <div className="w-80 border-r flex flex-col h-full">
+      <div className="w-80 border-r flex flex-col h-full shrink-0">
         {/* Cabeçalho com opções de filtro e pesquisa */}
         <div className="p-3 border-b shrink-0">
           <div className="flex items-center gap-2 mb-3">
