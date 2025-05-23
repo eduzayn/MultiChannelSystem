@@ -28,24 +28,33 @@ export const sendTextMessage = async (params: SendTextMessageParams): Promise<{s
   try {
     const { channelId, to, message } = params;
     
-    // Para fins de demonstração, simulamos o envio bem sucedido
-    console.log(`Simulando envio de mensagem para ${to}: "${message}"`);
+    console.log(`Enviando mensagem para ${to}: "${message}"`);
     
-    // Simula um pequeno delay como em uma API real
-    await new Promise(resolve => setTimeout(resolve, 600));
+    // Obter as credenciais do canal ou usar valores padrão para testes
+    // Em um sistema real, essas informações deveriam vir de uma API baseada no channelId
+    const instanceId = "3DF871A7ADFB20FB49998E66062CE0C1"; // Substituir pelo ID real da instância
+    const token = "F17CB66AC44697A25E"; // Substituir pelo token real
+    
+    // Faz a chamada para a API do servidor
+    const response = await fetch('/api/zapi/send-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        instanceId, 
+        token,
+        phone: to.replace(/\D/g, ''), // Remove não-dígitos do número
+        message
+      })
+    });
+    
+    const data = await response.json();
+    console.log('Resposta do servidor:', data);
     
     return {
-      success: true,
-      messageId: `msg_${Date.now()}`,
-      message: 'Mensagem enviada com sucesso'
+      success: data.success,
+      messageId: data.messageId,
+      message: data.message || 'Mensagem enviada com sucesso'
     };
-    
-    // Em produção, faria uma chamada para a API do servidor
-    // return await fetch(`/api/zapi/send-text-message/${channelId}`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ to, message })
-    // }).then(res => res.json());
   } catch (error: any) {
     console.error('Erro ao enviar mensagem:', error);
     return {

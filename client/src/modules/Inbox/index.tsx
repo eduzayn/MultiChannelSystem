@@ -3,6 +3,7 @@ import { ConversationList } from './components/ConversationList';
 import { ConversationItemProps } from './components/ConversationItem';
 import MessageList from './components/MessageList';
 import MessageComposer from './components/MessageComposer';
+import { sendTextMessage } from '../../services/messageService';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -293,14 +294,21 @@ export default function Inbox() {
   const handleSelectConversation = (conversation: ConversationItemProps) => {
     setSelectedConversation(conversation);
   };
-
+  
   // Função para enviar uma mensagem
   const handleSendMessage = async () => {
     if (messageText.trim() && selectedConversation) {
       setIsSending(true);
       
       try {
-        // Aqui você enviaria a mensagem para o back-end
+        // Identificando o número de telefone a partir do identificador da conversa
+        // Normalmente o identificador está no formato "WhatsApp 5511999999999"
+        const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
+        
+        if (!phoneNumber) {
+          throw new Error('Não foi possível identificar o número de telefone para esta conversa');
+        }
+        
         // Adiciona uma mensagem temporária na UI
         const newMessage: Message = {
           id: Date.now(), // Temporário até receber o ID real do backend
@@ -321,30 +329,66 @@ export default function Inbox() {
         // Limpa o input
         setMessageText('');
         
-        // Simula o envio para o backend
-        setTimeout(() => {
-          // Atualiza o status da mensagem para delivered após um tempo
+        // Enviar mensagem através da API Z-API
+        const result = await sendTextMessage({
+          channelId: parseInt(selectedConversation.id),
+          to: phoneNumber,
+          message: newMessage.content
+        });
+        
+        if (result.success) {
+          console.log('Mensagem enviada com sucesso:', result);
+          
+          // Atualiza o status da mensagem para entregue
           setMessages(prev => 
             prev.map(msg => 
               msg.id === newMessage.id 
-                ? { ...msg, status: 'delivered' } 
+                ? { 
+                    ...msg, 
+                    status: 'delivered',
+                    messageId: result.messageId // Armazenar o ID retornado pela API
+                  } 
                 : msg
             )
           );
           setDisplayedMessages(prev => 
             prev.map(msg => 
               msg.id === newMessage.id 
-                ? { ...msg, status: 'delivered' } 
+                ? { 
+                    ...msg, 
+                    status: 'delivered',
+                    messageId: result.messageId
+                  } 
+                : msg
+            )
+          );
+        } else {
+          console.error('Falha ao enviar mensagem:', result.message);
+          
+          // Atualiza o status da mensagem para erro
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: 'error' } 
+                : msg
+            )
+          );
+          setDisplayedMessages(prev => 
+            prev.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: 'error' } 
                 : msg
             )
           );
           
-          setIsSending(false);
-        }, 1500);
+          alert(`Erro ao enviar a mensagem: ${result.message}`);
+        }
         
-      } catch (error) {
+        setIsSending(false);
+        
+      } catch (error: any) {
         console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar a mensagem. Tente novamente.');
+        alert('Erro ao enviar a mensagem: ' + (error.message || 'Tente novamente.'));
         setIsSending(false);
       }
     }
