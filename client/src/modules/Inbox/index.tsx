@@ -41,7 +41,21 @@ import {
   Mic,
   Video,
   Image as ImageIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Sparkles,
+  Heart,
+  ArrowRight,
+  ClipboardCheck,
+  Wand2,
+  Check,
+  Languages,
+  Share2,
+  Bookmark,
+  ClipboardList,
+  CalendarClock,
+  File,
+  MessageCircle,
+  SlidersHorizontal
 } from "lucide-react";
 import axios from 'axios';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
