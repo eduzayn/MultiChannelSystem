@@ -241,7 +241,7 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
       {/* Lista de conversas - com scrollbar personalizada e forçadamente visível */}
       <div 
         className="flex-1 flex flex-col overflow-y-scroll pb-2 custom-scrollbar" 
-        style={{ maxHeight: "calc(100vh - 230px)", minWidth: "320px" }}
+        style={{ height: "calc(100vh - 230px)", minWidth: "320px" }}
         ref={scrollContainerRef}
       >
         {isLoading && !storedData.length && (

@@ -435,9 +435,9 @@ const Inbox = () => {
   
   // Componente principal
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Painel da esquerda: Lista de conversas */}
-      <div className="w-[350px] border-r flex flex-col">
+      <div className="w-[350px] border-r flex flex-col h-full">
         {/* Cabeçalho do painel esquerdo */}
         <div className="p-3 border-b min-w-[350px]">
           <div className="flex items-center justify-between mb-3">
@@ -861,7 +861,7 @@ const Inbox = () => {
             
             {/* Área de mensagens com visualização cronológica e status de entrega */}
             <div className="flex-1 overflow-y-scroll p-4 space-y-4 custom-scrollbar" 
-                 style={{ maxHeight: "calc(100vh - 230px)" }}>
+                 style={{ height: "calc(100vh - 230px)" }}>
               
               {/* Utilizando o componente MessageList para exibir as mensagens com todas as melhorias */}
               {selectedConversation && displayedMessages.length > 0 && (
