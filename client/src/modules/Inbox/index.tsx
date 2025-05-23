@@ -337,56 +337,79 @@ const Inbox = () => {
       <div className="w-72 h-full border-r flex flex-col">
         {/* Cabeçalho do painel */}
         <div className="p-3 border-b">
-          <div className="flex items-center justify-between mb-2">
+          {/* Título e botão Nova Conversa */}
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold">Caixa de Entrada</h2>
-            <div className="flex items-center space-x-1">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-1 text-xs">
-                    {agentStatus === "online" ? (
-                      <span className="h-2 w-2 rounded-full bg-green-500" />
-                    ) : agentStatus === "busy" ? (
-                      <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                    ) : agentStatus === "away" ? (
-                      <span className="h-2 w-2 rounded-full bg-gray-400" />
-                    ) : (
-                      <span className="h-2 w-2 rounded-full bg-red-500" />
-                    )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-8 gap-1 text-xs"
+              onClick={() => alert('Funcionalidade de Nova Conversa em desenvolvimento')}
+            >
+              <Plus className="h-3 w-3" /> Nova
+            </Button>
+          </div>
+          
+          {/* Status do agente */}
+          <div className="mb-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1 text-xs w-full justify-start">
+                  {agentStatus === "online" ? (
+                    <span className="h-2 w-2 rounded-full bg-green-500" />
+                  ) : agentStatus === "busy" ? (
+                    <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                  ) : agentStatus === "away" ? (
+                    <span className="h-2 w-2 rounded-full bg-gray-400" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                  )}
+                  <span className="ml-1.5">
                     {agentStatus === "online" ? "Disponível" : 
                      agentStatus === "busy" ? "Ocupado" : 
                      agentStatus === "away" ? "Ausente" : "Offline"}
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Status do Agente</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setAgentStatus("online")}>
-                    <span className="h-2 w-2 rounded-full bg-green-500 mr-2" />
-                    Disponível
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAgentStatus("busy")}>
-                    <span className="h-2 w-2 rounded-full bg-yellow-500 mr-2" />
-                    Ocupado
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAgentStatus("away")}>
-                    <span className="h-2 w-2 rounded-full bg-gray-400 mr-2" />
-                    Ausente
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setAgentStatus("offline")}>
-                    <span className="h-2 w-2 rounded-full bg-red-500 mr-2" />
-                    Offline
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <Button variant="ghost" size="icon" className="h-8 w-8" title="Nova Conversa">
-                <Plus className="h-4 w-4" />
-              </Button>
+                  </span>
+                  <ChevronDown className="h-3 w-3 ml-auto" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuLabel>Status do Agente</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setAgentStatus("online")}>
+                  <span className="h-2 w-2 rounded-full bg-green-500 mr-2" />
+                  Disponível
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAgentStatus("busy")}>
+                  <span className="h-2 w-2 rounded-full bg-yellow-500 mr-2" />
+                  Ocupado
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAgentStatus("away")}>
+                  <span className="h-2 w-2 rounded-full bg-gray-400 mr-2" />
+                  Ausente
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setAgentStatus("offline")}>
+                  <span className="h-2 w-2 rounded-full bg-red-500 mr-2" />
+                  Offline
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          
+          {/* Indicadores de Volume de Trabalho */}
+          <div className="grid grid-cols-2 gap-2 mb-2 text-xs">
+            <div className="bg-secondary/30 rounded p-2 flex flex-col">
+              <span className="text-muted-foreground">Minhas Ativas</span>
+              <span className="font-semibold text-lg">12</span>
+            </div>
+            <div className="bg-secondary/30 rounded p-2 flex flex-col">
+              <span className="text-muted-foreground">Não Atribuídas</span>
+              <span className="font-semibold text-lg">8</span>
             </div>
           </div>
+        </div>
 
-          {/* Indicadores de Volume de Trabalho */}
+        {/* Área de filtros e ordenação */}
+        <div className="p-3 border-b">
           <div className="flex flex-wrap gap-1 mb-2">
             <Badge variant="outline" className="gap-1 py-0 text-xs px-1.5">
               <MessageSquare className="h-3 w-3" />
