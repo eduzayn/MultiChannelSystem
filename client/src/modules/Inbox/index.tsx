@@ -114,6 +114,7 @@ const Inbox = () => {
   const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [messagePage, setMessagePage] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Estados para filtros de conversas
@@ -173,6 +174,15 @@ const Inbox = () => {
       }, 100);
     }
   }, [messages]);
+  
+  // Efeito para rolar para a última mensagem sempre que uma nova é adicionada
+  useEffect(() => {
+    if (displayedMessages.length > 0) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [displayedMessages.length]);
 
   // Função para buscar mensagens do servidor
   const fetchMessages = async (conversationId: string) => {
