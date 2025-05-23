@@ -449,7 +449,7 @@ export default function Inbox() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar esquerda: Lista de conversas */}
-      <div className="w-80 border-r flex flex-col h-full shrink-0">
+      <div className="w-72 border-r flex flex-col h-full shrink-0">
         {/* Cabeçalho com opções de filtro e pesquisa */}
         <div className="p-3 border-b shrink-0">
           <div className="flex items-center gap-2 mb-3">
@@ -870,7 +870,7 @@ export default function Inbox() {
       </div>
       
       {/* Painel de contexto */}
-      <div className="w-80 border-l hidden md:block h-full bg-background shrink-0">
+      <div className="w-72 border-l hidden md:block h-full bg-background shrink-0">
         {selectedConversation && (
           <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3">
