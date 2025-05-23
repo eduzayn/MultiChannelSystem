@@ -172,13 +172,16 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
   // Determinar quais conversas exibir com limite opcional
   const allConversations = storedData.length > 0 ? storedData : (conversations || mockConversations);
   
-  // Limitar conversas mostradas se limit estiver definido e não estiver mostrando todas
-  const conversationsToDisplay = limit && !showAllConversations 
-    ? allConversations.slice(0, limit) 
+  // Definir limite padrão de 20 conversas se nenhum limite for fornecido
+  const effectiveLimit = limit || 20;
+  
+  // Limitar conversas mostradas se não estiver mostrando todas
+  const conversationsToDisplay = !showAllConversations 
+    ? allConversations.slice(0, effectiveLimit) 
     : allConversations;
   
   // Verificar se tem mais conversas além do limite
-  const hasMoreConversations = limit ? allConversations.length > limit : false;
+  const hasMoreConversations = allConversations.length > effectiveLimit;
 
   const handleLoadMore = () => {
     setShowAllConversations(true);
@@ -186,9 +189,9 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
 
   return (
     <div className="h-full flex flex-col">
-      {/* Lista de conversas */}
+      {/* Lista de conversas - com scrollbar personalizada */}
       <div 
-        className="flex-1 flex flex-col overflow-y-auto pb-2" 
+        className="flex-1 flex flex-col overflow-y-auto pb-2 custom-scrollbar" 
         ref={scrollContainerRef}
       >
         {isLoading && !storedData.length && (

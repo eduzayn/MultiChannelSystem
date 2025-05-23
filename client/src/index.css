@@ -127,3 +127,36 @@
 .sidebar-menu-item:hover .sidebar-submenu {
   display: block;
 }
+
+/* Estilo personalizado para scrollbar na lista de conversas */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* No modo escuro */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(40, 40, 40, 0.2);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
