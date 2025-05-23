@@ -71,9 +71,24 @@ const mockConversations: ConversationItemProps[] = [
 interface ConversationListProps {
   onSelectConversation: (conversation: ConversationItemProps) => void;
   limit?: number; // Número máximo de conversas a mostrar
+  activeTab?: string; // Aba ativa para filtragem
+  searchQuery?: string; // Consulta de busca
+  selectedConversation?: ConversationItemProps | null; // Conversa selecionada
+  filters?: {
+    channels?: string[];
+    statuses?: string[];
+    sortBy?: string;
+  }; // Filtros adicionais
 }
 
-export const ConversationList = ({ onSelectConversation, limit }: ConversationListProps) => {
+export const ConversationList = ({ 
+  onSelectConversation, 
+  limit,
+  activeTab = 'all',
+  searchQuery = '',
+  selectedConversation = null,
+  filters = {}
+}: ConversationListProps) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [storedData, setStoredData] = useState<ConversationItemProps[]>([]);
   const [showAllConversations, setShowAllConversations] = useState(false);
@@ -122,6 +137,11 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
             timestamp = new Date(); // Fallback para data atual em caso de erro
           }
           
+          // Garante que campos importantes estejam presentes para filtragem
+          const normalizedName = conversation.name ? conversation.name.toLowerCase() : '';
+          const normalizedIdentifier = conversation.identifier ? conversation.identifier.toLowerCase() : '';
+          const searchableFields = [normalizedName, normalizedIdentifier].filter(Boolean).join(' ');
+          
           return {
             id: conversation.id.toString(),
             name: conversation.name,
@@ -133,6 +153,8 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
             contactId: conversation.contactId,
             identifier: conversation.identifier,
             avatar: conversation.avatar,
+            // Campo para busca
+            searchableText: searchableFields,
             // Propriedades extras
             priority,
             sla,
@@ -218,19 +240,84 @@ export const ConversationList = ({ onSelectConversation, limit }: ConversationLi
     onSelectConversation(conversation);
   };
 
-  // Determinar quais conversas exibir com limite opcional
+  // Aplicar filtros de pesquisa e outros filtros às conversas
+  const filterConversations = (convs: ConversationItemProps[]) => {
+    return convs.filter(conversation => {
+      // Filtrar por texto de pesquisa
+      if (searchQuery && searchQuery.trim() !== '') {
+        const query = searchQuery.toLowerCase().trim();
+        
+        // Verificar no campo searchableText criado especialmente para buscas
+        if (conversation.searchableText) {
+          if (!conversation.searchableText.includes(query)) {
+            return false;
+          }
+        }
+        // Ou usar o nome e lastMessage se searchableText não estiver disponível
+        else if (
+          !(conversation.name?.toLowerCase().includes(query) || 
+            conversation.lastMessage?.toLowerCase().includes(query) ||
+            (conversation.identifier && conversation.identifier.toLowerCase().includes(query)))
+        ) {
+          return false;
+        }
+      }
+      
+      // Filtrar por aba ativa
+      if (activeTab === 'unread' && (!conversation.unreadCount || conversation.unreadCount <= 0)) {
+        return false;
+      } else if (activeTab === 'assigned' && !conversation.assignedTo) {
+        return false;
+      }
+      
+      // Filtrar por canais
+      if (filters.channels && filters.channels.length > 0) {
+        if (!conversation.channel || !filters.channels.includes(conversation.channel)) {
+          return false;
+        }
+      }
+      
+      // Filtrar por status
+      if (filters.statuses && filters.statuses.length > 0) {
+        if (!conversation.status || !filters.statuses.includes(conversation.status)) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  };
+  
+  // Ordenar conversas
+  const sortConversations = (convs: ConversationItemProps[]) => {
+    return [...convs].sort((a, b) => {
+      if (filters.sortBy === 'name') {
+        return (a.name || '').localeCompare(b.name || '');
+      } else if (filters.sortBy === 'priority') {
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return (priorityOrder[a.priority as keyof typeof priorityOrder] || 1) - 
+               (priorityOrder[b.priority as keyof typeof priorityOrder] || 1);
+      } else {
+        // Por padrão, ordenar por timestamp (mais recente primeiro)
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      }
+    });
+  };
+  
+  // Obter as conversas com filtros e ordenação aplicados
   const allConversations = storedData.length > 0 ? storedData : (conversations || mockConversations);
+  const filteredConversations = sortConversations(filterConversations(allConversations));
   
   // Definir limite padrão de 20 conversas se nenhum limite for fornecido
   const effectiveLimit = limit || 20;
   
   // Limitar conversas mostradas se não estiver mostrando todas
   const conversationsToDisplay = !showAllConversations 
-    ? allConversations.slice(0, effectiveLimit) 
-    : allConversations;
+    ? filteredConversations.slice(0, effectiveLimit) 
+    : filteredConversations;
   
   // Verificar se tem mais conversas além do limite
-  const hasMoreConversations = allConversations.length > effectiveLimit;
+  const hasMoreConversations = filteredConversations.length > effectiveLimit;
 
   const handleLoadMore = () => {
     setShowAllConversations(true);

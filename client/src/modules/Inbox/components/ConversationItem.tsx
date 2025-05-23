@@ -53,6 +53,12 @@ export interface ConversationItemProps {
   sla?: number; // Tempo em minutos até o SLA expirar
   waitingTime?: number; // Tempo em minutos desde a última mensagem do cliente
   onClick?: () => void;
+  searchableText?: string; // Campo para busca em texto completo
+  isOnline?: boolean; // Status de conexão online
+  lastActivity?: Date; // Última atividade
+  assignedTo?: string; // Atribuído a
+  createdAt?: Date; // Data de criação
+  notes?: any[]; // Anotações
 }
 
 export const ConversationItem = ({
