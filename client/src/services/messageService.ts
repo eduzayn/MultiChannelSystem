@@ -34,74 +34,39 @@ export const sendTextMessage = async (params: SendTextMessageParams): Promise<{s
     const cleanPhone = to.replace(/\D/g, '');
     console.log(`Enviando para número limpo: ${cleanPhone}`);
     
-    // Tenta fazer a chamada real para a API Z-API através do nosso backend
-    try {
-      const response = await fetch('/api/messages/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: cleanPhone,
-          message: message,
-          channelId: channelId
-        })
-      });
-      
-      // Se a resposta não for ok, lançar erro
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erro ${response.status}: ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('Resposta do servidor:', data);
-      
-      if (data.success) {
-        return {
-          success: true,
-          messageId: data.messageId || `msg_${Date.now()}`,
-          message: 'Mensagem enviada com sucesso'
-        };
-      } else {
-        // Fallback para simulação em caso de erro de API
-        console.log(`Usando simulação de envio como fallback para ${cleanPhone}`);
-        
-        // Simula um pequeno delay como em uma API real
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Retorna sucesso simulado
-        const simulatedResponse = {
-          success: true,
-          messageId: `msg_${Date.now()}`,
-          message: 'Mensagem enviada com sucesso (simulação)'
-        };
-        
-        console.log('Resposta simulada:', simulatedResponse);
-        return simulatedResponse;
-      }
-    } catch (apiError: any) {
-      console.error('Erro na API de mensagens:', apiError);
-      
-      // Fallback para simulação em caso de erro de API
-      console.log(`Usando simulação de envio como fallback para ${cleanPhone} após erro: ${apiError.message}`);
-      
-      // Simula um pequeno delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Retorna sucesso simulado
-      return {
-        success: true,
-        messageId: `msg_${Date.now()}`,
-        message: 'Mensagem enviada com sucesso (simulação após erro)'
-      };
-    }
-  } catch (error: any) {
-    console.error('Erro geral ao enviar mensagem:', error);
+    // Faz a chamada real para a API Z-API através do nosso backend
+    const response = await fetch('/api/messages/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phoneNumber: cleanPhone,
+        message: message,
+        channelId: channelId
+      })
+    });
     
-    // Mesmo em caso de erro crítico, retornamos sucesso simulado para a UI
+    // Se a resposta não for ok, lançar erro
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Resposta do servidor:', data);
+    
+    // Propagar o resultado exato da API, sem simular sucessos
     return {
-      success: true,
-      messageId: `msg_${Date.now()}`,
-      message: 'Mensagem enviada com sucesso (simulação após erro crítico)'
+      success: data.success,
+      messageId: data.messageId,
+      message: data.message || (data.success ? 'Mensagem enviada com sucesso' : 'Falha ao enviar mensagem')
+    };
+  } catch (error: any) {
+    console.error('Erro ao enviar mensagem:', error);
+    
+    // Propagar o erro real para a interface
+    return {
+      success: false,
+      message: error.message || 'Erro ao enviar mensagem'
     };
   }
 };
@@ -116,25 +81,41 @@ export const sendButtonMessage = async (params: SendButtonMessageParams): Promis
   try {
     const { channelId, to, title, message, footer, buttons } = params;
     
-    // Para fins de demonstração, simulamos o envio bem sucedido
-    console.log(`Simulando envio de mensagem com botões para ${to}: "${message}"`);
+    console.log(`Enviando mensagem com botões para ${to}: "${message}"`);
     console.log('Botões:', buttons);
     
-    // Simula um pequeno delay como em uma API real
-    await new Promise(resolve => setTimeout(resolve, 700));
+    // Limpa o número de telefone, garantindo que não há caracteres especiais
+    const cleanPhone = to.replace(/\D/g, '');
     
+    // Faz a chamada real para a API Z-API através do nosso backend
+    const response = await fetch('/api/zapi/send-button-message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        phoneNumber: cleanPhone,
+        title,
+        message, 
+        footer,
+        buttons,
+        channelId: channelId
+      })
+    });
+    
+    // Se a resposta não for ok, lançar erro
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Resposta do servidor para mensagem com botões:', data);
+    
+    // Propagar o resultado exato da API
     return {
-      success: true,
-      messageId: `btn_${Date.now()}`,
-      message: 'Mensagem com botões enviada com sucesso'
+      success: data.success,
+      messageId: data.messageId,
+      message: data.message || (data.success ? 'Mensagem com botões enviada com sucesso' : 'Falha ao enviar mensagem com botões')
     };
-    
-    // Em produção, faria uma chamada para a API do servidor
-    // return await fetch(`/api/zapi/send-button-message/${channelId}`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({ to, title, message, footer, buttons })
-    // }).then(res => res.json());
   } catch (error: any) {
     console.error('Erro ao enviar mensagem com botões:', error);
     return {

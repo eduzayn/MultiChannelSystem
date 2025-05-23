@@ -422,9 +422,11 @@ export default function Inbox() {
               )
             );
             
-            alert(`Erro ao enviar a mensagem: ${result.message}`);
+            // Mostrar mensagem de erro detalhada com toast ou alert
+            const errorMsg = result.message || 'Falha ao enviar mensagem através da API Z-API';
+            alert(`Erro ao enviar a mensagem: ${errorMsg}`);
           }
-        } catch (sendError) {
+        } catch (sendError: any) {
           console.error('Erro ao enviar mensagem via Z-API:', sendError);
           
           // Atualiza o status da mensagem para erro
@@ -443,7 +445,9 @@ export default function Inbox() {
             )
           );
           
-          alert('Erro ao enviar a mensagem via WhatsApp. Tente novamente.');
+          // Extrair a mensagem de erro mais detalhada possível
+          const errorMessage = sendError.message || 'Erro desconhecido';
+          alert(`Erro ao enviar a mensagem via WhatsApp: ${errorMessage}. Verifique as credenciais da Z-API e tente novamente.`);
         }
         
         setIsSending(false);
