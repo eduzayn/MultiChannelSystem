@@ -77,6 +77,11 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
       setMessageText('');
       setAiSuggestion(null);
       setAttachments([]);
+      
+      // Limpa a textarea após envio
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
     }
   };
 
