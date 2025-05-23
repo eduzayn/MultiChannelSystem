@@ -914,16 +914,15 @@ const Inbox = () => {
               </div>
             </div>
           </div>
-        </div>
-        
-        {/* Painel de contexto */}
-        <div className="w-80 border-l hidden md:block">
-          {selectedConversation && (
-            <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="info">Informações</TabsTrigger>
-                <TabsTrigger value="notes">Anotações</TabsTrigger>
-                <TabsTrigger value="history">Histórico</TabsTrigger>
+          
+          {/* Painel de contexto */}
+          <div className="w-80 border-l hidden md:block">
+            {selectedConversation && (
+              <Tabs value={contextPanelTab} onValueChange={setContextPanelTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="info">Informações</TabsTrigger>
+                  <TabsTrigger value="notes">Anotações</TabsTrigger>
+                  <TabsTrigger value="history">Histórico</TabsTrigger>
                 </TabsList>
                                         <CheckCheck className="h-3.5 w-3.5 text-green-500" />
                                       ) : null}
