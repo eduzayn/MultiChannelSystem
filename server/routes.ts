@@ -600,15 +600,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let instanceId, token, clientToken;
       
       try {
-        // Usando valores diretos das credenciais configuradas
-        instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
-        token = "A4E42029C248B72DA0842F47";
-        clientToken = "Fc8381522d96c45888a430cfcbf4271d2S";
+        // Buscar no banco o canal WhatsApp ativo
+        const { db } = await import('./db');
         
-        console.log(`Usando credenciais Z-API configuradas no sistema:`);
+        // Usando SQL nativo para buscar canais WhatsApp
+        const [whatsappChannel] = await db.execute(
+          `SELECT * FROM marketing_channels WHERE type = 'whatsapp' AND is_active = true LIMIT 1`
+        );
+        
+        if (whatsappChannel && whatsappChannel.configuration) {
+          // Parseamos a configuração para extrair as credenciais
+          let config;
+          try {
+            config = typeof whatsappChannel.configuration === 'string' 
+              ? JSON.parse(whatsappChannel.configuration) 
+              : whatsappChannel.configuration;
+          } catch (parseError) {
+            console.error('Erro ao processar configuração:', parseError);
+            config = whatsappChannel.configuration;
+          }
+          
+          // Extrair as credenciais da configuração
+          instanceId = config.instanceId || "3DF871A7ADFB20FB49998E66062CE0C1";
+          token = config.token || "A4E42029C248B72DA0842F47";
+          clientToken = config.clientToken || "Fc8381522d96c45888a430cfcbf4271d2S";
+          
+          console.log(`Usando credenciais do canal WhatsApp ${whatsappChannel.name}:`);
+        } else {
+          // Usar as credenciais que você confirmou funcionarem no seu outro sistema
+          instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
+          token = "A4E42029C248B72DA0842F47";
+          clientToken = "Fc8381522d96c45888a430cfcbf4271d2S";
+          
+          console.log(`Usando credenciais Z-API padrão configuradas no sistema:`);
+        }
+        
         console.log(`- Instance ID: ${instanceId}`);
         console.log(`- Token: ${token}`);
         console.log(`- Client Token: ${clientToken || "Não fornecido"}`);
+        
+        // Validar credenciais
+        if (!instanceId || !token) {
+          throw new Error("Credenciais Z-API incompletas");
+        }
       } catch (err) {
         console.error('Erro ao definir credenciais Z-API:', err);
         
