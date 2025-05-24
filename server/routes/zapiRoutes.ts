@@ -99,9 +99,30 @@ export function registerZapiRoutes(app: Router) {
           const formattedPhone = senderPhone.replace(/\D/g, "");
           
           // Obter o tipo e conteúdo da mensagem
-          const messageType = webhookData.type || "text";
-          const messageContent = webhookData.body || webhookData.message || 
-                                JSON.stringify(webhookData.text || webhookData.content || {});
+          const messageType = webhookData.type === "ReceivedCallback" ? "text" : webhookData.type || "text";
+          
+          // Extrair o conteúdo da mensagem de forma correta
+          let messageContent = "";
+          
+          if (webhookData.text && webhookData.text.message) {
+            // Formato comum Z-API para mensagens de texto: { text: { message: "Conteúdo aqui" } }
+            messageContent = webhookData.text.message;
+          } else if (webhookData.body) {
+            // Alguns webhooks usam "body" para o conteúdo
+            messageContent = webhookData.body;
+          } else if (webhookData.message) {
+            // Alguns webhooks usam "message" diretamente
+            messageContent = webhookData.message;
+          } else if (typeof webhookData.content === "string") {
+            // Formato alternativo
+            messageContent = webhookData.content;
+          } else if (webhookData.text) {
+            // Se text existe mas não tem message, usar o próprio objeto
+            messageContent = JSON.stringify(webhookData.text);
+          } else {
+            // Último recurso - salvar vazio para tipos não-texto (presence, etc)
+            messageContent = ""
+          }
           
           // Verificar se já existe um contato com este número
           // Padronizar o formato do número para garantir correspondência exata

@@ -4,6 +4,8 @@ import { ConversationItemProps } from './components/ConversationItem';
 import MessageList from './components/MessageList';
 import MessageComposer from './components/MessageComposer';
 import { sendTextMessage } from '../../services/messageService';
+import { socketClient, ServerEventTypes } from '@/lib/socketClient';
+import { useSocketContext } from '@/contexts/SocketContext';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -167,6 +169,12 @@ export default function Inbox() {
   function extractMessageContent(message: Message): string {
     try {
       if (typeof message.content === 'string') {
+        // Primeiro, verifica se a mensagem já é texto plano (formato novo e mais eficiente)
+        if (message.content.trim() && !message.content.startsWith('{') && !message.content.startsWith('[')) {
+          return message.content;
+        }
+        
+        // Se parece ser JSON, tenta processar (formato antigo)
         try {
           // Tenta fazer parse do conteúdo como JSON
           const jsonContent = JSON.parse(message.content);
@@ -205,10 +213,56 @@ export default function Inbox() {
     if (selectedConversation) {
       setLoadingMessages(true);
       loadConversationMessages(selectedConversation);
+      
+      // Entra na sala de WebSocket para esta conversa
+      socketClient.joinConversation(parseInt(selectedConversation.id));
     } else {
       setMessages([]);
       setDisplayedMessages([]);
     }
+    
+    // Limpar ao desmontar
+    return () => {
+      if (selectedConversation) {
+        socketClient.leaveConversation(parseInt(selectedConversation.id));
+      }
+    };
+  }, [selectedConversation]);
+  
+  // Efeito para ouvir novas mensagens via WebSocket
+  useEffect(() => {
+    // Configura o Socket.IO se ainda não estiver inicializado
+    socketClient.init();
+    
+    // Ouvinte para novas mensagens
+    const newMessageUnsubscribe = socketClient.on(ServerEventTypes.NEW_MESSAGE, (data: any) => {
+      console.log('Nova mensagem recebida via WebSocket:', data);
+      
+      if (data && data.message) {
+        const newMessage = data.message;
+        
+        // Verifica se é para a conversa atual
+        if (selectedConversation && parseInt(selectedConversation.id) === newMessage.conversationId) {
+          // Formata a data corretamente
+          const formattedMessage = {
+            ...newMessage,
+            timestamp: new Date(newMessage.timestamp),
+            createdAt: new Date(newMessage.createdAt || newMessage.timestamp),
+            updatedAt: new Date(newMessage.updatedAt || newMessage.timestamp)
+          };
+          
+          // Adiciona à lista de mensagens
+          setMessages(prev => [...prev, formattedMessage]);
+          setDisplayedMessages(prev => [...prev, formattedMessage]);
+          
+          console.log('Mensagem adicionada ao estado:', formattedMessage);
+        }
+      }
+    });
+    
+    return () => {
+      newMessageUnsubscribe();
+    };
   }, [selectedConversation]);
 
   // Função para carregar mais mensagens (paginação)
