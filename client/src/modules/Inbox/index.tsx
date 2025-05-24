@@ -251,11 +251,37 @@ export default function Inbox() {
             updatedAt: new Date(newMessage.updatedAt || newMessage.timestamp)
           };
           
-          // Adiciona à lista de mensagens
-          setMessages(prev => [...prev, formattedMessage]);
-          setDisplayedMessages(prev => [...prev, formattedMessage]);
+          // Adiciona à lista de mensagens (evitando duplicatas pelo ID)
+          setMessages(prev => {
+            // Verifica se a mensagem já existe
+            const messageExists = prev.some(msg => msg.id === formattedMessage.id);
+            if (messageExists) {
+              return prev;
+            }
+            return [...prev, formattedMessage];
+          });
+          
+          setDisplayedMessages(prev => {
+            // Verifica se a mensagem já existe
+            const messageExists = prev.some(msg => msg.id === formattedMessage.id);
+            if (messageExists) {
+              return prev;
+            }
+            return [...prev, formattedMessage];
+          });
           
           console.log('Mensagem adicionada ao estado:', formattedMessage);
+          
+          // Reproduzir um som de notificação (opcional)
+          try {
+            const audio = new Audio('/notification.mp3');
+            audio.volume = 0.5;
+            audio.play().catch(e => console.log('Não foi possível reproduzir o som de notificação', e));
+          } catch (e) {
+            console.log('Erro ao tentar reproduzir som de notificação', e);
+          }
+        } else {
+          console.log('Mensagem para outra conversa recebida');
         }
       }
     });
