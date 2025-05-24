@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import WhatsAppMessageContent from './WhatsAppMessageContent';
 import { 
   MessageSquare,
   Forward,
@@ -182,7 +183,7 @@ const MessageList: React.FC<MessageListProps> = ({
               </div>
             </div>
             {message.content && (
-              <p className="text-sm">{extractMessageContent(message)}</p>
+              <WhatsAppMessageContent message={message} />
             )}
           </div>
         );
@@ -209,12 +210,13 @@ const MessageList: React.FC<MessageListProps> = ({
               />
             </div>
             {message.content && (
-              <p className="text-sm mt-2">{extractMessageContent(message)}</p>
+              <WhatsAppMessageContent message={message} />
             )}
           </div>
         );
       default:
-        return <p className="text-sm whitespace-pre-wrap">{extractMessageContent(message)}</p>;
+        // Usar o componente especializado para mensagens do WhatsApp
+        return <WhatsAppMessageContent message={message} />;
     }
   };
 
@@ -261,7 +263,7 @@ const MessageList: React.FC<MessageListProps> = ({
               <div className="border rounded-md p-3 bg-muted/20">
                 <p className="text-sm font-medium mb-1">Mensagem a ser encaminhada:</p>
                 <div className="text-sm opacity-80">
-                  {extractMessageContent(messageToForward)}
+                  <WhatsAppMessageContent message={messageToForward} />
                 </div>
               </div>
             )}
