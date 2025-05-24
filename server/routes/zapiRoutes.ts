@@ -177,7 +177,8 @@ export function registerZapiRoutes(app: Router) {
             receivedAt: new Date()
           };
           
-          await db.insert(messages)
+          // Inserir a mensagem no banco de dados
+          const [savedMessage] = await db.insert(messages)
             .values({
               conversationId: conversation.id,
               content: messageContent,
@@ -186,9 +187,35 @@ export function registerZapiRoutes(app: Router) {
               status: "delivered",
               metadata: messageMetadata,
               timestamp: new Date()
-            });
+            })
+            .returning();
           
           console.log(`[Z-API] Mensagem salva com sucesso para a conversa: ${conversation.id}`);
+          
+          // Notificar via WebSocket que uma nova mensagem chegou
+          try {
+            const { socketService, ServerEventTypes } = await import('../services/socketService');
+            
+            // Notificar sobre a nova mensagem na conversa específica
+            socketService.emitToRoom(`conversation:${conversation.id}`, ServerEventTypes.NEW_MESSAGE, {
+              message: savedMessage,
+              conversationId: conversation.id
+            });
+            
+            // Notificar sobre a atualização da conversa para todos
+            socketService.emit(ServerEventTypes.CONVERSATION_UPDATED, {
+              conversation: {
+                ...conversation,
+                lastMessage: messageContent,
+                lastMessageAt: new Date(),
+                unreadCount: (conversation.unreadCount || 0) + 1
+              }
+            });
+            
+            console.log(`[Z-API] Notificações WebSocket enviadas para nova mensagem na conversa ${conversation.id}`);
+          } catch (socketError) {
+            console.error(`[Z-API] Erro ao emitir evento via WebSocket:`, socketError);
+          }
         } catch (error) {
           console.error(`[Z-API] Erro ao processar mensagem recebida:`, error);
         }
