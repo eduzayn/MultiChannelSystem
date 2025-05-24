@@ -14,6 +14,7 @@ import {
   sendDocument,
   sendLink
 } from "../services/zapiService";
+import { configureZapiWebhook, getZapiWebhook } from "../services/webhookService";
 
 export function registerZapiRoutes(app: Router) {
   // Rota para obter credenciais da Z-API para um canal específico
@@ -289,6 +290,68 @@ export function registerZapiRoutes(app: Router) {
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de teste de conexão:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para configurar o webhook da Z-API
+  app.post("/api/zapi/configure-webhook", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken } = req.body;
+      
+      if (!instanceId || !token) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID e Token são obrigatórios",
+        });
+      }
+      
+      // Determinar a URL base da aplicação
+      let baseUrl = '';
+      if (process.env.APP_URL) {
+        baseUrl = process.env.APP_URL;
+      } else if (process.env.REPLIT_DOMAINS) {
+        baseUrl = `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`;
+      } else {
+        // URL baseada no domínio atual
+        baseUrl = req.protocol + '://' + req.get('host');
+      }
+      
+      // URL do webhook específica para esta instância
+      const webhookUrl = `${baseUrl}/api/zapi/webhook/1/1`;
+      
+      console.log(`Configurando webhook Z-API: ${webhookUrl}`);
+      
+      const result = await configureZapiWebhook(instanceId, token, webhookUrl, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de configuração de webhook:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para obter a configuração atual do webhook da Z-API
+  app.post("/api/zapi/get-webhook", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken } = req.body;
+      
+      if (!instanceId || !token) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID e Token são obrigatórios",
+        });
+      }
+      
+      const result = await getZapiWebhook(instanceId, token, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de obtenção de webhook:", error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Erro interno do servidor",
