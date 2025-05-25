@@ -602,14 +602,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Buscar no banco o canal WhatsApp ativo
         const { db } = await import('./db');
+        const { marketingChannels } = await import('../shared/schema');
+        const { eq, and } = await import('drizzle-orm');
         
-        // Usando SQL nativo para buscar canais WhatsApp
-        const result = await db.execute(
-          `SELECT * FROM marketing_channels WHERE type = 'whatsapp' AND is_active = true LIMIT 1`
-        );
+        // Usando o ORM Drizzle para buscar o canal WhatsApp ativo
+        const whatsappChannels = await db.query.marketingChannels.findMany({
+          where: and(
+            eq(marketingChannels.type, 'whatsapp'),
+            eq(marketingChannels.isActive, true)
+          ),
+          limit: 1
+        });
         
         // Verificar se há resultados e extrair o primeiro canal
-        const whatsappChannel = result.rows && result.rows.length > 0 ? result.rows[0] : null;
+        const whatsappChannel = whatsappChannels.length > 0 ? whatsappChannels[0] : null;
         
         if (whatsappChannel && whatsappChannel.configuration) {
           // Parseamos a configuração para extrair as credenciais
