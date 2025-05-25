@@ -604,9 +604,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { db } = await import('./db');
         
         // Usando SQL nativo para buscar canais WhatsApp
-        const [whatsappChannel] = await db.execute(
+        const result = await db.execute(
           `SELECT * FROM marketing_channels WHERE type = 'whatsapp' AND is_active = true LIMIT 1`
         );
+        
+        // Verificar se há resultados e extrair o primeiro canal
+        const whatsappChannel = result.rows && result.rows.length > 0 ? result.rows[0] : null;
         
         if (whatsappChannel && whatsappChannel.configuration) {
           // Parseamos a configuração para extrair as credenciais
