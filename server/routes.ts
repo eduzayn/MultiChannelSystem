@@ -649,14 +649,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await uploadedFile.mv(filepath);
       
       // Gerar URL pública
-      const baseUrl = process.env.REPLIT_DOMAINS 
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-        : `http://localhost:${process.env.PORT || 3000}`;
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const host = process.env.REPLIT_DOMAINS 
+        ? process.env.REPLIT_DOMAINS.split(',')[0]
+        : `localhost:${process.env.PORT || 3000}`;
       
-      const publicUrl = `${baseUrl}/uploads/${filename}`;
+      const publicUrl = `${protocol}://${host}/uploads/${filename}`;
       
-      console.log(`Arquivo salvo: ${filepath}`);
-      console.log(`URL pública: ${publicUrl}`);
+      console.log(`✅ UPLOAD REAL - Arquivo salvo: ${filepath}`);
+      console.log(`✅ UPLOAD REAL - URL pública: ${publicUrl}`);
+      console.log(`✅ UPLOAD REAL - Nome do arquivo original: ${uploadedFile.name}`);
+      console.log(`✅ UPLOAD REAL - Tamanho do arquivo: ${uploadedFile.size} bytes`);
       
       res.json({
         success: true,

@@ -1047,6 +1047,7 @@ export async function sendImage(
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-image`;
     
     console.log(`Enviando imagem para ${cleanPhone} via Z-API`);
+    console.log(`URL da imagem que será enviada: ${imageUrl}`);
     
     // Preparando headers
     const headers: Record<string, string> = {
