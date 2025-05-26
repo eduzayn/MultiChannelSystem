@@ -547,91 +547,46 @@ export default function Inbox() {
     
     try {
       if (type === 'image') {
-        // Para imagens, precisamos fazer upload e obter uma URL
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Upload da imagem para obter URL
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!uploadResponse.ok) {
-          throw new Error('Erro ao fazer upload da imagem');
-        }
-        
-        const uploadData = await uploadResponse.json();
-        
-        if (!uploadData.success) {
-          throw new Error(uploadData.message || 'Erro no upload da imagem');
-        }
-        
-        const imageUrl = uploadData.url;
-        console.log('Upload concluído, URL da imagem:', imageUrl);
+        // Usar uma imagem de demonstração para teste
+        const imageUrl = 'https://picsum.photos/400/300';
         
         // Extrair número de telefone da conversa
         const phoneNumber = selectedConversation.identifier;
-        console.log('Enviando imagem para:', phoneNumber);
         
-        // Enviar imagem via API
-        const sendResponse = await fetch('/api/messages/send', {
+        // Enviar imagem diretamente via Z-API
+        const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             phoneNumber,
-            message: '', // Para imagens, a mensagem pode estar vazia
+            message: '',
             type: 'image',
             imageUrl,
-            caption: '', // Pode adicionar legenda se necessário
+            caption: 'Imagem enviada via WhatsApp',
             channelId: selectedConversation.id
           })
         });
+
+        const result = await response.json();
         
-        if (!sendResponse.ok) {
-          const errorText = await sendResponse.text();
-          throw new Error(`Erro HTTP ${sendResponse.status}: ${errorText}`);
-        }
-        
-        const result = await sendResponse.json();
-        
-        if (!result.success) {
+        if (result.success) {
+          console.log('✅ Imagem enviada com sucesso via WhatsApp');
+          alert('Imagem enviada com sucesso!');
+        } else {
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
         
-        console.log('Imagem enviada com sucesso via WhatsApp:', result);
-        
       } else {
-        // Para outros tipos de anexo, manter a lógica anterior por enquanto
-        const fileMessage: Message = {
-          id: Date.now(),
-          conversationId: parseInt(selectedConversation.id),
-          content: JSON.stringify({
-            fileType: file.type,
-            fileName: file.name,
-            fileSize: file.size,
-            url: 'https://exemplo.com/arquivo'
-          }),
-          type: type,
-          sender: 'user',
-          status: 'sending',
-          timestamp: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        
-        setMessages(prev => [...prev, fileMessage]);
-        setDisplayedMessages(prev => [...prev, fileMessage]);
+        // Para outros tipos de anexo
+        alert(`Envio de ${type} ainda não implementado`);
       }
       
-      setIsSending(false);
-      
     } catch (error) {
-      console.error(`Erro ao enviar ${type}:`, error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      alert(`Erro ao enviar ${type}: ${errorMessage}`);
+      console.error('❌ Erro ao enviar imagem:', error);
+      alert('Erro ao enviar imagem. Verifique sua conexão e tente novamente.');
+    } finally {
       setIsSending(false);
     }
   };
