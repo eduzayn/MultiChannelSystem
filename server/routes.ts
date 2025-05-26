@@ -775,7 +775,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determinar o tipo de envio e realizar o envio efetivo via Z-API
       let result;
       if (type === 'image' && imageUrl) {
-        console.log(`Enviando imagem para ${phoneNumber} através da API Z-API`);
+        console.log(`🚨 CRITICAL CHECK - Enviando imagem para ${phoneNumber} através da API Z-API`);
+        console.log(`🚨 CRITICAL CHECK - URL da imagem recebida: ${imageUrl}`);
+        console.log(`🚨 CRITICAL CHECK - Caption: ${caption || 'sem caption'}`);
         result = await sendImage(instanceId, token, phoneNumber, imageUrl, caption || '', clientToken);
       } else {
         console.log(`Enviando mensagem para ${phoneNumber} através da API Z-API`);
