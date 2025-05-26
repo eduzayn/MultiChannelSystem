@@ -578,7 +578,8 @@ export default function Inbox() {
         throw new Error('Nenhuma conversa selecionada');
       }
 
-      const phoneNumber = selectedConversation.phone;
+      // Extrair o número de telefone do identifier
+      const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
       if (!phoneNumber) {
         throw new Error('Número de telefone não encontrado');
       }
