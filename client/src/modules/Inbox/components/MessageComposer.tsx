@@ -21,16 +21,23 @@ import {
 
 interface MessageComposerProps {
   onSendMessage: (text: string) => void;
-  onSendAttachment: (file: File, type: string) => void;
+  onFileSelect: (file: File, type: string) => void;
+  onSendAttachment: () => void;
   isSending: boolean;
+  selectedAttachment: { file: File; type: string } | null;
 }
 
-const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: MessageComposerProps) => {
+const MessageComposer = ({ 
+  onSendMessage, 
+  onFileSelect,
+  onSendAttachment,
+  isSending,
+  selectedAttachment 
+}: MessageComposerProps) => {
   const [messageText, setMessageText] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [showCommands, setShowCommands] = useState(false);
   const [selectedTone, setSelectedTone] = useState('normal');
-  const [attachments, setAttachments] = useState<File[]>([]);
   
   // Refs para os inputs de arquivo
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +83,6 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
       onSendMessage(messageText);
       setMessageText('');
       setAiSuggestion(null);
-      setAttachments([]);
       
       // Limpa a textarea após envio
       if (textareaRef.current) {
@@ -96,19 +102,16 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // Adiciona o arquivo aos anexos para pré-visualização
-      setAttachments(prev => [...prev, file]);
-      
-      // Envia o arquivo
-      onSendAttachment(file, type);
+      try {
+        onFileSelect(file, type);
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', error);
+        alert('Erro ao processar arquivo. Por favor, tente novamente.');
+      }
       
       // Limpa o input
       e.target.value = '';
     }
-  };
-
-  const removeAttachment = (index: number) => {
-    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const applyAiSuggestion = () => {
@@ -123,50 +126,61 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
   return (
     <div className="border-t bg-background">
       {/* Área de visualização de anexos */}
-      {attachments.length > 0 && (
+      {selectedAttachment && (
         <div className="bg-muted/10 px-4 py-2 flex gap-2 overflow-x-auto">
-          {attachments.map((file, index) => (
-            <div key={index} className="relative group min-w-[120px]">
-              <div className="bg-background border rounded-md p-2 flex items-center gap-2">
-                {file.type.startsWith('image/') ? (
-                  <div className="w-10 h-10 relative">
-                    <img 
-                      src={URL.createObjectURL(file)} 
-                      alt={file.name} 
-                      className="w-full h-full object-cover rounded-sm"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-sm">
-                    {file.type.startsWith('audio/') && <Mic className="h-5 w-5 text-muted-foreground" />}
-                    {file.type.startsWith('video/') && <Video className="h-5 w-5 text-muted-foreground" />}
-                    {file.type.includes('pdf') && <FileText className="h-5 w-5 text-muted-foreground" />}
-                    {file.type.includes('doc') && <FileText className="h-5 w-5 text-muted-foreground" />}
-                    {(!file.type.startsWith('audio/') && 
-                      !file.type.startsWith('video/') && 
-                      !file.type.includes('pdf') &&
-                      !file.type.includes('doc') &&
-                      !file.type.startsWith('image/')) && 
-                      <File className="h-5 w-5 text-muted-foreground" />}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium truncate">{file.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </div>
+          <div className="relative group min-w-[120px]">
+            <div className="bg-background border rounded-md p-2 flex items-center gap-2">
+              {selectedAttachment.file.type.startsWith('image/') ? (
+                <div className="w-10 h-10 relative">
+                  <img 
+                    src={URL.createObjectURL(selectedAttachment.file)} 
+                    alt={selectedAttachment.file.name} 
+                    className="w-full h-full object-cover rounded-sm"
+                  />
+                  {isSending && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-sm">
+                      <span className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                    </div>
+                  )}
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => removeAttachment(index)}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
+              ) : (
+                <div className="w-10 h-10 flex items-center justify-center bg-muted rounded-sm">
+                  {selectedAttachment.file.type.startsWith('audio/') && <Mic className="h-5 w-5 text-muted-foreground" />}
+                  {selectedAttachment.file.type.startsWith('video/') && <Video className="h-5 w-5 text-muted-foreground" />}
+                  {selectedAttachment.file.type.includes('pdf') && <FileText className="h-5 w-5 text-muted-foreground" />}
+                  {selectedAttachment.file.type.includes('doc') && <FileText className="h-5 w-5 text-muted-foreground" />}
+                  {(!selectedAttachment.file.type.startsWith('audio/') && 
+                    !selectedAttachment.file.type.startsWith('video/') && 
+                    !selectedAttachment.file.type.includes('pdf') &&
+                    !selectedAttachment.file.type.includes('doc') &&
+                    !selectedAttachment.file.type.startsWith('image/')) && 
+                    <File className="h-5 w-5 text-muted-foreground" />}
+                  {isSending && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-sm">
+                      <span className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              <div>
+                <div className="text-xs font-medium truncate">{selectedAttachment.file.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {(selectedAttachment.file.size / 1024 / 1024).toFixed(2)} MB
+                </div>
               </div>
+              
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => onFileSelect(null as any, '')}
+                disabled={isSending}
+              >
+                <X className="h-3 w-3" />
+              </Button>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
@@ -193,35 +207,31 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
 
       {/* Menu de comandos rápidos */}
       {showCommands && (
-        <div className="absolute bottom-full left-4 mb-2 bg-background border rounded-md shadow-md w-72 max-h-60 overflow-y-auto z-10">
-          <div className="p-2">
-            <p className="text-xs font-medium text-muted-foreground mb-2">Comandos Rápidos</p>
-            <div className="space-y-1">
-              {[
-                { command: '/notainterna', desc: 'Adiciona uma nota interna à conversa' },
-                { command: '/tarefa', desc: 'Cria uma tarefa relacionada à conversa' },
-                { command: '/resposta', desc: 'Insere uma resposta rápida salva' },
-                { command: '/atribuir', desc: 'Atribui a conversa para outro atendente' },
-                { command: '/resolver', desc: 'Marca a conversa como resolvida' }
-              ].map((cmd, i) => (
-                <div 
-                  key={i} 
-                  className="p-1.5 hover:bg-muted rounded-md cursor-pointer text-sm"
-                  onClick={() => {
-                    setMessageText(cmd.command + ' ');
-                    setShowCommands(false);
-                  }}
-                >
-                  <div className="font-medium">{cmd.command}</div>
-                  <div className="text-xs text-muted-foreground">{cmd.desc}</div>
-                </div>
-              ))}
-            </div>
+        <div className="px-4 py-2 border-t">
+          <div className="text-xs font-medium mb-2">Comandos disponíveis:</div>
+          <div className="grid grid-cols-2 gap-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="justify-start text-xs h-7"
+              onClick={() => setMessageText("/saudacao Olá! Como posso ajudar?")}
+            >
+              <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
+              /saudacao
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="justify-start text-xs h-7"
+              onClick={() => setMessageText("/horario Nosso horário de atendimento é...")}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+              /horario
+            </Button>
           </div>
         </div>
       )}
 
-      {/* Barra de ferramentas superior do editor */}
       <div className="px-3 pt-2 flex justify-between items-center">
         <div className="flex items-center gap-1.5">
           {/* Botão de anexo com menu dropdown */}
@@ -269,110 +279,12 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
                   <FileText className="h-4 w-4 mr-2" />
                   Documento
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="w-full justify-start text-xs h-8 px-2"
-                >
-                  <LinkIcon className="h-4 w-4 mr-2" />
-                  Link
-                </Button>
               </div>
             </PopoverContent>
           </Popover>
-
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" title="Mensagem de áudio">
-            <Mic className="h-4 w-4 text-muted-foreground" />
-          </Button>
-
-          {/* Seletor de tom */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
-                <MessageCircle className="h-3.5 w-3.5" />
-                <span>Tom: {selectedTone === 'normal' ? 'Normal' : 
-                       selectedTone === 'formal' ? 'Formal' : 
-                       selectedTone === 'friendly' ? 'Amigável' : 
-                       selectedTone === 'enthusiastic' ? 'Entusiasmado' : 'Normal'}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-2" side="top">
-              <Tabs defaultValue="preset" className="w-full">
-                <TabsList className="w-full grid grid-cols-2 h-8">
-                  <TabsTrigger value="preset" className="text-xs">Pré-definidos</TabsTrigger>
-                  <TabsTrigger value="custom" className="text-xs">Personalizado</TabsTrigger>
-                </TabsList>
-                <TabsContent value="preset" className="mt-2 space-y-1">
-                  <Button 
-                    variant={selectedTone === 'normal' ? 'secondary' : 'ghost'} 
-                    size="sm" 
-                    className="w-full justify-start text-xs h-8 px-2"
-                    onClick={() => setSelectedTone('normal')}
-                  >
-                    Normal
-                  </Button>
-                  <Button 
-                    variant={selectedTone === 'formal' ? 'secondary' : 'ghost'} 
-                    size="sm" 
-                    className="w-full justify-start text-xs h-8 px-2"
-                    onClick={() => setSelectedTone('formal')}
-                  >
-                    Formal
-                  </Button>
-                  <Button 
-                    variant={selectedTone === 'friendly' ? 'secondary' : 'ghost'} 
-                    size="sm" 
-                    className="w-full justify-start text-xs h-8 px-2"
-                    onClick={() => setSelectedTone('friendly')}
-                  >
-                    Amigável
-                  </Button>
-                  <Button 
-                    variant={selectedTone === 'enthusiastic' ? 'secondary' : 'ghost'} 
-                    size="sm" 
-                    className="w-full justify-start text-xs h-8 px-2"
-                    onClick={() => setSelectedTone('enthusiastic')}
-                  >
-                    Entusiasmado
-                  </Button>
-                </TabsContent>
-                <TabsContent value="custom" className="mt-2">
-                  <div className="space-y-3">
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium">Formalidade</div>
-                      <div className="flex items-center">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">Informal</Button>
-                        <SlidersHorizontal className="h-4 w-4 mx-2 text-muted-foreground" />
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">Formal</Button>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <div className="text-xs font-medium">Comprimento</div>
-                      <div className="flex items-center">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">Conciso</Button>
-                        <SlidersHorizontal className="h-4 w-4 mx-2 text-muted-foreground" />
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">Detalhado</Button>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </PopoverContent>
-          </Popover>
-
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            className="h-7 gap-1 text-xs"
-            onClick={() => setAiSuggestion("Clique para obter sugestões da IA para este contexto.")}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Prof. Ana</span>
-          </Button>
         </div>
       </div>
-      
-      {/* Área de entrada de texto */}
+
       <div className="p-3 relative">
         <Textarea 
           ref={textareaRef}
@@ -396,8 +308,8 @@ const MessageComposer = ({ onSendMessage, onSendAttachment, isSending }: Message
             variant="default"
             size="icon" 
             className="h-9 w-9 rounded-full bg-primary text-primary-foreground" 
-            disabled={isSending || !messageText.trim()}
-            onClick={handleSendMessage}
+            disabled={isSending || (!messageText.trim() && !selectedAttachment)}
+            onClick={selectedAttachment ? onSendAttachment : handleSendMessage}
           >
             {isSending ? (
               <span className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin"></span>

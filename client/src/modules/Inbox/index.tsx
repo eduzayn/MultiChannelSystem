@@ -129,6 +129,7 @@ export default function Inbox() {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [multipleAttachments, setMultipleAttachments] = useState<File[]>([]);
+  const [selectedAttachment, setSelectedAttachment] = useState<{ file: File; type: string } | null>(null);
   
   // Estados para mensagens
   const [messages, setMessages] = useState<Message[]>([]);
@@ -554,7 +555,24 @@ export default function Inbox() {
     return true;
   };
 
-  const handleSendAttachment = async (file: File, type: string) => {
+  const handleFileSelect = async (file: File, type: string) => {
+    try {
+      if (!file) return;
+      
+      if (type === 'image') {
+        validateImage(file);
+      }
+      setSelectedAttachment({ file, type });
+    } catch (error) {
+      console.error('❌ Erro ao selecionar arquivo:', error);
+      alert(error instanceof Error ? error.message : 'Erro ao selecionar arquivo');
+      setSelectedAttachment(null); // Limpa o anexo em caso de erro
+    }
+  };
+
+  const handleSendAttachment = async () => {
+    if (!selectedAttachment) return;
+    
     try {
       if (!selectedConversation) {
         throw new Error('Nenhuma conversa selecionada');
@@ -567,34 +585,17 @@ export default function Inbox() {
 
       setIsSending(true);
 
+      const { file, type } = selectedAttachment;
+
       if (type === 'image') {
-        // Validar imagem
-        validateImage(file);
-
-        // Criar mensagem temporária
-        const newMessage = {
-          id: `temp-${Date.now()}`,
-          content: `[Imagem: ${file.name}]`,
-          type: 'image',
-          sender: 'user',
-          timestamp: new Date().toISOString(),
-          status: 'sending',
-          metadata: {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type
-          }
-        };
-
-        // Adicionar mensagem temporária
-        setMessages(prev => [...prev, newMessage]);
-        setDisplayedMessages(prev => [...prev, newMessage]);
-
         // Converter para Base64
         const base64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
+          reader.onerror = (error) => {
+            console.error('❌ Erro ao ler arquivo:', error);
+            reject(new Error('Erro ao processar imagem'));
+          };
           reader.readAsDataURL(file);
         });
 
@@ -613,26 +614,14 @@ export default function Inbox() {
           })
         });
 
+        if (!response.ok) {
+          throw new Error('Erro ao enviar imagem para o servidor');
+        }
+
         const result = await response.json();
         
         if (result.success) {
           console.log('✅ Imagem enviada com sucesso via WhatsApp');
-          
-          // Atualizar status da mensagem para entregue
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
-                ? { ...msg, status: 'delivered', messageId: result.messageId } 
-                : msg
-            )
-          );
-          setDisplayedMessages(prev => 
-            prev.map(msg => 
-              msg.id === newMessage.id 
-                ? { ...msg, status: 'delivered', messageId: result.messageId } 
-                : msg
-            )
-          );
           
           // Salvar no backend
           try {
@@ -656,10 +645,15 @@ export default function Inbox() {
               }),
             });
             
+            if (!apiResponse.ok) {
+              throw new Error('Erro ao salvar mensagem no backend');
+            }
+
             const savedMessage = await apiResponse.json();
             console.log('✅ Mensagem salva no backend:', savedMessage);
           } catch (saveError) {
             console.error('❌ Erro ao salvar mensagem no backend:', saveError);
+            throw new Error('Erro ao salvar mensagem no sistema');
           }
         } else {
           throw new Error(result.message || 'Erro ao enviar imagem');
@@ -668,26 +662,10 @@ export default function Inbox() {
         console.log(`Envio de ${type} ainda não implementado`);
       }
       
+      // Limpar o anexo apenas após o envio bem-sucedido
+      setSelectedAttachment(null);
     } catch (error) {
       console.error('❌ Erro ao enviar imagem:', error);
-      
-      // Atualizar status da mensagem para erro se ela foi criada
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.status === 'sending' 
-            ? { ...msg, status: 'error', error: error instanceof Error ? error.message : 'Erro desconhecido' } 
-            : msg
-        )
-      );
-      setDisplayedMessages(prev => 
-        prev.map(msg => 
-          msg.status === 'sending' 
-            ? { ...msg, status: 'error', error: error instanceof Error ? error.message : 'Erro desconhecido' } 
-            : msg
-        )
-      );
-
-      // Mostrar erro para o usuário
       alert(error instanceof Error ? error.message : 'Erro ao enviar imagem');
     } finally {
       setIsSending(false);
@@ -906,7 +884,6 @@ export default function Inbox() {
                         {selectedConversation.channel === 'email' && 'Email'}
                         {selectedConversation.channel === 'instagram' && 'Instagram'}
                         {selectedConversation.channel === 'facebook' && 'Facebook'}
-                        {selectedConversation.channel === 'telegram' && 'Telegram'}
                       </div>
                       
                       <span>•</span>
@@ -1101,8 +1078,10 @@ export default function Inbox() {
             {/* Área de composição de mensagem com o novo componente MessageComposer */}
             <MessageComposer 
               onSendMessage={handleSendMessage}
+              onFileSelect={handleFileSelect}
               onSendAttachment={handleSendAttachment}
               isSending={isSending}
+              selectedAttachment={selectedAttachment}
             />
             
           </div>
