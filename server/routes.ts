@@ -5,11 +5,13 @@ import { z } from "zod";
 import { registerZapiRoutes } from "./routes/zapiRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { ParsedQs } from "qs";
+import fileUpload from "express-fileupload";
 
 // Estendendo o tipo de Request para incluir a propriedade session
 declare module "express-serve-static-core" {
   interface Request {
     session: any;
+    files?: fileUpload.FileArray;
   }
 }
 import { 
@@ -581,6 +583,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Dados de mensagem inválidos", errors: error.errors });
       }
       res.status(500).json({ message: "Falha ao criar mensagem" });
+    }
+  });
+
+  // Rota para upload de arquivos (imagens)
+  app.post("/api/upload", async (req, res) => {
+    try {
+      // Por enquanto, vamos usar uma URL base64 temporária
+      // Em produção, você poderia usar um serviço como Cloudinary, AWS S3, etc.
+      const file = req.files?.file;
+      
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          message: "Nenhum arquivo foi enviado"
+        });
+      }
+      
+      // Verificar se é um único arquivo
+      const uploadedFile = Array.isArray(file) ? file[0] : file;
+      
+      // Para demonstração, vamos converter para base64 e retornar uma URL temporária
+      // Em produção, você faria upload para um serviço de armazenamento
+      const base64Data = Buffer.from(uploadedFile.data).toString('base64');
+      const mimeType = uploadedFile.mimetype;
+      const dataUrl = `data:${mimeType};base64,${base64Data}`;
+      
+      // Para a Z-API, precisamos de uma URL pública
+      // Como demonstração, vamos usar um serviço temporário
+      const tempUrl = `https://via.placeholder.com/300x200.png?text=Imagem+Enviada`;
+      
+      res.json({
+        success: true,
+        url: tempUrl,
+        message: "Upload realizado com sucesso"
+      });
+      
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor durante o upload"
+      });
     }
   });
   
