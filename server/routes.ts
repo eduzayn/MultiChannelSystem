@@ -640,10 +640,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      if (!message && !imageUrl) {
+      // Validação flexível: aceitar se houver imageUrl para imagens
+      if (type === 'image' && !imageUrl) {
         return res.status(400).json({ 
           success: false, 
-          message: "Mensagem ou imagem são obrigatórios" 
+          message: "URL da imagem é obrigatória para envio de imagens" 
+        });
+      }
+      
+      if (type !== 'image' && !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mensagem é obrigatória" 
         });
       }
       
