@@ -587,12 +587,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Nova rota para envio de mensagens via Z-API
   app.post("/api/messages/send", async (req, res) => {
     try {
-      const { phoneNumber, message, channelId } = req.body;
+      const { phoneNumber, message, channelId, type, imageUrl, caption } = req.body;
       
-      if (!phoneNumber || !message) {
+      if (!phoneNumber) {
         return res.status(400).json({ 
           success: false, 
-          message: "Número de telefone e mensagem são obrigatórios" 
+          message: "Número de telefone é obrigatório" 
+        });
+      }
+      
+      if (!message && !imageUrl) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mensagem ou imagem são obrigatórios" 
         });
       }
       
@@ -662,11 +669,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importar o serviço da Z-API
-      const { sendTextMessage } = await import('./services/zapiService');
+      const { sendTextMessage, sendImage } = await import('./services/zapiService');
       
-      // Realizar o envio efetivo via Z-API
-      console.log(`Enviando mensagem para ${phoneNumber} através da API Z-API`);
-      const result = await sendTextMessage(instanceId, token, phoneNumber, message, clientToken);
+      // Determinar o tipo de envio e realizar o envio efetivo via Z-API
+      let result;
+      if (type === 'image' && imageUrl) {
+        console.log(`Enviando imagem para ${phoneNumber} através da API Z-API`);
+        result = await sendImage(instanceId, token, phoneNumber, imageUrl, caption || '', clientToken);
+      } else {
+        console.log(`Enviando mensagem para ${phoneNumber} através da API Z-API`);
+        result = await sendTextMessage(instanceId, token, phoneNumber, message, clientToken);
+      }
       
       // Salvar a mensagem no banco de dados independente do resultado da API
       // para garantir que a mensagem apareça na interface

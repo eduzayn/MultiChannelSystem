@@ -546,10 +546,53 @@ export default function Inbox() {
     setIsSending(true);
     
     try {
-      // Lógica para enviar o anexo ao backend
-      // Simulação de upload
-      setTimeout(() => {
-        // Adiciona uma mensagem de anexo no chat
+      if (type === 'image') {
+        // Para imagens, precisamos fazer upload e obter uma URL
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Upload da imagem para obter URL
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Erro ao fazer upload da imagem');
+        }
+        
+        const uploadData = await uploadResponse.json();
+        const imageUrl = uploadData.url;
+        
+        // Extrair número de telefone da conversa
+        const phoneNumber = selectedConversation.identifier;
+        
+        // Enviar imagem via API
+        const sendResponse = await fetch('/api/messages/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            phoneNumber,
+            message: '', // Para imagens, a mensagem pode estar vazia
+            type: 'image',
+            imageUrl,
+            caption: '', // Pode adicionar legenda se necessário
+            channelId: selectedConversation.id
+          })
+        });
+        
+        const result = await sendResponse.json();
+        
+        if (!result.success) {
+          throw new Error(result.message || 'Erro ao enviar imagem');
+        }
+        
+        console.log('Imagem enviada com sucesso:', result);
+        
+      } else {
+        // Para outros tipos de anexo, manter a lógica anterior por enquanto
         const fileMessage: Message = {
           id: Date.now(),
           conversationId: parseInt(selectedConversation.id),
@@ -561,7 +604,7 @@ export default function Inbox() {
           }),
           type: type,
           sender: 'user',
-          status: 'delivered',
+          status: 'sending',
           timestamp: new Date(),
           createdAt: new Date(),
           updatedAt: new Date()
@@ -569,12 +612,13 @@ export default function Inbox() {
         
         setMessages(prev => [...prev, fileMessage]);
         setDisplayedMessages(prev => [...prev, fileMessage]);
-        setIsSending(false);
-      }, 2000);
+      }
+      
+      setIsSending(false);
       
     } catch (error) {
       console.error(`Erro ao enviar ${type}:`, error);
-      alert(`Erro ao enviar ${type}. Tente novamente.`);
+      alert(`Erro ao enviar ${type}: ${error.message}`);
       setIsSending(false);
     }
   };

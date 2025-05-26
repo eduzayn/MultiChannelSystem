@@ -1062,7 +1062,7 @@ export async function sendImage(
       {
         phone: cleanPhone,
         image: imageUrl,
-        caption: caption
+        caption: caption || ""
       },
       {
         headers,
