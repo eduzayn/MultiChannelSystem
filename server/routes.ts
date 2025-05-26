@@ -1,19 +1,11 @@
-import type { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import express, { Express, Request, Response, Router } from 'express';
+import { ParsedQs } from 'qs';
+import fileUpload from 'express-fileupload';
+import { Server } from 'http';
 import { storage } from "./storage";
 import { z } from "zod";
 import { registerZapiRoutes } from "./routes/zapiRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
-import { ParsedQs } from "qs";
-import fileUpload from "express-fileupload";
-
-// Estendendo o tipo de Request para incluir a propriedade session
-declare module "express-serve-static-core" {
-  interface Request {
-    session: any;
-    files?: fileUpload.FileArray;
-  }
-}
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -678,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Nova rota para envio de mensagens via Z-API
-  app.post("/api/messages/send", async (req, res) => {
+  app.post("/api/messages/send", async (req: Request, res: Response) => {
     try {
       const { phoneNumber, message, channelId, type, imageUrl, caption } = req.body;
       
@@ -703,71 +695,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Mensagem é obrigatória" 
         });
       }
-      
-      // Credenciais da Z-API
-      let instanceId, token, clientToken;
-      
-      try {
-        // Buscar no banco o canal WhatsApp ativo
-        const { db } = await import('./db');
-        const { marketingChannels } = await import('../shared/schema');
-        const { eq, and } = await import('drizzle-orm');
-        
-        // Usando o ORM Drizzle para buscar o canal WhatsApp ativo
-        const whatsappChannels = await db.query.marketingChannels.findMany({
-          where: and(
-            eq(marketingChannels.type, 'whatsapp'),
-            eq(marketingChannels.isActive, true)
-          ),
-          limit: 1
-        });
-        
-        // Verificar se há resultados e extrair o primeiro canal
-        const whatsappChannel = whatsappChannels.length > 0 ? whatsappChannels[0] : null;
-        
-        if (whatsappChannel && whatsappChannel.configuration) {
-          // Parseamos a configuração para extrair as credenciais
-          let config;
-          try {
-            config = typeof whatsappChannel.configuration === 'string' 
-              ? JSON.parse(whatsappChannel.configuration) 
-              : whatsappChannel.configuration;
-          } catch (parseError) {
-            console.error('Erro ao processar configuração:', parseError);
-            config = whatsappChannel.configuration;
-          }
-          
-          // Extrair as credenciais da configuração
-          instanceId = config.instanceId || "3DF871A7ADFB20FB49998E66062CE0C1";
-          token = config.token || "A4E42029C248B72DA0842F47";
-          clientToken = config.clientToken || "Fc8381522d96c45888a430cfcbf4271d2S";
-          
-          console.log(`Usando credenciais do canal WhatsApp ${whatsappChannel.name}:`);
-        } else {
-          // Usar as credenciais que você confirmou funcionarem no seu outro sistema
-          instanceId = "3DF871A7ADFB20FB49998E66062CE0C1";
-          token = "A4E42029C248B72DA0842F47";
-          clientToken = "Fc8381522d96c45888a430cfcbf4271d2S";
-          
-          console.log(`Usando credenciais Z-API padrão configuradas no sistema:`);
-        }
-        
-        console.log(`- Instance ID: ${instanceId}`);
-        console.log(`- Token: ${token}`);
-        console.log(`- Client Token: ${clientToken || "Não fornecido"}`);
-        
-        // Validar credenciais
-        if (!instanceId || !token) {
-          throw new Error("Credenciais Z-API incompletas");
-        }
-      } catch (err) {
-        console.error('Erro ao definir credenciais Z-API:', err);
-        
-        return res.status(400).json({
+
+      // Buscar canal e suas credenciais
+      const channel = await storage.getChannel(channelId);
+      if (!channel) {
+        return res.status(404).json({
           success: false,
-          message: "Erro ao configurar credenciais da Z-API."
+          message: "Canal não encontrado"
         });
       }
+
+      // Verificar se é um canal Z-API
+      if (channel.provider !== 'zapi') {
+        return res.status(400).json({
+          success: false,
+          message: "Canal não é do tipo Z-API"
+        });
+      }
+
+      // Extrair credenciais do canal
+      const instanceId = channel.config?.instanceId;
+      const token = channel.config?.token;
+      const clientToken = channel.config?.clientToken;
+
+      if (!instanceId || !token) {
+        return res.status(400).json({
+          success: false,
+          message: "Canal Z-API não configurado corretamente"
+        });
+      }
+
+      console.log(`[Z-API DEBUG] Enviando mensagem via canal ${channelId}:`);
+      console.log(`- Instance ID: ${instanceId}`);
+      console.log(`- Token: ${token}`);
+      console.log(`- Client Token: ${clientToken || "Não fornecido"}`);
       
       // Importar o serviço da Z-API
       const { sendTextMessage, sendImage } = await import('./services/zapiService');
@@ -775,61 +736,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Determinar o tipo de envio e realizar o envio efetivo via Z-API
       let result;
       if (type === 'image' && imageUrl) {
-        console.log(`🚨 CRITICAL CHECK - Enviando imagem para ${phoneNumber} através da API Z-API`);
-        console.log(`🚨 CRITICAL CHECK - URL da imagem recebida: ${imageUrl}`);
-        console.log(`🚨 CRITICAL CHECK - Caption: ${caption || 'sem caption'}`);
+        console.log(`[Z-API DEBUG] Enviando imagem para ${phoneNumber}`);
+        console.log(`[Z-API DEBUG] URL/Base64 da imagem (primeiros 50 chars): ${imageUrl.substring(0, 50)}...`);
         result = await sendImage(instanceId, token, phoneNumber, imageUrl, caption || '', clientToken);
       } else {
-        console.log(`Enviando mensagem para ${phoneNumber} através da API Z-API`);
+        console.log(`[Z-API DEBUG] Enviando texto para ${phoneNumber}`);
         result = await sendTextMessage(instanceId, token, phoneNumber, message, clientToken);
       }
       
-      // Salvar a mensagem no banco de dados independente do resultado da API
-      // para garantir que a mensagem apareça na interface
-      try {
-        const { db } = await import('./db');
-        const { messages } = await import('../shared/schema');
-        
-        const newMessage = {
-          conversationId: parseInt(channelId),
-          content: message,
-          type: 'text',
-          sender: 'user',
-          status: result.success ? 'sent' : 'error',
-          timestamp: new Date(),
-          metadata: {
-            zapiMessageId: result.messageId || `local_${Date.now()}`,
-            sentAt: new Date(),
-            apiResponse: result.success ? 'success' : result.message
-          }
-        };
-        
-        const [savedMessage] = await db.insert(messages).values(newMessage).returning();
-        console.log('Mensagem salva no banco de dados com ID:', savedMessage.id);
-        
-        // Responde com sucesso e inclui a mensagem salva para atualização da UI
-        return res.json({
-          success: result.success,
-          messageId: result.messageId || `local_${Date.now()}`,
-          message: result.success ? "Mensagem enviada com sucesso" : result.message,
-          savedMessage
-        });
-      } catch (dbError) {
-        console.error('Erro ao salvar mensagem no banco:', dbError);
-        // Mesmo com erro no banco, responder com o resultado da API
-        return res.json({
-          success: result.success,
+      // Retornar resultado
+      if (result.success) {
+        res.json({
+          success: true,
           messageId: result.messageId,
-          message: result.success ? 
-            "Mensagem enviada, mas não salva localmente" : 
-            `Erro: ${result.message}`
+          message: "Mensagem enviada com sucesso"
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.message || "Erro ao enviar mensagem"
         });
       }
     } catch (error) {
-      console.error('Erro ao processar envio de mensagem:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: error instanceof Error ? error.message : "Erro interno ao enviar mensagem" 
+      console.error('[Z-API ERROR] Erro ao processar envio:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor"
       });
     }
   });

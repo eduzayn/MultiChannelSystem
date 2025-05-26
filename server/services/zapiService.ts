@@ -1046,8 +1046,8 @@ export async function sendImage(
     
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-image`;
     
-    console.log(`Enviando imagem para ${cleanPhone} via Z-API`);
-    console.log(`URL da imagem que será enviada: ${imageUrl}`);
+    console.log(`[Z-API DEBUG] Enviando imagem para ${cleanPhone}`);
+    console.log(`[Z-API DEBUG] URL da imagem: ${imageUrl.substring(0, 50)}...`);
     
     // Preparando headers
     const headers: Record<string, string> = {
@@ -1057,23 +1057,43 @@ export async function sendImage(
     if (clientToken) {
       headers["Client-Token"] = clientToken;
     }
+
+    // Verificar se é base64 ou URL
+    const isBase64 = imageUrl.startsWith('data:');
+    const payload: Record<string, any> = {
+      phone: cleanPhone,
+      caption: caption || ''
+    };
+
+    if (isBase64) {
+      console.log(`[Z-API DEBUG] Enviando imagem como Base64`);
+      // Garantir que o Base64 tenha o prefixo correto
+      payload.image = imageUrl.startsWith('data:image/') 
+        ? imageUrl 
+        : `data:image/jpeg;base64,${imageUrl}`;
+    } else {
+      console.log(`[Z-API DEBUG] Enviando imagem como URL`);
+      payload.image = imageUrl;
+    }
+
+    // Log do payload (sem expor a imagem completa)
+    console.log(`[Z-API DEBUG] Payload:`, {
+      ...payload,
+      image: payload.image.substring(0, 50) + '...'
+    });
     
     const response = await axios.post(
       url,
-      {
-        phone: cleanPhone,
-        image: imageUrl,
-        caption: caption || ""
-      },
+      payload,
       {
         headers,
-        timeout: 15000,
-        validateStatus: (status) => true
+        timeout: 30000, // Aumentado para 30s
+        validateStatus: (status) => true // Permite tratar todos os status
       }
     );
     
     if (response.status !== 200 && response.status !== 201) {
-      console.error(`Z-API retornou status ${response.status}`);
+      console.error(`[Z-API ERROR] Status ${response.status}`);
       let errorMsg = 'Erro ao enviar imagem';
       
       if (response.data && typeof response.data === 'object') {
@@ -1086,7 +1106,7 @@ export async function sendImage(
       };
     }
     
-    console.log(`Imagem enviada via Z-API:`, response.data);
+    console.log(`[Z-API SUCCESS] Imagem enviada:`, response.data);
     
     return {
       success: true,
@@ -1094,7 +1114,7 @@ export async function sendImage(
       message: "Imagem enviada com sucesso"
     };
   } catch (error) {
-    console.error(`Erro ao enviar imagem via Z-API:`, error);
+    console.error(`[Z-API ERROR] Erro ao enviar imagem:`, error);
     
     if (axios.isAxiosError(error)) {
       return {

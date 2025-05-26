@@ -539,59 +539,66 @@ export default function Inbox() {
     }
   };
 
-  // Função para enviar um anexo
+  const validateImage = (file: File): boolean => {
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    const maxSize = 16 * 1024 * 1024; // 16MB (limite do WhatsApp)
+    
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Formato de imagem não suportado. Use JPG ou PNG.');
+    }
+    
+    if (file.size > maxSize) {
+      throw new Error('Imagem muito grande. O tamanho máximo é 16MB.');
+    }
+    
+    return true;
+  };
+
   const handleSendAttachment = async (file: File, type: string) => {
-    if (!selectedConversation) return;
-    
-    setIsSending(true);
-    
     try {
+      if (!selectedConversation) {
+        throw new Error('Nenhuma conversa selecionada');
+      }
+
+      const phoneNumber = selectedConversation.phone;
+      if (!phoneNumber) {
+        throw new Error('Número de telefone não encontrado');
+      }
+
+      setIsSending(true);
+
       if (type === 'image') {
-        console.log('Iniciando upload da imagem:', file.name);
-        
-        // Primeiro, fazer upload da imagem para obter URL
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        });
-        
-        const uploadResult = await uploadResponse.json();
-        
-        if (!uploadResult.success) {
-          throw new Error(uploadResult.message || 'Erro no upload da imagem');
-        }
-        
-        const imageUrl = uploadResult.url;
-        console.log('Upload concluído, URL da imagem:', imageUrl);
-        
-        // Extrair número de telefone da conversa
-        const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
-        
-        if (!phoneNumber) {
-          throw new Error('Não foi possível identificar o número de telefone');
-        }
-        
-        // Adicionar mensagem temporária na UI
-        const newMessage: Message = {
-          id: Date.now(),
-          conversationId: parseInt(selectedConversation.id),
+        // Validar imagem
+        validateImage(file);
+
+        // Criar mensagem temporária
+        const newMessage = {
+          id: `temp-${Date.now()}`,
           content: `[Imagem: ${file.name}]`,
           type: 'image',
-          sender: 'user' as 'user',
+          sender: 'user',
+          timestamp: new Date().toISOString(),
           status: 'sending',
-          timestamp: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          metadata: { imageUrl, fileName: file.name }
+          metadata: {
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type
+          }
         };
-        
+
+        // Adicionar mensagem temporária
         setMessages(prev => [...prev, newMessage]);
         setDisplayedMessages(prev => [...prev, newMessage]);
-        
-        // Enviar imagem via Z-API
+
+        // Converter para Base64
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Enviar imagem
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: {
@@ -600,7 +607,7 @@ export default function Inbox() {
           body: JSON.stringify({
             phoneNumber,
             type: 'image',
-            imageUrl,
+            imageUrl: base64,
             caption: '',
             channelId: parseInt(selectedConversation.id)
           })
@@ -640,22 +647,23 @@ export default function Inbox() {
                 type: 'image',
                 sender: 'user',
                 metadata: { 
-                  imageUrl, 
+                  imageUrl: base64,
                   fileName: file.name,
+                  fileSize: file.size,
+                  fileType: file.type,
                   zapiMessageId: result.messageId 
                 }
               }),
             });
             
             const savedMessage = await apiResponse.json();
-            console.log('Mensagem salva no backend:', savedMessage);
+            console.log('✅ Mensagem salva no backend:', savedMessage);
           } catch (saveError) {
-            console.error('Erro ao salvar mensagem no backend:', saveError);
+            console.error('❌ Erro ao salvar mensagem no backend:', saveError);
           }
         } else {
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
-        
       } else {
         console.log(`Envio de ${type} ainda não implementado`);
       }
@@ -667,17 +675,20 @@ export default function Inbox() {
       setMessages(prev => 
         prev.map(msg => 
           msg.status === 'sending' 
-            ? { ...msg, status: 'error' } 
+            ? { ...msg, status: 'error', error: error instanceof Error ? error.message : 'Erro desconhecido' } 
             : msg
         )
       );
       setDisplayedMessages(prev => 
         prev.map(msg => 
           msg.status === 'sending' 
-            ? { ...msg, status: 'error' } 
+            ? { ...msg, status: 'error', error: error instanceof Error ? error.message : 'Erro desconhecido' } 
             : msg
         )
       );
+
+      // Mostrar erro para o usuário
+      alert(error instanceof Error ? error.message : 'Erro ao enviar imagem');
     } finally {
       setIsSending(false);
     }
