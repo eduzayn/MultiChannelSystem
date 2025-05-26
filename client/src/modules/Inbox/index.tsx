@@ -562,10 +562,17 @@ export default function Inbox() {
         }
         
         const uploadData = await uploadResponse.json();
+        
+        if (!uploadData.success) {
+          throw new Error(uploadData.message || 'Erro no upload da imagem');
+        }
+        
         const imageUrl = uploadData.url;
+        console.log('Upload concluído, URL da imagem:', imageUrl);
         
         // Extrair número de telefone da conversa
         const phoneNumber = selectedConversation.identifier;
+        console.log('Enviando imagem para:', phoneNumber);
         
         // Enviar imagem via API
         const sendResponse = await fetch('/api/messages/send', {
@@ -583,13 +590,18 @@ export default function Inbox() {
           })
         });
         
+        if (!sendResponse.ok) {
+          const errorText = await sendResponse.text();
+          throw new Error(`Erro HTTP ${sendResponse.status}: ${errorText}`);
+        }
+        
         const result = await sendResponse.json();
         
         if (!result.success) {
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
         
-        console.log('Imagem enviada com sucesso:', result);
+        console.log('Imagem enviada com sucesso via WhatsApp:', result);
         
       } else {
         // Para outros tipos de anexo, manter a lógica anterior por enquanto
