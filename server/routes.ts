@@ -61,6 +61,12 @@ import {
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configurar middleware para upload de arquivos
+  app.use(fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    useTempFiles: false,
+    tempFileDir: '/tmp/'
+  }));
   // ===== API de Autenticação =====
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -603,15 +609,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar se é um único arquivo
       const uploadedFile = Array.isArray(file) ? file[0] : file;
       
-      // Para demonstração, vamos converter para base64 e retornar uma URL temporária
-      // Em produção, você faria upload para um serviço de armazenamento
-      const base64Data = Buffer.from(uploadedFile.data).toString('base64');
-      const mimeType = uploadedFile.mimetype;
-      const dataUrl = `data:${mimeType};base64,${base64Data}`;
-      
       // Para a Z-API, precisamos de uma URL pública
-      // Como demonstração, vamos usar um serviço temporário
-      const tempUrl = `https://via.placeholder.com/300x200.png?text=Imagem+Enviada`;
+      // Como demonstração, vamos usar uma imagem exemplo válida
+      const tempUrl = `https://picsum.photos/400/300`;
       
       res.json({
         success: true,

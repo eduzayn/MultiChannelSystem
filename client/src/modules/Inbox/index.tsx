@@ -618,7 +618,8 @@ export default function Inbox() {
       
     } catch (error) {
       console.error(`Erro ao enviar ${type}:`, error);
-      alert(`Erro ao enviar ${type}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      alert(`Erro ao enviar ${type}: ${errorMessage}`);
       setIsSending(false);
     }
   };
