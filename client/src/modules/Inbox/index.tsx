@@ -561,11 +561,9 @@ export default function Inbox() {
           },
           body: JSON.stringify({
             phoneNumber,
-            message: '',
             type: 'image',
             imageUrl,
-            caption: 'Imagem enviada via WhatsApp',
-            channelId: selectedConversation.id
+            caption: 'Imagem enviada via WhatsApp'
           })
         });
 
