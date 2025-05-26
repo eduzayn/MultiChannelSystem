@@ -3,6 +3,7 @@ import {
   getZapiQRCode, 
   testZapiConnection, 
   sendTextMessage, 
+  sendImage,
   forwardMessage,
   disconnectZapi,
   getZapiContacts,
@@ -423,6 +424,29 @@ export function registerZapiRoutes(app: Router) {
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de envio de mensagem:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+
+  // Rota para enviar imagem via Z-API
+  app.post("/api/zapi/send-image", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phone, imageUrl, caption = "" } = req.body;
+      
+      if (!instanceId || !token || !phone || !imageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone e URL da imagem são obrigatórios",
+        });
+      }
+      
+      const result = await sendImage(instanceId, token, phone, imageUrl, caption, clientToken);
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de imagem:", error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Erro interno do servidor",

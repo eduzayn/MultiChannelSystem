@@ -1004,6 +1004,112 @@ export async function sendAudio(
 }
 
 /**
+ * Envia uma imagem via Z-API
+ */
+export async function sendImage(
+  instanceId: string,
+  token: string,
+  phone: string,
+  imageUrl: string,
+  caption: string = "",
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      return {
+        success: false,
+        message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
+      };
+    }
+
+    if (!phone) {
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar imagem"
+      };
+    }
+
+    if (!imageUrl) {
+      return {
+        success: false,
+        message: "URL da imagem é obrigatória"
+      };
+    }
+
+    // Limpar o número de telefone
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-image`;
+    
+    console.log(`Enviando imagem para ${cleanPhone} via Z-API`);
+    
+    // Preparando headers
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    const response = await axios.post(
+      url,
+      {
+        phone: cleanPhone,
+        image: imageUrl,
+        caption: caption
+      },
+      {
+        headers,
+        timeout: 15000,
+        validateStatus: (status) => true
+      }
+    );
+    
+    if (response.status !== 200 && response.status !== 201) {
+      console.error(`Z-API retornou status ${response.status}`);
+      let errorMsg = 'Erro ao enviar imagem';
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMsg += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMsg
+      };
+    }
+    
+    console.log(`Imagem enviada via Z-API:`, response.data);
+    
+    return {
+      success: true,
+      messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+      message: "Imagem enviada com sucesso"
+    };
+  } catch (error) {
+    console.error(`Erro ao enviar imagem via Z-API:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
  * Envia um vídeo via Z-API
  */
 export async function sendVideo(
