@@ -547,13 +547,51 @@ export default function Inbox() {
     
     try {
       if (type === 'image') {
-        // Usar uma imagem de demonstração para teste
-        const imageUrl = 'https://picsum.photos/400/300';
+        console.log('Iniciando upload da imagem:', file.name);
+        
+        // Primeiro, fazer upload da imagem para obter URL
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.message || 'Erro no upload da imagem');
+        }
+        
+        const imageUrl = uploadResult.url;
+        console.log('Upload concluído, URL da imagem:', imageUrl);
         
         // Extrair número de telefone da conversa
-        const phoneNumber = selectedConversation.identifier;
+        const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
         
-        // Enviar imagem diretamente via Z-API
+        if (!phoneNumber) {
+          throw new Error('Não foi possível identificar o número de telefone');
+        }
+        
+        // Adicionar mensagem temporária na UI
+        const newMessage: Message = {
+          id: Date.now(),
+          conversationId: parseInt(selectedConversation.id),
+          content: `[Imagem: ${file.name}]`,
+          type: 'image',
+          sender: 'user' as 'user',
+          status: 'sending',
+          timestamp: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          metadata: { imageUrl, fileName: file.name }
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
+        setDisplayedMessages(prev => [...prev, newMessage]);
+        
+        // Enviar imagem via Z-API
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: {
@@ -563,7 +601,8 @@ export default function Inbox() {
             phoneNumber,
             type: 'image',
             imageUrl,
-            caption: 'Imagem enviada via WhatsApp'
+            caption: '',
+            channelId: parseInt(selectedConversation.id)
           })
         });
 
@@ -571,19 +610,74 @@ export default function Inbox() {
         
         if (result.success) {
           console.log('✅ Imagem enviada com sucesso via WhatsApp');
-          alert('Imagem enviada com sucesso!');
+          
+          // Atualizar status da mensagem para entregue
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: 'delivered', messageId: result.messageId } 
+                : msg
+            )
+          );
+          setDisplayedMessages(prev => 
+            prev.map(msg => 
+              msg.id === newMessage.id 
+                ? { ...msg, status: 'delivered', messageId: result.messageId } 
+                : msg
+            )
+          );
+          
+          // Salvar no backend
+          try {
+            const apiResponse = await fetch('/api/messages', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                conversationId: parseInt(selectedConversation.id),
+                content: `[Imagem: ${file.name}]`,
+                type: 'image',
+                sender: 'user',
+                metadata: { 
+                  imageUrl, 
+                  fileName: file.name,
+                  zapiMessageId: result.messageId 
+                }
+              }),
+            });
+            
+            const savedMessage = await apiResponse.json();
+            console.log('Mensagem salva no backend:', savedMessage);
+          } catch (saveError) {
+            console.error('Erro ao salvar mensagem no backend:', saveError);
+          }
         } else {
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
         
       } else {
-        // Para outros tipos de anexo
-        alert(`Envio de ${type} ainda não implementado`);
+        console.log(`Envio de ${type} ainda não implementado`);
       }
       
     } catch (error) {
       console.error('❌ Erro ao enviar imagem:', error);
-      alert('Erro ao enviar imagem. Verifique sua conexão e tente novamente.');
+      
+      // Atualizar status da mensagem para erro se ela foi criada
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.status === 'sending' 
+            ? { ...msg, status: 'error' } 
+            : msg
+        )
+      );
+      setDisplayedMessages(prev => 
+        prev.map(msg => 
+          msg.status === 'sending' 
+            ? { ...msg, status: 'error' } 
+            : msg
+        )
+      );
     } finally {
       setIsSending(false);
     }

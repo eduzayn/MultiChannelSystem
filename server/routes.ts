@@ -67,6 +67,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     useTempFiles: false,
     tempFileDir: '/tmp/'
   }));
+
+  // Servir arquivos estáticos da pasta uploads
+  const path = require('path');
+  app.use('/uploads', require('express').static(path.join(process.cwd(), 'uploads')));
   // ===== API de Autenticação =====
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -595,8 +599,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rota para upload de arquivos (imagens)
   app.post("/api/upload", async (req, res) => {
     try {
-      // Por enquanto, vamos usar uma URL base64 temporária
-      // Em produção, você poderia usar um serviço como Cloudinary, AWS S3, etc.
       const file = req.files?.file;
       
       if (!file) {
@@ -609,13 +611,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar se é um único arquivo
       const uploadedFile = Array.isArray(file) ? file[0] : file;
       
-      // Para a Z-API, precisamos de uma URL pública
-      // Como demonstração, vamos usar uma imagem exemplo válida
-      const tempUrl = `https://picsum.photos/400/300`;
+      // Validar tipo de arquivo
+      const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedMimeTypes.includes(uploadedFile.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          message: "Tipo de arquivo não permitido. Use JPEG, PNG, GIF ou WebP."
+        });
+      }
+      
+      // Validar tamanho do arquivo (máximo 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (uploadedFile.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: "Arquivo muito grande. Tamanho máximo: 10MB"
+        });
+      }
+      
+      // Criar diretório uploads se não existir
+      const fs = require('fs');
+      const path = require('path');
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      // Gerar nome único para o arquivo
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 15);
+      const extension = path.extname(uploadedFile.name);
+      const filename = `${timestamp}_${randomString}${extension}`;
+      const filepath = path.join(uploadDir, filename);
+      
+      // Salvar arquivo
+      await uploadedFile.mv(filepath);
+      
+      // Gerar URL pública
+      const baseUrl = process.env.REPLIT_DOMAINS 
+        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
+        : `http://localhost:${process.env.PORT || 3000}`;
+      
+      const publicUrl = `${baseUrl}/uploads/${filename}`;
+      
+      console.log(`Arquivo salvo: ${filepath}`);
+      console.log(`URL pública: ${publicUrl}`);
       
       res.json({
         success: true,
-        url: tempUrl,
+        url: publicUrl,
+        filename: filename,
         message: "Upload realizado com sucesso"
       });
       
