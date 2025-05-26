@@ -93,6 +93,7 @@ import {
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import axios from 'axios';
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: number;
@@ -108,6 +109,8 @@ interface Message {
 }
 
 export default function Inbox() {
+  const { toast } = useToast();
+  
   // Referências para auto-scroll e load more
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -565,8 +568,12 @@ export default function Inbox() {
       setSelectedAttachment({ file, type });
     } catch (error) {
       console.error('❌ Erro ao selecionar arquivo:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao selecionar arquivo');
-      setSelectedAttachment(null); // Limpa o anexo em caso de erro
+      toast({
+        title: "Erro ao selecionar arquivo",
+        description: error instanceof Error ? error.message : 'Erro ao selecionar arquivo',
+        variant: "destructive"
+      });
+      setSelectedAttachment(null);
     }
   };
 
@@ -623,6 +630,10 @@ export default function Inbox() {
         
         if (result.success) {
           console.log('✅ Imagem enviada com sucesso via WhatsApp');
+          toast({
+            title: "Imagem enviada",
+            description: "A imagem foi enviada com sucesso.",
+          });
           
           // Salvar no backend
           try {
@@ -654,20 +665,33 @@ export default function Inbox() {
             console.log('✅ Mensagem salva no backend:', savedMessage);
           } catch (saveError) {
             console.error('❌ Erro ao salvar mensagem no backend:', saveError);
-            throw new Error('Erro ao salvar mensagem no sistema');
+            toast({
+              title: "Atenção",
+              description: "A imagem foi enviada, mas houve um erro ao salvar no histórico.",
+              variant: "destructive"
+            });
           }
         } else {
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
       } else {
         console.log(`Envio de ${type} ainda não implementado`);
+        toast({
+          title: "Recurso não disponível",
+          description: `O envio de arquivos do tipo ${type} ainda não está disponível.`,
+          variant: "destructive"
+        });
       }
       
       // Limpar o anexo apenas após o envio bem-sucedido
       setSelectedAttachment(null);
     } catch (error) {
       console.error('❌ Erro ao enviar imagem:', error);
-      alert(error instanceof Error ? error.message : 'Erro ao enviar imagem');
+      toast({
+        title: "Erro ao enviar imagem",
+        description: error instanceof Error ? error.message : 'Erro ao enviar imagem',
+        variant: "destructive"
+      });
     } finally {
       setIsSending(false);
     }
