@@ -38,6 +38,7 @@ const MessageComposer = ({
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [showCommands, setShowCommands] = useState(false);
   const [selectedTone, setSelectedTone] = useState('normal');
+  const [isAttachmentPopoverOpen, setIsAttachmentPopoverOpen] = useState(false);
   
   // Refs para os inputs de arquivo
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -109,8 +110,8 @@ const MessageComposer = ({
         alert('Erro ao processar arquivo. Por favor, tente novamente.');
       }
       
-      // Limpa o input
-      e.target.value = '';
+      setIsAttachmentPopoverOpen(false); // Fecha o popover após selecionar o arquivo
+      e.target.value = ''; // Limpa o input
     }
   };
 
@@ -235,7 +236,7 @@ const MessageComposer = ({
       <div className="px-3 pt-2 flex justify-between items-center">
         <div className="flex items-center gap-1.5">
           {/* Botão de anexo com menu dropdown */}
-          <Popover>
+          <Popover open={isAttachmentPopoverOpen} onOpenChange={setIsAttachmentPopoverOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" title="Anexar arquivo">
                 <Paperclip className="h-4 w-4 text-muted-foreground" />
