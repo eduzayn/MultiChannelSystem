@@ -27,5 +27,47 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      },
+      format: {
+        comments: false
+      },
+      mangle: true
+    },
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['./src/utils']
+        }
+      }
+    }
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
+  },
+  // Configurações de desenvolvimento
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+  },
+  // Desabilitar HMR em produção
+  hmr: process.env.NODE_ENV === 'production' ? false : {},
+  // Ocultar código-fonte em desenvolvimento
+  css: {
+    devSourcemap: false
+  },
+  // Configurações adicionais de segurança
+  optimizeDeps: {
+    exclude: ['./src/config/secrets.ts']
+  }
 });

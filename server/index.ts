@@ -7,10 +7,14 @@ import session from "express-session";
 import MemoryStore from "memorystore";
 import { socketService } from "./services/socketService";
 import { channelMonitorService } from "./services/channelMonitorService";
+import { securityMiddleware } from './middleware/security';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Aplicar middlewares de segurança primeiro
+app.use(securityMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
