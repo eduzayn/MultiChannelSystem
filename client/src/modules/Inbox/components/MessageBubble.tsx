@@ -25,7 +25,9 @@ interface MessageProps {
     id: number;
     conversationId: number;
     content: string;
-    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'interactive';
+    type: 'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'interactive' | 
+          'ReceivedCallback' | 'MessageStatusCallback' | 'PresenceChatCallback' | 
+          'button-list' | 'option-list';
     sender: 'user' | 'contact' | 'system' | 'ai';
     status: 'sent' | 'delivered' | 'read' | 'error';
     metadata?: any;
@@ -148,6 +150,66 @@ export const MessageBubble: React.FC<MessageProps> = ({ message, isConsecutive }
                     {option}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        );
+      case 'button-list':
+        return (
+          <div className="p-3 bg-muted/60 rounded-lg max-w-[280px]">
+            {message.metadata?.title && (
+              <p className="text-sm font-medium mb-1">{message.metadata.title}</p>
+            )}
+            <p className="text-sm mb-3">{processedContent || "Mensagem com botões"}</p>
+            {message.metadata?.footer && (
+              <p className="text-xs text-muted-foreground mb-2">{message.metadata.footer}</p>
+            )}
+            {message.metadata?.buttons && (
+              <div className="space-y-1.5">
+                {message.metadata.buttons.map((button: {id?: string, label: string}, index: number) => (
+                  <div 
+                    key={index} 
+                    className="p-2 bg-primary/10 text-primary rounded text-sm text-center hover:bg-primary/20 cursor-pointer transition-colors"
+                  >
+                    {button.label}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      case 'option-list':
+        return (
+          <div className="p-3 bg-muted/60 rounded-lg max-w-[280px]">
+            <p className="text-sm font-medium mb-2">{processedContent || "Lista de opções"}</p>
+            {message.metadata?.description && (
+              <p className="text-xs mb-3">{message.metadata.description}</p>
+            )}
+            {message.metadata?.options && (
+              <div className="space-y-3">
+                {message.metadata.options.map((section: {title: string, rows: Array<{title: string, description?: string}>}, sIndex: number) => (
+                  <div key={sIndex} className="space-y-1">
+                    <p className="text-xs font-medium">{section.title}</p>
+                    {section.rows.map((row, rIndex) => (
+                      <div 
+                        key={`${sIndex}-${rIndex}`} 
+                        className="p-2 bg-background rounded text-sm hover:bg-accent cursor-pointer"
+                      >
+                        <p className="font-medium">{row.title}</p>
+                        {row.description && (
+                          <p className="text-xs text-muted-foreground">{row.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            {message.metadata?.buttonLabel && (
+              <div className="mt-2 text-center">
+                <div className="inline-block px-3 py-1.5 bg-primary text-primary-foreground rounded text-sm">
+                  {message.metadata.buttonLabel}
+                </div>
               </div>
             )}
           </div>

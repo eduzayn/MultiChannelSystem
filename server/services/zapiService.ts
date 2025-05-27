@@ -1578,3 +1578,324 @@ export async function disconnectZapi(
     }
   }
 }
+
+/**
+ * Envia uma mensagem com botões via Z-API
+ * @param instanceId ID da instância Z-API
+ * @param token Token da instância Z-API
+ * @param phone Número do telefone (formato: DDI+DDD+NUMERO, ex: 5511999999999)
+ * @param message Texto da mensagem principal
+ * @param buttonList Lista de botões a serem exibidos
+ * @param clientToken Token de segurança da conta Z-API (Client-Token)
+ * @returns Resultado do envio
+ */
+export async function sendButtonList(
+  instanceId: string,
+  token: string,
+  phone: string,
+  message: string,
+  buttonList: { buttons: Array<{ id?: string; label: string }> },
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      console.error(`[Z-API ERROR] Instance ID e Token são obrigatórios para enviar mensagem com botões`);
+      return {
+        success: false,
+        message: "Instance ID e Token são obrigatórios para enviar mensagem com botões"
+      };
+    }
+    
+    if (!phone) {
+      console.error(`[Z-API ERROR] Número de telefone é obrigatório para enviar mensagem com botões`);
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar mensagem com botões"
+      };
+    }
+    
+    if (!message) {
+      console.error(`[Z-API ERROR] Texto da mensagem é obrigatório para enviar mensagem com botões`);
+      return {
+        success: false,
+        message: "Texto da mensagem é obrigatório para enviar mensagem com botões"
+      };
+    }
+    
+    if (!buttonList || !buttonList.buttons || buttonList.buttons.length === 0) {
+      console.error(`[Z-API ERROR] Lista de botões é obrigatória para enviar mensagem com botões`);
+      return {
+        success: false,
+        message: "Lista de botões é obrigatória para enviar mensagem com botões"
+      };
+    }
+    
+    if (buttonList.buttons.length > 3) {
+      console.error(`[Z-API ERROR] Máximo de 3 botões permitidos por mensagem`);
+      return {
+        success: false,
+        message: "Máximo de 3 botões permitidos por mensagem"
+      };
+    }
+    
+    // Limpar o número de telefone, garantindo que não há caracteres especiais
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    console.log(`[Z-API] Enviando mensagem com botões para ${cleanPhone}: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
+    console.log(`[Z-API] Botões:`, buttonList.buttons);
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    // Endpoint para enviar mensagem com botões
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-button-list`;
+    
+    // Preparar o payload
+    const payload = {
+      phone: cleanPhone,
+      message: message,
+      buttonList: buttonList
+    };
+    
+    console.log(`[Z-API] Enviando payload para /send-button-list:`, payload);
+    
+    // Enviar a mensagem
+    const response = await axios.post(
+      url,
+      payload,
+      {
+        headers,
+        validateStatus: function (status) {
+          // Aceitar qualquer status para poder tratar o erro adequadamente
+          return true;
+        }
+      }
+    );
+    
+    // Verificar se a resposta foi bem-sucedida
+    if (response.status === 200 || response.status === 201) {
+      console.log(`[Z-API SUCCESS] Mensagem com botões enviada para ${cleanPhone}:`, response.data);
+      
+      return {
+        success: true,
+        messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+        message: "Mensagem com botões enviada com sucesso"
+      };
+    } else {
+      // Se a resposta não foi bem-sucedida, extrair detalhes do erro
+      console.error(`[Z-API ERROR] Erro ao enviar mensagem com botões (Status ${response.status}):`, response.data);
+      
+      let errorDetail = "Erro desconhecido";
+      if (response.data) {
+        if (typeof response.data === 'string') {
+          errorDetail = response.data;
+        } else if (response.data.error) {
+          errorDetail = response.data.error;
+        } else if (response.data.message) {
+          errorDetail = response.data.message;
+        } else {
+          errorDetail = JSON.stringify(response.data);
+        }
+      }
+      
+      return {
+        success: false,
+        message: `Erro ${response.status}: ${errorDetail}`
+      };
+    }
+  } catch (error) {
+    console.error(`[Z-API ERROR] Erro ao enviar mensagem com botões:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}
+
+/**
+ * Envia uma mensagem com lista de opções via Z-API
+ * @param instanceId ID da instância Z-API
+ * @param token Token da instância Z-API
+ * @param phone Número do telefone (formato: DDI+DDD+NUMERO, ex: 5511999999999)
+ * @param title Título da lista
+ * @param buttonLabel Texto do botão que abre a lista
+ * @param options Lista de opções a serem exibidas
+ * @param description Descrição opcional da lista
+ * @param clientToken Token de segurança da conta Z-API (Client-Token)
+ * @returns Resultado do envio
+ */
+export async function sendOptionList(
+  instanceId: string,
+  token: string,
+  phone: string,
+  title: string,
+  buttonLabel: string,
+  options: Array<{
+    title: string;
+    rows: Array<{
+      title: string;
+      description?: string;
+      id?: string;
+    }>;
+  }>,
+  description?: string,
+  clientToken?: string
+): Promise<{
+  success: boolean;
+  messageId?: string;
+  message?: string;
+}> {
+  try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      console.error(`[Z-API ERROR] Instance ID e Token são obrigatórios para enviar lista de opções`);
+      return {
+        success: false,
+        message: "Instance ID e Token são obrigatórios para enviar lista de opções"
+      };
+    }
+    
+    if (!phone) {
+      console.error(`[Z-API ERROR] Número de telefone é obrigatório para enviar lista de opções`);
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar lista de opções"
+      };
+    }
+    
+    if (!title) {
+      console.error(`[Z-API ERROR] Título é obrigatório para enviar lista de opções`);
+      return {
+        success: false,
+        message: "Título é obrigatório para enviar lista de opções"
+      };
+    }
+    
+    if (!buttonLabel) {
+      console.error(`[Z-API ERROR] Texto do botão é obrigatório para enviar lista de opções`);
+      return {
+        success: false,
+        message: "Texto do botão é obrigatório para enviar lista de opções"
+      };
+    }
+    
+    if (!options || options.length === 0) {
+      console.error(`[Z-API ERROR] Lista de opções é obrigatória para enviar lista de opções`);
+      return {
+        success: false,
+        message: "Lista de opções é obrigatória para enviar lista de opções"
+      };
+    }
+    
+    // Limpar o número de telefone, garantindo que não há caracteres especiais
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    console.log(`[Z-API] Enviando lista de opções para ${cleanPhone}: "${title}"`);
+    
+    // Preparando headers com ou sem Client-Token (opcional)
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json"
+    };
+    if (clientToken) {
+      headers["Client-Token"] = clientToken;
+    }
+    
+    // Endpoint para enviar lista de opções
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-option-list`;
+    
+    // Preparar o payload
+    const payload: any = {
+      phone: cleanPhone,
+      title: title,
+      buttonText: buttonLabel,
+      options: options
+    };
+    
+    // Adicionar descrição se fornecida
+    if (description) {
+      payload.description = description;
+    }
+    
+    console.log(`[Z-API] Enviando payload para /send-option-list:`, {
+      ...payload,
+      options: `[${options.length} opções]` // Truncar para log
+    });
+    
+    // Enviar a mensagem
+    const response = await axios.post(
+      url,
+      payload,
+      {
+        headers,
+        validateStatus: function (status) {
+          // Aceitar qualquer status para poder tratar o erro adequadamente
+          return true;
+        }
+      }
+    );
+    
+    // Verificar se a resposta foi bem-sucedida
+    if (response.status === 200 || response.status === 201) {
+      console.log(`[Z-API SUCCESS] Lista de opções enviada para ${cleanPhone}:`, response.data);
+      
+      return {
+        success: true,
+        messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+        message: "Lista de opções enviada com sucesso"
+      };
+    } else {
+      // Se a resposta não foi bem-sucedida, extrair detalhes do erro
+      console.error(`[Z-API ERROR] Erro ao enviar lista de opções (Status ${response.status}):`, response.data);
+      
+      let errorDetail = "Erro desconhecido";
+      if (response.data) {
+        if (typeof response.data === 'string') {
+          errorDetail = response.data;
+        } else if (response.data.error) {
+          errorDetail = response.data.error;
+        } else if (response.data.message) {
+          errorDetail = response.data.message;
+        } else {
+          errorDetail = JSON.stringify(response.data);
+        }
+      }
+      
+      return {
+        success: false,
+        message: `Erro ${response.status}: ${errorDetail}`
+      };
+    }
+  } catch (error) {
+    console.error(`[Z-API ERROR] Erro ao enviar lista de opções:`, error);
+    
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        message: `Erro ${error.response?.status}: ${error.response?.data?.error || error.message}`
+      };
+    } else {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "Erro desconhecido"
+      };
+    }
+  }
+}

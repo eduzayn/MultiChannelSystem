@@ -18,6 +18,22 @@ export interface SendButtonMessageParams {
   buttons: any[];
 }
 
+export interface SendOptionListMessageParams {
+  channelId: number;
+  to: string;
+  title: string;
+  buttonLabel: string;
+  options: Array<{
+    title: string;
+    rows: Array<{
+      title: string;
+      description?: string;
+      id?: string;
+    }>;
+  }>;
+  description?: string;
+}
+
 /**
  * Envia mensagem de texto via Z-API
  * 
@@ -121,6 +137,60 @@ export const sendButtonMessage = async (params: SendButtonMessageParams): Promis
     return {
       success: false,
       message: error.message || 'Erro ao enviar mensagem com botões'
+    };
+  }
+};
+
+/**
+ * Envia mensagem com lista de opções via Z-API
+ * 
+ * @param params Parâmetros para envio de mensagem com lista de opções
+ * @returns Resultado do envio
+ */
+export const sendOptionListMessage = async (params: SendOptionListMessageParams): Promise<{success: boolean; messageId?: string; message?: string}> => {
+  try {
+    const { channelId, to, title, buttonLabel, options, description } = params;
+    
+    console.log(`Enviando mensagem com lista de opções para ${to}: "${title}"`);
+    console.log('Opções:', options);
+    
+    // Limpa o número de telefone, garantindo que não há caracteres especiais
+    const cleanPhone = to.replace(/\D/g, '');
+    
+    // Faz a chamada real para a API Z-API através do nosso backend
+    const response = await fetch('/api/zapi/send-option-list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        phoneNumber: cleanPhone,
+        title,
+        buttonLabel,
+        options,
+        description,
+        channelId: channelId
+      })
+    });
+    
+    // Se a resposta não for ok, lançar erro
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Resposta do servidor para mensagem com lista de opções:', data);
+    
+    // Propagar o resultado exato da API
+    return {
+      success: data.success,
+      messageId: data.messageId,
+      message: data.message || (data.success ? 'Mensagem com lista de opções enviada com sucesso' : 'Falha ao enviar mensagem com lista de opções')
+    };
+  } catch (error: any) {
+    console.error('Erro ao enviar mensagem com lista de opções:', error);
+    return {
+      success: false,
+      message: error.message || 'Erro ao enviar mensagem com lista de opções'
     };
   }
 };

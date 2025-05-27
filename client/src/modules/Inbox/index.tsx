@@ -141,6 +141,10 @@ export default function Inbox() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   
+  // Estados para controle de envio de mensagens interativas
+  const [sendingButtonMessage, setSendingButtonMessage] = useState(false);
+  const [sendingOptionList, setSendingOptionList] = useState(false);
+  
   // Opções para filtros
   const channelOptions = [
     { value: 'whatsapp', label: 'WhatsApp', icon: <MessageSquare className="h-3.5 w-3.5 mr-1.5" /> },
@@ -725,6 +729,151 @@ export default function Inbox() {
     }
   };
 
+  // Função para enviar mensagem com botões
+  const handleSendButtonMessage = async (title: string, message: string, footer: string, buttons: any[]) => {
+    if (!selectedConversation) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma conversa selecionada",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSendingButtonMessage(true);
+      
+      // Extrair o número de telefone do identifier
+      const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
+      if (!phoneNumber) {
+        throw new Error('Número de telefone não encontrado');
+      }
+      
+      console.log(`Enviando mensagem com botões para ${phoneNumber}`);
+      console.log(`Título: "${title}", Mensagem: "${message}", Botões: ${buttons.length}`);
+      
+      const response = await fetch('/api/zapi/send-button-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          title,
+          message,
+          footer,
+          buttons,
+          channelId: parseInt(selectedConversation.id)
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro ao enviar mensagem com botões:', errorText);
+        throw new Error(`Erro ao enviar mensagem com botões: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Mensagem com botões enviada com sucesso');
+        toast({
+          title: "Mensagem enviada",
+          description: "A mensagem com botões foi enviada com sucesso.",
+        });
+      } else {
+        throw new Error(result.message || 'Erro ao enviar mensagem com botões');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem com botões:', error);
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: error instanceof Error ? error.message : 'Erro ao enviar mensagem com botões',
+        variant: "destructive"
+      });
+    } finally {
+      setSendingButtonMessage(false);
+    }
+  };
+  
+  // Função para enviar mensagem com lista de opções
+  const handleSendOptionList = async (
+    title: string, 
+    buttonLabel: string, 
+    options: Array<{
+      title: string;
+      rows: Array<{
+        title: string;
+        description?: string;
+      }>;
+    }>,
+    description?: string
+  ) => {
+    if (!selectedConversation) {
+      toast({
+        title: "Erro",
+        description: "Nenhuma conversa selecionada",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSendingOptionList(true);
+      
+      // Extrair o número de telefone do identifier
+      const phoneNumber = selectedConversation.identifier?.replace(/\D/g, '') || '';
+      if (!phoneNumber) {
+        throw new Error('Número de telefone não encontrado');
+      }
+      
+      console.log(`Enviando lista de opções para ${phoneNumber}`);
+      console.log(`Título: "${title}", Botão: "${buttonLabel}", Seções: ${options.length}`);
+      
+      const response = await fetch('/api/zapi/send-option-list', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          title,
+          buttonLabel,
+          options,
+          description,
+          channelId: parseInt(selectedConversation.id)
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro ao enviar lista de opções:', errorText);
+        throw new Error(`Erro ao enviar lista de opções: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Lista de opções enviada com sucesso');
+        toast({
+          title: "Mensagem enviada",
+          description: "A lista de opções foi enviada com sucesso.",
+        });
+      } else {
+        throw new Error(result.message || 'Erro ao enviar lista de opções');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar lista de opções:', error);
+      toast({
+        title: "Erro ao enviar mensagem",
+        description: error instanceof Error ? error.message : 'Erro ao enviar lista de opções',
+        variant: "destructive"
+      });
+    } finally {
+      setSendingOptionList(false);
+    }
+  };
+
   return (
     <div className="grid h-screen overflow-hidden bg-background" style={{gridTemplateColumns: '340px minmax(0, 1fr) 280px'}}>
       {/* Sidebar esquerda: Lista de conversas */}
@@ -1133,7 +1282,9 @@ export default function Inbox() {
               onSendMessage={handleSendMessage}
               onFileSelect={handleFileSelect}
               onSendAttachment={handleSendAttachment}
-              isSending={isSending}
+              onSendButtonMessage={handleSendButtonMessage}
+              onSendOptionList={handleSendOptionList}
+              isSending={isSending || sendingButtonMessage || sendingOptionList}
               selectedAttachment={selectedAttachment}
             />
             
