@@ -844,7 +844,47 @@ export async function sendReaction(
   message?: string;
 }> {
   try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      console.error('[Z-API ERROR] Credenciais inválidas');
+      return {
+        success: false,
+        message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
+      };
+    }
+
+    if (!phone) {
+      console.error('[Z-API ERROR] Número de telefone não fornecido');
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar reação"
+      };
+    }
+
+    if (!messageId) {
+      console.error('[Z-API ERROR] ID da mensagem não fornecido');
+      return {
+        success: false,
+        message: "ID da mensagem é obrigatório para enviar reação"
+      };
+    }
+
+    if (!reaction) {
+      console.error('[Z-API ERROR] Reação não fornecida');
+      return {
+        success: false,
+        message: "Emoji de reação é obrigatório"
+      };
+    }
+
+    // Limpar o número de telefone
+    const cleanPhone = phone.replace(/\D/g, '');
+    
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/messages/reaction`;
+    
+    console.log(`[Z-API DEBUG] Enviando reação para ${cleanPhone}`);
+    console.log(`[Z-API DEBUG] ID da mensagem: ${messageId}`);
+    console.log(`[Z-API DEBUG] Reação: ${reaction}`);
     
     // Preparando headers com ou sem Client-Token (opcional)
     const headers: Record<string, string> = {
@@ -857,21 +897,40 @@ export async function sendReaction(
     const response = await axios.post(
       url,
       {
-        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        phone: cleanPhone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
         messageId, // ID da mensagem a receber a reação
         reaction // Emoji da reação, ex: "❤️", "👍", "😂", etc.
       },
       {
-        headers
+        headers,
+        timeout: 15000, // 15s timeout
+        validateStatus: (status) => true // Permite tratar todos os status
       }
     );
     
+    if (response.status !== 200 && response.status !== 201) {
+      console.error(`[Z-API ERROR] Status ${response.status}`);
+      let errorMsg = 'Erro ao enviar reação';
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMsg += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMsg
+      };
+    }
+    
+    console.log(`[Z-API SUCCESS] Reação enviada:`, response.data);
+    
     return {
       success: true,
-      messageId: response.data?.messageId || response.data?.id
+      messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+      message: "Reação enviada com sucesso"
     };
   } catch (error) {
-    console.error(`Erro ao enviar reação via Z-API:`, error);
+    console.error(`[Z-API ERROR] Erro ao enviar reação:`, error);
     
     if (axios.isAxiosError(error)) {
       return {
@@ -902,7 +961,38 @@ export async function removeReaction(
   message?: string;
 }> {
   try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      console.error('[Z-API ERROR] Credenciais inválidas');
+      return {
+        success: false,
+        message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
+      };
+    }
+
+    if (!phone) {
+      console.error('[Z-API ERROR] Número de telefone não fornecido');
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para remover reação"
+      };
+    }
+
+    if (!messageId) {
+      console.error('[Z-API ERROR] ID da mensagem não fornecido');
+      return {
+        success: false,
+        message: "ID da mensagem é obrigatório para remover reação"
+      };
+    }
+
+    // Limpar o número de telefone
+    const cleanPhone = phone.replace(/\D/g, '');
+    
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/messages/reaction/remove`;
+    
+    console.log(`[Z-API DEBUG] Removendo reação para ${cleanPhone}`);
+    console.log(`[Z-API DEBUG] ID da mensagem: ${messageId}`);
     
     // Preparando headers com ou sem Client-Token (opcional)
     const headers: Record<string, string> = {
@@ -915,20 +1005,39 @@ export async function removeReaction(
     const response = await axios.post(
       url,
       {
-        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        phone: cleanPhone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
         messageId // ID da mensagem para remover a reação
       },
       {
-        headers
+        headers,
+        timeout: 15000, // 15s timeout
+        validateStatus: (status) => true // Permite tratar todos os status
       }
     );
     
+    if (response.status !== 200 && response.status !== 201) {
+      console.error(`[Z-API ERROR] Status ${response.status}`);
+      let errorMsg = 'Erro ao remover reação';
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMsg += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMsg
+      };
+    }
+    
+    console.log(`[Z-API SUCCESS] Reação removida:`, response.data);
+    
     return {
       success: true,
-      messageId: response.data?.messageId || response.data?.id
+      messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+      message: "Reação removida com sucesso"
     };
   } catch (error) {
-    console.error(`Erro ao remover reação via Z-API:`, error);
+    console.error(`[Z-API ERROR] Erro ao remover reação:`, error);
     
     if (axios.isAxiosError(error)) {
       return {
