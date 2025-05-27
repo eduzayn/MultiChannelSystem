@@ -1,12 +1,12 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "outputDirectory": "dist/public",
   "installCommand": "npm install",
   "framework": "vite",
   "builds": [
     {
-      "src": "client/dist/**",
+      "src": "dist/public/**",
       "use": "@vercel/static"
     },
     {
@@ -26,7 +26,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "client/dist/$1",
+      "dest": "dist/public/$1",
       "headers": {
         "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "DENY",
