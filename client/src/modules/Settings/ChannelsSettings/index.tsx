@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ZAPIIntegration } from "./components/ZAPIIntegration";
-import { ChannelWizardV2 } from "./components/ChannelWizardV2";
+import { UnifiedChannelWizard } from "./components/UnifiedChannelWizard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"; 
 import { MessageSquare, Instagram, Mail, Phone, Facebook, MessageSquareText, PlusCircle, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
@@ -222,11 +221,8 @@ export const ChannelsSettingsModule = () => {
         )}
       </div>
 
-      {/* Componente de integração Z-API */}
-      <ZAPIIntegration key={`zapi-integration-${refreshTrigger}`} />
-      
-      {/* Wizard de adição de novos canais */}
-      <ChannelWizardV2 
+      {/* Wizard unificado de canais */}
+      <UnifiedChannelWizard 
         open={openAddChannelWizard} 
         onOpenChange={setOpenAddChannelWizard}
         onChannelAdded={() => setRefreshTrigger(prev => prev + 1)}
