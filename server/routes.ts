@@ -587,15 +587,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Falha ao criar mensagem" });
     }
   });
-
+  
   // Rota para upload de arquivos (imagens)
   app.post("/api/upload", async (req, res) => {
     try {
       const file = req.files?.file;
       
       if (!file) {
-        return res.status(400).json({
-          success: false,
+        return res.status(400).json({ 
+          success: false, 
           message: "Nenhum arquivo foi enviado"
         });
       }
@@ -683,8 +683,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validação flexível: aceitar se houver imageUrl para imagens
       if (type === 'image' && !imageUrl) {
-        return res.status(400).json({ 
-          success: false, 
+        return res.status(400).json({
+          success: false,
           message: "URL da imagem é obrigatória para envio de imagens" 
         });
       }
@@ -782,8 +782,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error('[Z-API ERROR] Erro ao processar envio:', error);
-      res.status(500).json({
-        success: false,
+      res.status(500).json({ 
+        success: false, 
         message: error instanceof Error ? error.message : "Erro interno do servidor"
       });
     }
