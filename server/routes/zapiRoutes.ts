@@ -13,7 +13,9 @@ import {
   sendAudio,
   sendVideo,
   sendDocument,
-  sendLink
+  sendLink,
+  sendButtonList,
+  sendOptionList
 } from "../services/zapiService";
 import { configureZapiWebhook, getZapiWebhook } from "../services/webhookService";
 
@@ -815,6 +817,159 @@ export function registerZapiRoutes(app: Router) {
       res.json(result);
     } catch (error) {
       console.error("Erro na rota de envio de link:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar mensagem com botões via Z-API
+  app.post("/api/zapi/send-button-message", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phoneNumber, title, message, footer, buttons, channelId } = req.body;
+      
+      if (!instanceId || !token || !phoneNumber || !message || !buttons || !Array.isArray(buttons) || buttons.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone, mensagem e botões são obrigatórios",
+        });
+      }
+      
+      // Verificar se há no máximo 3 botões (limitação da API)
+      if (buttons.length > 3) {
+        return res.status(400).json({
+          success: false,
+          message: "Máximo de 3 botões permitidos por mensagem",
+        });
+      }
+      
+      // Formatar os botões no formato esperado pela Z-API
+      const buttonList = {
+        buttons: buttons.map(button => ({
+          id: button.id || undefined,
+          label: button.label || button.text
+        }))
+      };
+      
+      console.log(`[Z-API] Enviando mensagem com botões para ${phoneNumber}`);
+      console.log(`[Z-API] Mensagem: "${message}"`);
+      console.log(`[Z-API] Botões:`, buttonList.buttons);
+      
+      const result = await sendButtonList(instanceId, token, phoneNumber, message, buttonList, clientToken);
+      
+      if (result.success && channelId) {
+        try {
+          const { db } = await import('../db');
+          const { messages, conversations } = await import('../../shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          const conversation = await db.query.conversations.findFirst({
+            where: eq(conversations.identifier, phoneNumber.replace(/\D/g, ""))
+          });
+          
+          if (conversation) {
+            // Salvar a mensagem no histórico
+            await db.insert(messages).values({
+              conversationId: conversation.id,
+              content: message,
+              type: "button-list",
+              sender: "user", // Mensagem enviada pelo usuário
+              status: "sent",
+              metadata: {
+                buttons: buttonList.buttons,
+                title: title || "",
+                footer: footer || "",
+                messageId: result.messageId
+              },
+              timestamp: new Date()
+            });
+            
+            // Atualizar a conversa
+            await db.update(conversations)
+              .set({
+                lastMessage: message,
+                lastMessageAt: new Date()
+              })
+              .where(eq(conversations.id, conversation.id));
+          }
+        } catch (dbError) {
+          console.error("Erro ao salvar mensagem com botões no histórico:", dbError);
+        }
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de mensagem com botões:", error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
+      });
+    }
+  });
+  
+  // Rota para enviar mensagem com lista de opções via Z-API
+  app.post("/api/zapi/send-option-list", async (req: Request, res: Response) => {
+    try {
+      const { instanceId, token, clientToken, phoneNumber, title, buttonLabel, options, description, channelId } = req.body;
+      
+      if (!instanceId || !token || !phoneNumber || !title || !buttonLabel || !options || !Array.isArray(options) || options.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Instance ID, Token, número de telefone, título, texto do botão e opções são obrigatórios",
+        });
+      }
+      
+      console.log(`[Z-API] Enviando lista de opções para ${phoneNumber}`);
+      console.log(`[Z-API] Título: "${title}"`);
+      console.log(`[Z-API] Botão: "${buttonLabel}"`);
+      console.log(`[Z-API] Opções: ${options.length} seções`);
+      
+      const result = await sendOptionList(instanceId, token, phoneNumber, title, buttonLabel, options, description, clientToken);
+      
+      if (result.success && channelId) {
+        try {
+          const { db } = await import('../db');
+          const { messages, conversations } = await import('../../shared/schema');
+          const { eq } = await import('drizzle-orm');
+          
+          const conversation = await db.query.conversations.findFirst({
+            where: eq(conversations.identifier, phoneNumber.replace(/\D/g, ""))
+          });
+          
+          if (conversation) {
+            // Salvar a mensagem no histórico
+            await db.insert(messages).values({
+              conversationId: conversation.id,
+              content: title,
+              type: "option-list",
+              sender: "user", // Mensagem enviada pelo usuário
+              status: "sent",
+              metadata: {
+                options: options,
+                buttonLabel: buttonLabel,
+                description: description || "",
+                messageId: result.messageId
+              },
+              timestamp: new Date()
+            });
+            
+            // Atualizar a conversa
+            await db.update(conversations)
+              .set({
+                lastMessage: title,
+                lastMessageAt: new Date()
+              })
+              .where(eq(conversations.id, conversation.id));
+          }
+        } catch (dbError) {
+          console.error("Erro ao salvar mensagem com lista de opções no histórico:", dbError);
+        }
+      }
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Erro na rota de envio de mensagem com lista de opções:", error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : "Erro interno do servidor",
