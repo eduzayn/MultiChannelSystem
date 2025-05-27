@@ -162,16 +162,46 @@ const MessageList: React.FC<MessageListProps> = ({
 
   // Formata o conteúdo da mensagem com base no tipo
   const renderMessageContent = (message: any) => {
-    switch(message.type) {
+    // Determinar o tipo real da mensagem
+    const messageType = message.type || 
+                       (message.body && message.body.type) || 
+                       (message.metadata && message.metadata.type) || 
+                       'text';
+    
+    // Verificar se é uma mensagem interativa
+    const isButtonMessage = messageType === 'button-list' || 
+                           (message.buttonList && message.buttonList.buttons) ||
+                           (message.body && message.body.buttonList);
+                           
+    const isOptionList = messageType === 'option-list' || 
+                        (message.listMessage && message.listMessage.sections) ||
+                        (message.body && message.body.listMessage);
+    
+    switch(messageType) {
       case 'image':
+        // Determinar a URL da imagem
+        const imageUrl = message.metadata?.url || 
+                        (message.body && message.body.url) || 
+                        (message.content && message.content.includes('http') && message.content.match(/https?:\/\/[^\s"]+/)?.[0]);
+        
+        if (!imageUrl) {
+          console.warn('Mensagem de imagem sem URL:', message);
+          return <WhatsAppMessageContent message={message} />;
+        }
+        
         return (
           <div className="media-message-container">
             <div className="relative group">
               <img 
-                src={message.metadata?.url || ''}
+                src={imageUrl}
                 alt="Imagem enviada" 
                 className="rounded-lg max-w-full max-h-[250px] object-cover mb-2 cursor-pointer transition-transform transform hover:scale-[1.02]"
-                onClick={() => window.open(message.metadata?.url, '_blank')}
+                onClick={() => window.open(imageUrl, '_blank')}
+                onError={(e) => {
+                  console.error('Erro ao carregar imagem:', imageUrl);
+                  e.currentTarget.src = '/placeholder-image.png';
+                  e.currentTarget.className = e.currentTarget.className + ' opacity-50';
+                }}
               />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-lg">
                 <svg className="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -187,7 +217,19 @@ const MessageList: React.FC<MessageListProps> = ({
             )}
           </div>
         );
+        
       case 'audio':
+      case 'ptt':
+        // Determinar a URL do áudio
+        const audioUrl = message.metadata?.url || 
+                        (message.body && message.body.url) || 
+                        (message.content && message.content.includes('http') && message.content.match(/https?:\/\/[^\s"]+/)?.[0]);
+        
+        if (!audioUrl) {
+          console.warn('Mensagem de áudio sem URL:', message);
+          return <WhatsAppMessageContent message={message} />;
+        }
+        
         return (
           <div className="media-message-container">
             <div className="bg-background/80 p-2 rounded-md border border-muted/50">
@@ -203,7 +245,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 </span>
               </div>
               <audio 
-                src={message.metadata?.url || ''} 
+                src={audioUrl} 
                 controls 
                 className="max-w-full w-full h-10" 
                 preload="metadata"
@@ -214,6 +256,162 @@ const MessageList: React.FC<MessageListProps> = ({
             )}
           </div>
         );
+        
+      case 'video':
+        // Determinar a URL do vídeo
+        const videoUrl = message.metadata?.url || 
+                        (message.body && message.body.url) || 
+                        (message.content && message.content.includes('http') && message.content.match(/https?:\/\/[^\s"]+/)?.[0]);
+        
+        if (!videoUrl) {
+          console.warn('Mensagem de vídeo sem URL:', message);
+          return <WhatsAppMessageContent message={message} />;
+        }
+        
+        return (
+          <div className="media-message-container">
+            <div className="relative group">
+              <video 
+                src={videoUrl}
+                controls
+                className="rounded-lg max-w-full max-h-[250px] object-cover mb-2"
+                preload="metadata"
+              />
+            </div>
+            {message.content && (
+              <WhatsAppMessageContent message={message} />
+            )}
+          </div>
+        );
+        
+      case 'document':
+        // Determinar a URL do documento
+        const docUrl = message.metadata?.url || 
+                      (message.body && message.body.url) || 
+                      (message.content && message.content.includes('http') && message.content.match(/https?:\/\/[^\s"]+/)?.[0]);
+        
+        const fileName = message.metadata?.fileName || 
+                        (message.body && message.body.fileName) || 
+                        'documento.pdf';
+        
+        if (!docUrl) {
+          console.warn('Mensagem de documento sem URL:', message);
+          return <WhatsAppMessageContent message={message} />;
+        }
+        
+        return (
+          <div className="media-message-container">
+            <div className="bg-background/80 p-3 rounded-md border border-muted/50 flex items-center">
+              <svg className="h-8 w-8 mr-3 text-primary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+              <div className="flex-1 overflow-hidden">
+                <div className="text-sm font-medium truncate">{fileName}</div>
+                <div className="text-xs text-muted-foreground">
+                  {message.metadata?.fileSize ? `${(message.metadata.fileSize / 1024).toFixed(1)} KB` : ''}
+                </div>
+              </div>
+              <a 
+                href={docUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="ml-2 p-1.5 rounded-full hover:bg-muted"
+              >
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" x2="12" y1="15" y2="3"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        );
+        
+      case 'button-list':
+        if (isButtonMessage) {
+          // Extrair dados dos botões
+          const buttons = message.buttonList?.buttons || 
+                         (message.body && message.body.buttonList && message.body.buttonList.buttons) || 
+                         [];
+          
+          const messageText = message.message || 
+                             (message.body && message.body.message) || 
+                             '';
+          
+          return (
+            <div className="interactive-message-container">
+              <div className="bg-background/80 p-3 rounded-md border border-primary/30">
+                <div className="text-sm mb-3">{messageText}</div>
+                <div className="flex flex-col gap-2">
+                  {buttons.map((button: any, index: number) => (
+                    <button 
+                      key={button.id || index}
+                      className="px-4 py-2 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-md transition-colors"
+                      onClick={() => {
+                        console.log('Botão clicado:', button);
+                      }}
+                    >
+                      {button.label || button.text || `Opção ${index + 1}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return <WhatsAppMessageContent message={message} />;
+        
+      case 'option-list':
+        if (isOptionList) {
+          // Extrair dados da lista de opções
+          const sections = message.listMessage?.sections || 
+                          (message.body && message.body.listMessage && message.body.listMessage.sections) || 
+                          [];
+          
+          const title = message.listMessage?.title || 
+                       (message.body && message.body.listMessage && message.body.listMessage.title) || 
+                       'Selecione uma opção';
+          
+          const description = message.listMessage?.description || 
+                             (message.body && message.body.listMessage && message.body.listMessage.description) || 
+                             '';
+          
+          return (
+            <div className="interactive-message-container">
+              <div className="bg-background/80 p-3 rounded-md border border-primary/30">
+                <div className="text-sm font-medium mb-1">{title}</div>
+                {description && <div className="text-sm mb-3">{description}</div>}
+                
+                {sections.map((section: any, sectionIndex: number) => (
+                  <div key={sectionIndex} className="mb-3">
+                    {section.title && (
+                      <div className="text-xs font-medium text-muted-foreground mb-2">{section.title}</div>
+                    )}
+                    <div className="flex flex-col gap-1.5">
+                      {section.rows && section.rows.map((row: any, rowIndex: number) => (
+                        <button 
+                          key={row.id || rowIndex}
+                          className="px-3 py-2 text-sm text-left bg-muted/50 hover:bg-muted rounded-md transition-colors"
+                          onClick={() => {
+                            console.log('Opção selecionada:', row);
+                          }}
+                        >
+                          <div className="font-medium">{row.title || `Opção ${rowIndex + 1}`}</div>
+                          {row.description && (
+                            <div className="text-xs text-muted-foreground">{row.description}</div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+        return <WhatsAppMessageContent message={message} />;
+        
       default:
         // Usar o componente especializado para mensagens do WhatsApp
         return <WhatsAppMessageContent message={message} />;

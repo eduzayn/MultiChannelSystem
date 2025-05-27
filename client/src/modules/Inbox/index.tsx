@@ -340,8 +340,20 @@ export default function Inbox() {
         
         // Atualiza o estado
         if (append) {
-          setMessages(prev => [...prev, ...formattedMessages]);
-          setDisplayedMessages(prev => [...prev, ...formattedMessages]);
+          // Adiciona mensagens evitando duplicatas pelo ID
+          setMessages(prev => {
+            const uniqueMessages = formattedMessages.filter(
+              newMsg => !prev.some(existingMsg => existingMsg.id === newMsg.id)
+            );
+            return [...prev, ...uniqueMessages];
+          });
+          
+          setDisplayedMessages(prev => {
+            const uniqueMessages = formattedMessages.filter(
+              newMsg => !prev.some(existingMsg => existingMsg.id === newMsg.id)
+            );
+            return [...prev, ...uniqueMessages];
+          });
         } else {
           setMessages(formattedMessages);
           setDisplayedMessages(formattedMessages);

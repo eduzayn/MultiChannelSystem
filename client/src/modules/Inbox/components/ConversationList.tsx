@@ -4,7 +4,7 @@ import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 
-// Função para formatar a última mensagem, tratando objetos JSON
+// Função para formatar a última mensagem, tratando objetos JSON e mensagens Z-API
 const formatLastMessage = (lastMessage: string): string => {
   if (!lastMessage) return "";
   
@@ -13,6 +13,29 @@ const formatLastMessage = (lastMessage: string): string => {
     try {
       const messageObj = JSON.parse(lastMessage);
       
+      // Verificar formatos específicos da Z-API
+      if (messageObj.text && messageObj.text.message) {
+        return messageObj.text.message;
+      }
+      
+      // Verificar formatos de webhook da Z-API
+      if (messageObj.body && messageObj.body.text) {
+        return messageObj.body.text;
+      }
+      
+      if (messageObj.body && messageObj.body.caption) {
+        return messageObj.body.caption;
+      }
+      
+      // Verificar formatos de mensagens interativas
+      if (messageObj.buttonList && messageObj.message) {
+        return `${messageObj.message} [Mensagem com botões]`;
+      }
+      
+      if (messageObj.listMessage && messageObj.listMessage.description) {
+        return `${messageObj.listMessage.description} [Lista de opções]`;
+      }
+      
       // Se o objeto tiver um campo de texto ou mensagem, usar esse valor
       if (messageObj.text) return messageObj.text;
       if (messageObj.message) return messageObj.message;
@@ -20,14 +43,28 @@ const formatLastMessage = (lastMessage: string): string => {
       if (messageObj.content) return messageObj.content;
       
       // Se for um tipo especial de mensagem
-      if (messageObj.type === 'image') return '🖼️ Imagem';
-      if (messageObj.type === 'video') return '🎥 Vídeo';
-      if (messageObj.type === 'audio') return '🔊 Áudio';
-      if (messageObj.type === 'document') return '📄 Documento';
-      if (messageObj.type === 'location') return '📍 Localização';
-      if (messageObj.type === 'contact') return '👤 Contato';
+      if (messageObj.type === 'image' || messageObj.body?.type === 'image') return '🖼️ Imagem';
+      if (messageObj.type === 'video' || messageObj.body?.type === 'video') return '🎥 Vídeo';
+      if (messageObj.type === 'audio' || messageObj.body?.type === 'audio' || messageObj.body?.type === 'ptt') return '🔊 Áudio';
+      if (messageObj.type === 'document' || messageObj.body?.type === 'document') return '📄 Documento';
+      if (messageObj.type === 'location' || messageObj.body?.type === 'location') return '📍 Localização';
+      if (messageObj.type === 'contact' || messageObj.body?.type === 'contact') return '👤 Contato';
+      if (messageObj.type === 'button-list' || messageObj.body?.type === 'button-list') return '🔘 Mensagem com botões';
+      if (messageObj.type === 'option-list' || messageObj.body?.type === 'option-list') return '📋 Lista de opções';
+      if (messageObj.type === 'interactive' || messageObj.body?.type === 'interactive') return '🔄 Mensagem interativa';
       
-      // Fallback para outros objetos JSON
+      // Verificar se é uma mensagem de status (ReceivedCallback, MessageStatusCallback, etc.)
+      if (messageObj.type && messageObj.type.includes('Callback')) {
+        return 'Atualização de status';
+      }
+      
+      // Fallback para outros objetos JSON - tentar extrair qualquer texto útil
+      for (const key in messageObj) {
+        if (typeof messageObj[key] === 'string' && messageObj[key].length > 0) {
+          return messageObj[key].length > 30 ? messageObj[key].substring(0, 30) + "..." : messageObj[key];
+        }
+      }
+      
       return "Nova mensagem";
     } catch (e) {
       // Se falhar o parse, retornar a mensagem original com limite de caracteres
