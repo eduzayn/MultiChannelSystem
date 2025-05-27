@@ -596,18 +596,40 @@ export default function Inbox() {
       const { file, type } = selectedAttachment;
 
       if (type === 'image') {
-        // Converter para Base64
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = (error) => {
-            console.error('❌ Erro ao ler arquivo:', error);
-            reject(new Error('Erro ao processar imagem'));
-          };
-          reader.readAsDataURL(file);
+        console.log(`🔍 DEBUG: Iniciando upload de imagem: ${file.name} (${file.size} bytes)`);
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        console.log('🔍 DEBUG: Enviando imagem para endpoint /api/upload');
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
         });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('❌ Erro no upload:', errorText);
+          throw new Error(`Erro ao fazer upload da imagem: ${uploadResponse.status}`);
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        
+        if (!uploadResult.success || !uploadResult.url) {
+          console.error('❌ Upload falhou:', uploadResult);
+          throw new Error('Falha no upload da imagem');
+        }
+        
+        const imageUrl = uploadResult.url;
+        console.log(`✅ Upload concluído, URL da imagem real: ${imageUrl}`);
+        
+        if (imageUrl.includes('picsum.photos')) {
+          console.error('🚨 ALERTA DE SEGURANÇA: URL de imagem aleatória detectada:', imageUrl);
+          throw new Error('Sistema tentou usar uma URL de imagem aleatória. Operação cancelada por segurança.');
+        }
 
-        // Enviar imagem
+        // 2. Enviar a URL real da imagem para o WhatsApp via Z-API
+        console.log('🔍 DEBUG: Enviando URL da imagem para /api/messages/send');
         const response = await fetch('/api/messages/send', {
           method: 'POST',
           headers: {
@@ -616,14 +638,16 @@ export default function Inbox() {
           body: JSON.stringify({
             phoneNumber,
             type: 'image',
-            imageUrl: base64,
+            imageUrl: imageUrl, // Usar a URL real obtida do upload
             caption: '',
             channelId: parseInt(selectedConversation.id)
           })
         });
 
         if (!response.ok) {
-          throw new Error('Erro ao enviar imagem para o servidor');
+          const errorText = await response.text();
+          console.error('❌ Erro ao enviar imagem:', errorText);
+          throw new Error(`Erro ao enviar imagem para o servidor: ${response.status}`);
         }
 
         const result = await response.json();
@@ -635,8 +659,9 @@ export default function Inbox() {
             description: "A imagem foi enviada com sucesso.",
           });
           
-          // Salvar no backend
+          // 3. Salvar no histórico de mensagens
           try {
+            console.log('🔍 DEBUG: Salvando mensagem no histórico');
             const apiResponse = await fetch('/api/messages', {
               method: 'POST',
               headers: {
@@ -648,7 +673,7 @@ export default function Inbox() {
                 type: 'image',
                 sender: 'user',
                 metadata: { 
-                  imageUrl: base64,
+                  imageUrl: imageUrl, // Usar a URL real, não o base64
                   fileName: file.name,
                   fileSize: file.size,
                   fileType: file.type,
@@ -658,13 +683,15 @@ export default function Inbox() {
             });
             
             if (!apiResponse.ok) {
-              throw new Error('Erro ao salvar mensagem no backend');
+              const errorText = await apiResponse.text();
+              console.error('❌ Erro ao salvar mensagem:', errorText);
+              throw new Error(`Erro ao salvar mensagem no backend: ${apiResponse.status}`);
             }
 
             const savedMessage = await apiResponse.json();
-            console.log('✅ Mensagem salva no backend:', savedMessage);
+            console.log('✅ Mensagem salva no histórico:', savedMessage);
           } catch (saveError) {
-            console.error('❌ Erro ao salvar mensagem no backend:', saveError);
+            console.error('❌ Erro ao salvar mensagem no histórico:', saveError);
             toast({
               title: "Atenção",
               description: "A imagem foi enviada, mas houve um erro ao salvar no histórico.",
@@ -672,6 +699,7 @@ export default function Inbox() {
             });
           }
         } else {
+          console.error('❌ Erro na resposta do servidor:', result);
           throw new Error(result.message || 'Erro ao enviar imagem');
         }
       } else {

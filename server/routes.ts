@@ -689,6 +689,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validação de segurança: verificar se a URL da imagem é do picsum.photos
+      if (type === 'image' && imageUrl) {
+        console.log(`🚨 CRITICAL CHECK - URL da imagem recebida: ${imageUrl.substring(0, 100)}...`);
+        
+        // Verificar se é uma URL de teste/desenvolvimento
+        if (typeof imageUrl === 'string' && imageUrl.includes('picsum.photos')) {
+          console.error('🚨 ALERTA DE SEGURANÇA: Tentativa de envio de URL de imagem aleatória bloqueada');
+          return res.status(400).json({
+            success: false,
+            message: "URL de imagem não permitida por motivos de segurança"
+          });
+        }
+        
+        // Verificar se é uma URL válida ou base64
+        if (typeof imageUrl === 'string' && !imageUrl.startsWith('data:') && !imageUrl.startsWith('http')) {
+          console.error('🚨 ALERTA: Formato de imagem inválido:', imageUrl.substring(0, 30));
+          return res.status(400).json({
+            success: false,
+            message: "Formato de imagem inválido. Use URL ou base64."
+          });
+        }
+      }
+      
       if (type !== 'image' && !message) {
         return res.status(400).json({ 
           success: false, 

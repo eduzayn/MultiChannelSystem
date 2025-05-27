@@ -960,7 +960,48 @@ export async function sendAudio(
   message?: string;
 }> {
   try {
+    // Validar parâmetros
+    if (!instanceId || !token) {
+      console.error('[Z-API ERROR] Credenciais inválidas');
+      return {
+        success: false,
+        message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
+      };
+    }
+
+    if (!phone) {
+      console.error('[Z-API ERROR] Número de telefone não fornecido');
+      return {
+        success: false,
+        message: "Número de telefone é obrigatório para enviar áudio"
+      };
+    }
+
+    if (!audioUrl) {
+      console.error('[Z-API ERROR] URL do áudio não fornecida');
+      return {
+        success: false,
+        message: "URL do áudio é obrigatória"
+      };
+    }
+    
+    // Validar formato da URL
+    if (typeof audioUrl === 'string' && !audioUrl.startsWith('http') && !audioUrl.startsWith('data:')) {
+      console.error('[Z-API ERROR] Formato de URL inválido:', audioUrl.substring(0, 30));
+      return {
+        success: false,
+        message: "Formato de URL inválido. A URL deve começar com http:// ou https://"
+      };
+    }
+
+    // Limpar o número de telefone
+    const cleanPhone = phone.replace(/\D/g, '');
+    
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-audio`;
+    
+    console.log(`[Z-API DEBUG] Enviando áudio para ${cleanPhone}`);
+    console.log(`[Z-API DEBUG] URL do áudio (primeiros 50 chars): ${audioUrl.substring(0, 50)}...`);
+    console.log(`[Z-API DEBUG] Tipo: ${isVoiceMessage ? 'Mensagem de voz (PTT)' : 'Áudio normal'}`);
     
     // Preparando headers com ou sem Client-Token (opcional)
     const headers: Record<string, string> = {
@@ -973,21 +1014,40 @@ export async function sendAudio(
     const response = await axios.post(
       url,
       {
-        phone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
+        phone: cleanPhone, // Número no formato DDI+DDD+NUMERO, ex: 5511999999999
         audio: audioUrl, // URL do áudio a ser enviado
         isVoice: isVoiceMessage // Se true, envia como mensagem de voz (PTT), se false, envia como áudio normal
       },
       {
-        headers
+        headers,
+        timeout: 30000, // Aumentado para 30s
+        validateStatus: (status) => true // Permite tratar todos os status
       }
     );
     
+    if (response.status !== 200 && response.status !== 201) {
+      console.error(`[Z-API ERROR] Status ${response.status}`);
+      let errorMsg = 'Erro ao enviar áudio';
+      
+      if (response.data && typeof response.data === 'object') {
+        errorMsg += `: ${response.data.error || response.data.message || JSON.stringify(response.data)}`;
+      }
+      
+      return {
+        success: false,
+        message: errorMsg
+      };
+    }
+    
+    console.log(`[Z-API SUCCESS] Áudio enviado:`, response.data);
+    
     return {
       success: true,
-      messageId: response.data?.messageId || response.data?.id
+      messageId: response.data?.zaapId || response.data?.id || response.data?.messageId,
+      message: "Áudio enviado com sucesso"
     };
   } catch (error) {
-    console.error(`Erro ao enviar áudio via Z-API:`, error);
+    console.error(`[Z-API ERROR] Erro ao enviar áudio:`, error);
     
     if (axios.isAxiosError(error)) {
       return {
@@ -1021,6 +1081,7 @@ export async function sendImage(
   try {
     // Validar parâmetros
     if (!instanceId || !token) {
+      console.error('[Z-API ERROR] Credenciais inválidas');
       return {
         success: false,
         message: "Credenciais da Z-API (instanceId e token) são obrigatórias"
@@ -1028,6 +1089,7 @@ export async function sendImage(
     }
 
     if (!phone) {
+      console.error('[Z-API ERROR] Número de telefone não fornecido');
       return {
         success: false,
         message: "Número de telefone é obrigatório para enviar imagem"
@@ -1035,9 +1097,19 @@ export async function sendImage(
     }
 
     if (!imageUrl) {
+      console.error('[Z-API ERROR] URL da imagem não fornecida');
       return {
         success: false,
         message: "URL da imagem é obrigatória"
+      };
+    }
+    
+    // Validação de segurança: verificar se a URL da imagem é do picsum.photos
+    if (typeof imageUrl === 'string' && imageUrl.includes('picsum.photos')) {
+      console.error('🚨 ALERTA DE SEGURANÇA: Tentativa de envio de URL de imagem aleatória bloqueada em zapiService');
+      return {
+        success: false,
+        message: "URL de imagem não permitida por motivos de segurança (picsum.photos detectado)"
       };
     }
 
@@ -1047,7 +1119,7 @@ export async function sendImage(
     const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-image`;
     
     console.log(`[Z-API DEBUG] Enviando imagem para ${cleanPhone}`);
-    console.log(`[Z-API DEBUG] URL da imagem: ${imageUrl.substring(0, 50)}...`);
+    console.log(`[Z-API DEBUG] URL da imagem (primeiros 50 chars): ${imageUrl.substring(0, 50)}...`);
     
     // Preparando headers
     const headers: Record<string, string> = {
@@ -1072,7 +1144,17 @@ export async function sendImage(
         ? imageUrl 
         : `data:image/jpeg;base64,${imageUrl}`;
     } else {
-      console.log(`[Z-API DEBUG] Enviando imagem como URL`);
+      console.log(`[Z-API DEBUG] Enviando imagem como URL: ${imageUrl}`);
+      
+      // Validar formato da URL
+      if (!imageUrl.startsWith('http')) {
+        console.error('[Z-API ERROR] Formato de URL inválido:', imageUrl.substring(0, 30));
+        return {
+          success: false,
+          message: "Formato de URL inválido. A URL deve começar com http:// ou https://"
+        };
+      }
+      
       payload.image = imageUrl;
     }
 
