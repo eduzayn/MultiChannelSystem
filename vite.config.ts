@@ -28,21 +28,14 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      },
-      format: {
-        comments: false
-      },
-      mangle: true
-    },
+    minify: true,
     sourcemap: false,
     rollupOptions: {
-      input: {
-        main: path.resolve(import.meta.dirname, "client/index.html")
+      input: path.resolve(import.meta.dirname, "client/index.html"),
+      output: {
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+        assetFileNames: 'assets/[name].[hash].[ext]'
       }
     }
   },
