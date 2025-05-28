@@ -20,14 +20,14 @@
       "dest": "/dist/index.js"
     },
     {
-      "src": "/assets/(.*)",
+      "src": "^/assets/(.*)",
       "dest": "/dist/assets/$1",
       "headers": {
         "cache-control": "public, max-age=31536000, immutable"
       }
     },
     {
-      "src": "/favicon.ico",
+      "src": "^/favicon.ico",
       "dest": "/dist/favicon.ico"
     },
     {
@@ -35,7 +35,12 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/index.html"
+      "dest": "/dist/index.html",
+      "headers": {
+        "x-frame-options": "DENY",
+        "x-content-type-options": "nosniff",
+        "x-xss-protection": "1; mode=block"
+      }
     }
   ],
   "env": {
