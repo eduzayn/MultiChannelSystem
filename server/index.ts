@@ -93,9 +93,10 @@ process.on('unhandledRejection', (reason, promise) => {
   // Iniciar monitoramento de saúde do sistema após 5 segundos
   setTimeout(() => {
     try {
-      const { healthCheckService } = require('./services/healthCheckService');
-      healthCheckService.startHealthCheck(60000); // Verificar a cada 1 minuto
-      log("Serviço de monitoramento de saúde iniciado");
+      import('./services/healthCheckService.js').then(({ healthCheckService }) => {
+        healthCheckService.startHealthCheck(60000); // Verificar a cada 1 minuto
+        log("Serviço de monitoramento de saúde iniciado");
+      });
     } catch (error) {
       log("Aviso: Serviço de monitoramento de saúde não pôde ser iniciado: " + (error instanceof Error ? error.message : String(error)));
     }
