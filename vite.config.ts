@@ -28,7 +28,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
-    minify: true,
+    minify: "esbuild",
     sourcemap: false,
     rollupOptions: {
       input: path.resolve(import.meta.dirname, "client/index.html"),
