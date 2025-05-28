@@ -10,6 +10,7 @@ import { registerKpiRoutes } from "./routes/kpiRoutes";
 import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerConversationRoutes } from "./routes/conversationRoutes";
 import { registerUserActivityRoutes } from "./routes/userActivityRoutes";
+import { registerHealthCheckRoutes } from "./routes/healthCheckRoutes";
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -3167,6 +3168,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rotas para atividades do usuário
   registerUserActivityRoutes(app);
+  
+  // Registrar rotas para monitoramento de saúde
+  registerHealthCheckRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
