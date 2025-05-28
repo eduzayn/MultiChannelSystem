@@ -6,7 +6,7 @@
   "framework": "vite",
   "builds": [
     {
-      "src": "dist/public/**",
+      "src": "dist/**",
       "use": "@vercel/static"
     },
     {
@@ -20,11 +20,15 @@
       "dest": "/dist/index.js"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/dist/assets/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/$1"
+      "dest": "/dist/index.html"
     }
   ],
   "env": {
