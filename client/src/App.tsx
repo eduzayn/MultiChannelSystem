@@ -38,9 +38,7 @@ import ZapiTestPage from "@/pages/ZapiTestPage";
 function Router() {
   return (
     <Switch>
-      <Route path="/login">
-        <Login />
-      </Route>
+      <Route path="/login" component={Login} />
       <Route path="/:rest*">
         <Layout>
           <Switch>

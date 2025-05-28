@@ -5,28 +5,42 @@ import { api } from '@/lib/api';
 
 export const useAuthInit = () => {
   const { setUser, logout } = useAuthStore();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('auth_token');
       
-      if (!token) {
+      if (!token && location !== '/login') {
         logout();
         setLocation('/login');
         return;
       }
 
-      try {
-        const response = await api.get('/auth/me');
-        const user = response.data;
-        setUser(user);
-      } catch (error) {
-        logout();
-        setLocation('/login');
+      if (token && location === '/login') {
+        try {
+          const response = await api.get('/auth/me');
+          const user = response.data;
+          setUser(user);
+          setLocation('/');
+        } catch (error) {
+          logout();
+        }
+        return;
+      }
+
+      if (token) {
+        try {
+          const response = await api.get('/auth/me');
+          const user = response.data;
+          setUser(user);
+        } catch (error) {
+          logout();
+          setLocation('/login');
+        }
       }
     };
 
     initializeAuth();
-  }, [setUser, logout, setLocation]);
+  }, [setUser, logout, setLocation, location]);
 };
