@@ -83,4 +83,68 @@ export function registerConversationRoutes(app: Router) {
       res.status(500).json({ error: 'Erro ao buscar métricas da conversa' });
     }
   });
+  
+  /**
+   * Busca histórico de conversas para um contato
+   */
+  app.get('/api/contacts/:contactId/conversations', async (req: Request, res: Response) => {
+    try {
+      const { contactId } = req.params;
+      const { limit = '5', offset = '0' } = req.query;
+      
+      if (!contactId || isNaN(parseInt(contactId, 10))) {
+        return res.status(400).json({ error: 'ID de contato inválido' });
+      }
+      
+      const conversations = [
+        {
+          id: 1,
+          contactId: parseInt(contactId, 10),
+          channelType: 'WhatsApp',
+          subject: 'Suporte técnico',
+          status: 'resolved',
+          messageCount: 8,
+          resolutionTime: 25,
+          createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 dias atrás
+          updatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)  // 6 dias atrás
+        },
+        {
+          id: 2,
+          contactId: parseInt(contactId, 10),
+          channelType: 'WhatsApp',
+          subject: 'Dúvida sobre produto',
+          status: 'resolved',
+          messageCount: 5,
+          resolutionTime: 15,
+          createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 dias atrás
+          updatedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)  // 15 dias atrás
+        },
+        {
+          id: 3,
+          contactId: parseInt(contactId, 10),
+          channelType: 'Email',
+          subject: 'Solicitação de orçamento',
+          status: 'resolved',
+          messageCount: 3,
+          resolutionTime: 120,
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 dias atrás
+          updatedAt: new Date(Date.now() - 29 * 24 * 60 * 60 * 1000)  // 29 dias atrás
+        }
+      ];
+      
+      const limitNum = parseInt(limit as string, 10);
+      const offsetNum = parseInt(offset as string, 10);
+      const paginatedConversations = conversations.slice(offsetNum, offsetNum + limitNum);
+      
+      socketService.emit(ServerEventTypes.TEAM_METRICS_UPDATED, {
+        contactId: parseInt(contactId, 10),
+        action: 'view_history'
+      });
+      
+      res.json(paginatedConversations);
+    } catch (error) {
+      console.error(`Erro ao buscar conversas do contato:`, error);
+      res.status(500).json({ error: 'Erro ao buscar conversas do contato' });
+    }
+  });
 }
