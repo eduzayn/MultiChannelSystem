@@ -1246,7 +1246,7 @@ class DashboardService {
     const results = await Promise.all(stages.map(async stage => {
       const count = await db.select({ value: count() })
         .from(deals)
-        .where(and(
+      .where(and(
           gte(deals.createdAt, dateFrom),
           lte(deals.createdAt, dateTo),
           eq(deals.stage, stage)
@@ -1340,7 +1340,7 @@ class DashboardService {
       default:
         throw new Error(`Tipo de kanban não suportado: ${boardType}`);
     }
-
+    
     return {
       columns,
       config: {
