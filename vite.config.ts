@@ -60,8 +60,6 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
   },
   // Desabilitar HMR em produção
-  hmr: process.env.NODE_ENV === 'production' ? false : {},
-  // Ocultar código-fonte em desenvolvimento
   css: {
     devSourcemap: false
   },
