@@ -90,16 +90,7 @@ process.on('unhandledRejection', (reason, promise) => {
   // Iniciar o serviço de monitoramento de canais
   channelMonitorService.start();
   
-  // Iniciar monitoramento de saúde do sistema após 5 segundos
-  setTimeout(async () => {
-    try {
-      const { healthCheckService } = await import('./services/healthCheckService');
-      healthCheckService.startHealthCheck(60000); // Verificar a cada 1 minuto
-      log("Serviço de monitoramento de saúde iniciado");
-    } catch (error) {
-      log("Aviso: Serviço de monitoramento de saúde não pôde ser iniciado: " + (error instanceof Error ? error.message : String(error)));
-    }
-  }, 5000);
+  log("Monitoramento de saúde temporariamente desativado");
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
