@@ -38,38 +38,42 @@ import ZapiTestPage from "@/pages/ZapiTestPage";
 function Router() {
   return (
     <Switch>
-      <Route path="/login" component={Login} />
-      <Layout>
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/chat" component={Chat} />
-          <Route path="/inbox" component={Inbox} />
-          <Route path="/contacts" component={Contacts} />
-          <Route path="/companies" component={Companies} />
-          <Route path="/deals" component={Deals} />
-          <Route path="/profana" component={ProfAna} />
-          <Route path="/goals" component={Goals} />
-          <Route path="/campaigns" component={Campaigns} />
-          <Route path="/campaigns/new" component={Campaigns} />
-          <Route path="/automations" component={Automations} />
-          <Route path="/reports" component={Reports} />
-          <Route path="/settings" component={Settings} />
-          <Route path="/settings/ai" component={AISettings} />
-          <Route path="/settings/channels" component={ChannelsSettings} />
-          <Route path="/settings/crm" component={CRMSettings} />
-          <Route path="/settings/integrations" component={IntegrationsSettings} />
-          <Route path="/settings/marketing" component={MarketingSettings} />
-          <Route path="/settings/users" component={UsersSettings} />
-          <Route path="/settings/branding" component={BrandingSettings} />
-          <Route path="/settings/company" component={CompanySettings} />
-          <Route path="/settings/goals" component={GoalsSettings} />
-          <Route path="/settings/localization" component={LocalizationSettings} />
-          <Route path="/settings/notifications" component={NotificationsSettings} />
-          <Route path="/settings/security" component={SecuritySettings} />
-          <Route path="/settings/subscription" component={SubscriptionSettings} />
-          <Route component={NotFound} />
-        </Switch>
-      </Layout>
+      <Route path="/login">
+        <Login />
+      </Route>
+      <Route path="/:rest*">
+        <Layout>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/chat" component={Chat} />
+            <Route path="/inbox" component={Inbox} />
+            <Route path="/contacts" component={Contacts} />
+            <Route path="/companies" component={Companies} />
+            <Route path="/deals" component={Deals} />
+            <Route path="/profana" component={ProfAna} />
+            <Route path="/goals" component={Goals} />
+            <Route path="/campaigns" component={Campaigns} />
+            <Route path="/campaigns/new" component={Campaigns} />
+            <Route path="/automations" component={Automations} />
+            <Route path="/reports" component={Reports} />
+            <Route path="/settings" component={Settings} />
+            <Route path="/settings/ai" component={AISettings} />
+            <Route path="/settings/channels" component={ChannelsSettings} />
+            <Route path="/settings/crm" component={CRMSettings} />
+            <Route path="/settings/integrations" component={IntegrationsSettings} />
+            <Route path="/settings/marketing" component={MarketingSettings} />
+            <Route path="/settings/users" component={UsersSettings} />
+            <Route path="/settings/branding" component={BrandingSettings} />
+            <Route path="/settings/company" component={CompanySettings} />
+            <Route path="/settings/goals" component={GoalsSettings} />
+            <Route path="/settings/localization" component={LocalizationSettings} />
+            <Route path="/settings/notifications" component={NotificationsSettings} />
+            <Route path="/settings/security" component={SecuritySettings} />
+            <Route path="/settings/subscription" component={SubscriptionSettings} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
     </Switch>
   );
 }
