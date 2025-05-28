@@ -1,11 +1,14 @@
 import express, { Express, Request, Response, Router } from 'express';
 import { ParsedQs } from 'qs';
 import fileUpload from 'express-fileupload';
-import { Server } from 'http';
+import { Server, createServer } from 'http';
 import { storage } from "./storage";
 import { z } from "zod";
 import { registerZapiRoutes } from "./routes/zapiRoutes";
 import { registerWebhookRoutes } from "./routes/webhookRoutes";
+import { registerKpiRoutes } from "./routes/kpiRoutes";
+import { registerDashboardRoutes } from "./routes/dashboardRoutes";
+import { registerConversationRoutes } from "./routes/conversationRoutes";
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -80,7 +83,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Armazenar o usuário na sessão
       if (req.session) {
-        req.session.user = {
+        (req.session as any).user = {
           id: user.id,
           username: user.username,
           displayName: user.displayName,
@@ -99,11 +102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/auth/me", async (req, res) => {
     try {
-      if (!req.session || !req.session.user) {
+      if (!req.session || !(req.session as any).user) {
         return res.status(401).json({ message: "Não autenticado" });
       }
       
-      const user = await storage.getUser(req.session.user.id);
+      const user = await storage.getUser((req.session as any).user.id);
       
       if (!user) {
         return res.status(404).json({ message: "Usuário não encontrado" });
@@ -720,7 +723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Buscar canal e suas credenciais
-      const channel = await storage.getChannel(channelId);
+      const channel = await (storage as any).getChannel(channelId);
       if (!channel) {
         return res.status(404).json({
           success: false,
@@ -3151,6 +3154,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rotas para visualização de webhooks
   registerWebhookRoutes(app);
+  
+  // Registrar rotas para KPIs e métricas
+  registerKpiRoutes(app);
+  
+  // Registrar rotas para dashboards
+  registerDashboardRoutes(app);
+  
+  // Registrar rotas para integração de conversas com CRM e relatórios
+  registerConversationRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;
