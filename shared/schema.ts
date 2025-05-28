@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, index, date, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, index, date, unique, float } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -88,26 +88,40 @@ export const insertCompanySchema = createInsertSchema(companies).pick({
 export const deals = pgTable("deals", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  value: integer("value"), // In cents
-  stage: text("stage").notNull(), // e.g. "lead", "opportunity", "negotiation", "won", "lost"
+  description: text("description"),
   contactId: integer("contact_id").references(() => contacts.id),
   companyId: integer("company_id").references(() => companies.id),
-  notes: text("notes"),
-  expectedCloseDate: timestamp("expected_close_date"),
+  value: integer("value"), // Valor em centavos
+  currency: text("currency").default("BRL"),
+  stage: text("stage").notNull(), // new, contacted, qualified, proposal, negotiation, won, lost
+  priority: text("priority"), // low, medium, high
+  assignedTo: integer("assigned_to").references(() => users.id),
+  region: text("region"), // Região geográfica do negócio
+  source: text("source"), // Origem do lead
+  tags: jsonb("tags"), // Array de tags
+  customFields: jsonb("custom_fields"), // Campos personalizados
+  metadata: jsonb("metadata"), // Metadados adicionais
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  assignedTo: integer("assigned_to").references(() => users.id),
+  closedAt: timestamp("closed_at"),
 });
 
 export const insertDealSchema = createInsertSchema(deals).pick({
   title: true,
-  value: true,
-  stage: true,
+  description: true,
   contactId: true,
   companyId: true,
-  notes: true,
-  expectedCloseDate: true,
+  value: true,
+  currency: true,
+  stage: true,
+  priority: true,
   assignedTo: true,
+  region: true,
+  source: true,
+  tags: true,
+  customFields: true,
+  metadata: true,
+  closedAt: true,
 });
 
 // Tabela para as conversas
@@ -147,11 +161,11 @@ export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").references(() => conversations.id).notNull(),
   content: text("content").notNull(),
-  type: text("type").default("text"), // text, image, video, audio, document, location, interactive
+  contentType: text("content_type").default("text"), // text, image, file, etc.
   sender: text("sender").notNull(), // user, contact, system
-  status: text("status").default("sent"), // sent, delivered, read, error
-  metadata: jsonb("metadata"), // para metadados adicionais: caption, fileSize, interactiveData, etc
   timestamp: timestamp("timestamp").defaultNow(),
+  status: text("status").default("sent"), // sent, delivered, read
+  metadata: jsonb("metadata"), // Metadados adicionais (ex: coordenadas para mensagens de localização)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -159,11 +173,13 @@ export const messages = pgTable("messages", {
 export const insertMessageSchema = createInsertSchema(messages).pick({
   conversationId: true,
   content: true,
-  type: true,
+  contentType: true,
   sender: true,
+  timestamp: true,
   status: true,
   metadata: true,
-  timestamp: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -665,15 +681,12 @@ export const kpis = pgTable("kpis", {
   name: text("name").notNull(),
   description: text("description"),
   category: text("category").notNull(), // sales, customer_service, marketing, etc.
-  metricType: text("metric_type").notNull(), // count, percentage, amount, ratio, etc.
-  formula: jsonb("formula"), // Como este KPI é calculado (campos/operações)
-  targetValue: integer("target_value"), // Valor alvo (opcional)
-  warningThreshold: integer("warning_threshold"), // Limiar de alerta (opcional)
-  criticalThreshold: integer("critical_threshold"), // Limiar crítico (opcional)
-  compareToHistorical: boolean("compare_to_historical").default(false), // Comparar com histórico
-  historicalPeriods: integer("historical_periods"), // Quanto histórico considerar (em períodos)
+  metricType: text("metric_type").notNull(), // number, percentage, currency, time, ratio
+  warningThreshold: integer("warning_threshold"), // Limite para alertas
+  criticalThreshold: integer("critical_threshold"), // Limite crítico
+  goal: integer("goal"), // Meta a ser alcançada
+  unit: text("unit"), // Unidade de medida (%, R$, min, etc.)
   active: boolean("active").default(true),
-  createdBy: integer("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -683,14 +696,13 @@ export const insertKpiSchema = createInsertSchema(kpis).pick({
   description: true,
   category: true,
   metricType: true,
-  formula: true,
-  targetValue: true,
   warningThreshold: true,
   criticalThreshold: true,
-  compareToHistorical: true,
-  historicalPeriods: true,
+  goal: true,
+  unit: true,
   active: true,
-  createdBy: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 // Análise e Performance: Valores de KPI (medições históricas)
@@ -742,118 +754,139 @@ export const insertDashboardSchema = createInsertSchema(dashboards).pick({
 export const dashboardWidgets = pgTable("dashboard_widgets", {
   id: serial("id").primaryKey(),
   dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
-  title: text("title").notNull(),
-  type: text("type").notNull(), // chart, table, kpi, goal, custom
-  size: text("size").notNull(), // small, medium, large
-  position: jsonb("position").notNull(), // { x, y, w, h } - posição no grid
-  configuration: jsonb("configuration").notNull(), // Configuração específica
-  dataSource: jsonb("data_source").notNull(), // Fonte de dados (queries, filtros, etc)
-  refreshInterval: integer("refresh_interval"), // Em segundos, se automaticamente atualizado
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // kpi, chart, table, map, heatmap, gauge, timeline, funnel, kanban, custom
+  dataSource: text("data_source"), // Nome da fonte de dados (tabela, API, etc.)
+  configuration: jsonb("configuration").notNull(), // Configurações específicas do widget
+  position: jsonb("position").notNull(), // { x: number, y: number, width: number, height: number }
+  refreshInterval: integer("refresh_interval"), // Intervalo de atualização em segundos
+  isVisible: boolean("is_visible").default(true),
+  permissions: jsonb("permissions"), // { roles: string[], teams: number[] }
+  customization: jsonb("customization"), // { theme: string, colors: string[], icons: string[] }
+  filters: jsonb("filters"), // { date: DateRange, category: string[], value: number[] }
+  drillDown: jsonb("drill_down"), // { enabled: boolean, maxLevels: number, types: string[] }
+  events: jsonb("events"), // { click: boolean, hover: boolean, selection: boolean }
+  integration: jsonb("integration"), // { export: string[], share: string[], api: object }
+  accessibility: jsonb("accessibility"), // { role: string, ariaLabel: string, features: object }
+  responsive: jsonb("responsive"), // { breakpoints: object }
+  animation: jsonb("animation"), // { enabled: boolean, duration: number, effects: object }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertDashboardWidgetSchema = createInsertSchema(dashboardWidgets).pick({
-  dashboardId: true,
-  title: true,
-  type: true,
-  size: true,
-  position: true,
-  configuration: true,
-  dataSource: true,
-  refreshInterval: true,
+export const dashboardLayouts = pgTable("dashboard_layouts", {
+  id: serial("id").primaryKey(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  name: text("name").notNull(),
+  layout: jsonb("layout").notNull(), // Array de posições de widgets
+  isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Análise e Performance: Relatórios personalizados
-export const reports = pgTable("reports", {
+export const dashboardThemes = pgTable("dashboard_themes", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  colors: jsonb("colors").notNull(), // { primary, secondary, background, text, etc. }
+  typography: jsonb("typography").notNull(), // { fontFamily, fontSize, fontWeight, etc. }
+  spacing: jsonb("spacing").notNull(), // { padding, margin, gap, etc. }
+  borders: jsonb("borders").notNull(), // { radius, width, style, etc. }
+  shadows: jsonb("shadows").notNull(), // { small, medium, large, etc. }
+  animations: jsonb("animations").notNull(), // { duration, easing, etc. }
+  darkMode: jsonb("dark_mode"), // Configurações específicas para modo escuro
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const dashboardPresets = pgTable("dashboard_presets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  type: text("type").notNull(), // static, dynamic, scheduled
-  format: text("format").notNull(), // pdf, excel, csv, html
-  query: jsonb("query").notNull(), // Definição da consulta (filtros, campos, ordenação)
-  schedule: jsonb("schedule"), // Configuração de agendamento (se agendado)
-  lastRunAt: timestamp("last_run_at"),
-  createdBy: integer("created_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  widgets: jsonb("widgets").notNull(), // Array de configurações de widgets
+  layout: jsonb("layout").notNull(), // Layout padrão dos widgets
+  theme: jsonb("theme"), // Tema padrão
+  category: text("category"), // Categoria do preset (vendas, suporte, etc.)
+  thumbnail: text("thumbnail"), // URL da miniatura
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertReportSchema = createInsertSchema(reports).pick({
-  name: true,
-  description: true,
-  type: true,
-  format: true,
-  query: true,
-  schedule: true,
-  createdBy: true,
-});
-
-// Análise e Performance: Relatórios gerados
-export const reportResults = pgTable("report_results", {
+export const dashboardShares = pgTable("dashboard_shares", {
   id: serial("id").primaryKey(),
-  reportId: integer("report_id").references(() => reports.id).notNull(),
-  fileUrl: text("file_url"), // URL para o arquivo gerado
-  status: text("status").notNull(), // success, error, processing
-  errorMessage: text("error_message"),
-  metadata: jsonb("metadata"), // Metadados do relatório (número de registros, etc)
-  generatedAt: timestamp("generated_at").defaultNow(),
-  expiresAt: timestamp("expires_at"), // Quando o resultado expira (se temporário)
-  createdAt: timestamp("created_at").defaultNow(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  type: text("type").notNull(), // link, embed
+  token: text("token").notNull(),
+  expiresAt: timestamp("expires_at"),
+  permissions: jsonb("permissions"), // { view: boolean, edit: boolean, share: boolean }
+  restrictions: jsonb("restrictions"), // { ip: string[], domain: string[], referer: string[] }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertReportResultSchema = createInsertSchema(reportResults).pick({
-  reportId: true,
-  fileUrl: true,
-  status: true,
-  errorMessage: true,
-  metadata: true,
-  expiresAt: true,
-});
-
-// Análise e Performance: Métricas de atividade do usuário
-export const userActivities = pgTable("user_activities", {
+export const dashboardExports = pgTable("dashboard_exports", {
   id: serial("id").primaryKey(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  format: text("format").notNull(), // pdf, png, xlsx
+  status: text("status").notNull(), // pending, processing, completed, failed
+  url: text("url"), // URL do arquivo exportado
+  error: text("error"), // Mensagem de erro, se houver
+  metadata: jsonb("metadata"), // { size: number, pages: number, etc. }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const dashboardAlerts = pgTable("dashboard_alerts", {
+  id: serial("id").primaryKey(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  widgetId: integer("widget_id").references(() => dashboardWidgets.id).notNull(),
+  name: text("name").notNull(),
+  condition: jsonb("condition").notNull(), // { metric: string, operator: string, value: number }
+  frequency: text("frequency").notNull(), // realtime, hourly, daily, weekly
+  channels: jsonb("channels").notNull(), // { email: boolean, slack: boolean, webhook: boolean }
+  recipients: jsonb("recipients"), // { users: number[], teams: number[], webhooks: string[] }
+  message: text("message"),
+  isActive: boolean("is_active").default(true),
+  lastTriggered: timestamp("last_triggered"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const dashboardAlertHistory = pgTable("dashboard_alert_history", {
+  id: serial("id").primaryKey(),
+  alertId: integer("alert_id").references(() => dashboardAlerts.id).notNull(),
+  triggeredAt: timestamp("triggered_at").notNull(),
+  value: float("value").notNull(),
+  threshold: float("threshold").notNull(),
+  status: text("status").notNull(), // triggered, acknowledged, resolved
+  acknowledgedBy: integer("acknowledged_by").references(() => users.id),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  resolvedAt: timestamp("resolved_at"),
+  metadata: jsonb("metadata"), // Dados adicionais do alerta
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const dashboardComments = pgTable("dashboard_comments", {
+  id: serial("id").primaryKey(),
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  widgetId: integer("widget_id").references(() => dashboardWidgets.id),
   userId: integer("user_id").references(() => users.id).notNull(),
-  activityType: text("activity_type").notNull(), // login, message_sent, deal_created, etc.
-  entityType: text("entity_type"), // contact, deal, message, etc.
-  entityId: integer("entity_id"), // ID da entidade relacionada
-  details: jsonb("details"), // Detalhes específicos da atividade
-  performedAt: timestamp("performed_at").defaultNow(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").defaultNow(),
+  content: text("content").notNull(),
+  type: text("type").default("comment"), // comment, note, insight
+  visibility: text("visibility").default("public"), // public, private, team
+  metadata: jsonb("metadata"), // { position: object, attachments: array }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-export const insertUserActivitySchema = createInsertSchema(userActivities).pick({
-  userId: true,
-  activityType: true,
-  entityType: true,
-  entityId: true,
-  details: true,
-  performedAt: true,
-  ipAddress: true,
-  userAgent: true,
-});
-
-// Análise e Performance: Métricas de performance da equipe
-export const teamPerformanceMetrics = pgTable("team_performance_metrics", {
+export const dashboardBookmarks = pgTable("dashboard_bookmarks", {
   id: serial("id").primaryKey(),
-  teamId: integer("team_id").references(() => teams.id).notNull(),
-  period: text("period").notNull(), // daily, weekly, monthly, quarterly, yearly
-  dateFrom: timestamp("date_from").notNull(),
-  dateTo: timestamp("date_to").notNull(),
-  metrics: jsonb("metrics").notNull(), // JSON com diferentes métricas e valores
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const insertTeamPerformanceMetricSchema = createInsertSchema(teamPerformanceMetrics).pick({
-  teamId: true,
-  period: true,
-  dateFrom: true,
-  dateTo: true,
-  metrics: true,
+  dashboardId: integer("dashboard_id").references(() => dashboards.id).notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  name: text("name"),
+  filters: jsonb("filters"), // Filtros salvos
+  layout: jsonb("layout"), // Layout personalizado
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
 // Export types for marketing and engagement tables
@@ -1122,4 +1155,204 @@ export const insertIntegrationLogSchema = createInsertSchema(integrationLogs).pi
   message: true,
   details: true,
   performedAt: true,
+});
+
+export const insertDashboardWidgetSchema = createInsertSchema(dashboardWidgets).pick({
+  dashboardId: true,
+  name: true,
+  type: true,
+  dataSource: true,
+  configuration: true,
+  position: true,
+  refreshInterval: true,
+  isVisible: true,
+  permissions: true,
+  customization: true,
+  filters: true,
+  drillDown: true,
+  events: true,
+  integration: true,
+  accessibility: true,
+  responsive: true,
+  animation: true
+});
+
+export const insertDashboardLayoutSchema = createInsertSchema(dashboardLayouts).pick({
+  dashboardId: true,
+  name: true,
+  layout: true,
+  isDefault: true
+});
+
+export const insertDashboardThemeSchema = createInsertSchema(dashboardThemes).pick({
+  name: true,
+  colors: true,
+  typography: true,
+  spacing: true,
+  borders: true,
+  shadows: true,
+  animations: true,
+  darkMode: true
+});
+
+export const insertDashboardPresetSchema = createInsertSchema(dashboardPresets).pick({
+  name: true,
+  description: true,
+  widgets: true,
+  layout: true,
+  theme: true,
+  category: true,
+  thumbnail: true
+});
+
+export const insertDashboardShareSchema = createInsertSchema(dashboardShares).pick({
+  dashboardId: true,
+  type: true,
+  token: true,
+  expiresAt: true,
+  permissions: true,
+  restrictions: true
+});
+
+export const insertDashboardExportSchema = createInsertSchema(dashboardExports).pick({
+  dashboardId: true,
+  format: true,
+  status: true,
+  url: true,
+  error: true,
+  metadata: true
+});
+
+export const insertDashboardAlertSchema = createInsertSchema(dashboardAlerts).pick({
+  dashboardId: true,
+  widgetId: true,
+  name: true,
+  condition: true,
+  frequency: true,
+  channels: true,
+  recipients: true,
+  message: true,
+  isActive: true
+});
+
+export const insertDashboardAlertHistorySchema = createInsertSchema(dashboardAlertHistory).pick({
+  alertId: true,
+  triggeredAt: true,
+  value: true,
+  threshold: true,
+  status: true,
+  acknowledgedBy: true,
+  acknowledgedAt: true,
+  resolvedAt: true,
+  metadata: true
+});
+
+export const insertDashboardCommentSchema = createInsertSchema(dashboardComments).pick({
+  dashboardId: true,
+  widgetId: true,
+  userId: true,
+  content: true,
+  type: true,
+  visibility: true,
+  metadata: true
+});
+
+export const insertDashboardBookmarkSchema = createInsertSchema(dashboardBookmarks).pick({
+  dashboardId: true,
+  userId: true,
+  name: true,
+  filters: true,
+  layout: true
+});
+
+// Análise e Performance: Relatórios personalizados
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // static, dynamic, scheduled
+  format: text("format").notNull(), // pdf, excel, csv, html
+  query: jsonb("query").notNull(), // Definição da consulta (filtros, campos, ordenação)
+  schedule: jsonb("schedule"), // Configuração de agendamento (se agendado)
+  lastRunAt: timestamp("last_run_at"),
+  createdBy: integer("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertReportSchema = createInsertSchema(reports).pick({
+  name: true,
+  description: true,
+  type: true,
+  format: true,
+  query: true,
+  schedule: true,
+  createdBy: true
+});
+
+// Análise e Performance: Relatórios gerados
+export const reportResults = pgTable("report_results", {
+  id: serial("id").primaryKey(),
+  reportId: integer("report_id").references(() => reports.id).notNull(),
+  fileUrl: text("file_url"), // URL para o arquivo gerado
+  status: text("status").notNull(), // success, error, processing
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // Metadados do relatório (número de registros, etc)
+  generatedAt: timestamp("generated_at").defaultNow(),
+  expiresAt: timestamp("expires_at"), // Quando o resultado expira (se temporário)
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertReportResultSchema = createInsertSchema(reportResults).pick({
+  reportId: true,
+  fileUrl: true,
+  status: true,
+  errorMessage: true,
+  metadata: true,
+  expiresAt: true
+});
+
+// Análise e Performance: Métricas de atividade do usuário
+export const userActivities = pgTable("user_activities", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  activityType: text("activity_type").notNull(), // login, message_sent, deal_created, etc.
+  entityType: text("entity_type"), // contact, deal, message, etc.
+  entityId: integer("entity_id"), // ID da entidade relacionada
+  details: jsonb("details"), // Detalhes específicos da atividade
+  performedAt: timestamp("performed_at").defaultNow(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+export const insertUserActivitySchema = createInsertSchema(userActivities).pick({
+  userId: true,
+  activityType: true,
+  entityType: true,
+  entityId: true,
+  details: true,
+  performedAt: true,
+  ipAddress: true,
+  userAgent: true
+});
+
+// Análise e Performance: Métricas de performance da equipe
+export const teamPerformanceMetrics = pgTable("team_performance_metrics", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id).notNull(),
+  period: text("period").notNull(), // daily, weekly, monthly, quarterly, yearly
+  dateFrom: timestamp("date_from").notNull(),
+  dateTo: timestamp("date_to").notNull(),
+  metrics: jsonb("metrics").notNull(), // JSON com diferentes métricas e valores
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const insertTeamPerformanceMetricSchema = createInsertSchema(teamPerformanceMetrics).pick({
+  teamId: true,
+  period: true,
+  dateFrom: true,
+  dateTo: true,
+  metrics: true
 });

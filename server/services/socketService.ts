@@ -20,6 +20,12 @@ export enum ServerEventTypes {
   CHANNEL_STATUS_UPDATED = 'channel_status_updated',
   WEBHOOK_RECEIVED = 'webhook_received',
   
+  // Eventos relacionados a KPIs e métricas
+  KPI_UPDATED = 'kpi_updated',
+  DASHBOARD_UPDATED = 'dashboard_updated',
+  TEAM_METRICS_UPDATED = 'team_metrics_updated',
+  GOAL_PROGRESS_UPDATED = 'goal_progress_updated',
+  
   // Eventos de sistema
   NOTIFICATION = 'notification'
 }

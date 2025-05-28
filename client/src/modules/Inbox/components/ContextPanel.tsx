@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -12,7 +12,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useConversationStore } from '../stores/conversationStore';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { api } from '@/lib/api';
+import { socketClient, ServerEventTypes } from '@/lib/socketClient';
+import { formatDistanceToNow, format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import {
   User,
   Phone,
@@ -29,12 +32,13 @@ import {
   Loader2,
   X,
   Edit,
+  RefreshCw,
 } from "lucide-react";
 
 const ContextPanel = () => {
   const { selectedConversation } = useConversationStore();
   const [activeTab, setActiveTab] = useState('profile');
-
+  
   // Consulta para buscar informações do contato
   const { data: contactData, isLoading: loadingContact } = useQuery({
     queryKey: ['/api/contacts', selectedConversation?.contactId],
@@ -42,8 +46,8 @@ const ContextPanel = () => {
       if (!selectedConversation?.contactId) return null;
       
       try {
-        const response = await axios.get(`/api/contacts/${selectedConversation.contactId}`);
-        return response.data;
+        const { data } = await api.get(`/api/contacts/${selectedConversation.contactId}`);
+        return data;
       } catch (error) {
         console.error('Erro ao buscar dados do contato:', error);
         return null;
@@ -51,6 +55,62 @@ const ContextPanel = () => {
     },
     enabled: !!selectedConversation?.contactId,
   });
+  
+  // Consulta para buscar métricas da conversa
+  const { 
+    data: conversationMetrics, 
+    isLoading: loadingMetrics,
+    refetch: refetchMetrics
+  } = useQuery({
+    queryKey: ['/api/conversations/metrics', selectedConversation?.id],
+    queryFn: async () => {
+      if (!selectedConversation?.id) return null;
+      
+      try {
+        const { data } = await api.get(`/api/conversations/${selectedConversation.id}/metrics`);
+        return data;
+      } catch (error) {
+        console.error('Erro ao buscar métricas da conversa:', error);
+        return null;
+      }
+    },
+    enabled: !!selectedConversation?.id,
+  });
+  
+  // Consulta para buscar histórico de conversas do contato
+  const { 
+    data: conversationHistory, 
+    isLoading: loadingHistory 
+  } = useQuery({
+    queryKey: ['/api/contacts/conversations', selectedConversation?.contactId],
+    queryFn: async () => {
+      if (!selectedConversation?.contactId) return null;
+      
+      try {
+        const { data } = await api.get(`/api/contacts/${selectedConversation.contactId}/conversations?limit=5`);
+        return data;
+      } catch (error) {
+        console.error('Erro ao buscar histórico de conversas:', error);
+        return null;
+      }
+    },
+    enabled: !!selectedConversation?.contactId && activeTab === 'history',
+  });
+  
+  useEffect(() => {
+    if (!selectedConversation?.id) return;
+    
+    const unsubscribe = socketClient.on(
+      ServerEventTypes.CONVERSATION_UPDATED, 
+      (data: { id: number; status?: string }) => {
+        if (data.id === Number(selectedConversation.id)) {
+          refetchMetrics();
+        }
+      }
+    );
+    
+    return unsubscribe;
+  }, [selectedConversation?.id, refetchMetrics]);
 
   // Se nenhuma conversa estiver selecionada, exibir mensagem informativa
   if (!selectedConversation) {
@@ -150,30 +210,61 @@ const ContextPanel = () => {
               {/* Resumo de interações */}
               <Card>
                 <CardHeader className="p-3">
-                  <CardTitle className="text-sm">Resumo de Interações</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Resumo de Interações</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6" 
+                      onClick={() => refetchMetrics()}
+                      disabled={loadingMetrics}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${loadingMetrics ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-3 pt-0 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center">
-                      <MessageCircle className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>Total de conversas</span>
+                  {loadingMetrics ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     </div>
-                    <span className="font-medium">23</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>Tempo médio de resposta</span>
-                    </div>
-                    <span className="font-medium">15min</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center">
-                      <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>Última interação</span>
-                    </div>
-                    <span className="font-medium">Hoje</span>
-                  </div>
+                  ) : conversationMetrics ? (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center">
+                          <MessageCircle className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span>Total de mensagens</span>
+                        </div>
+                        <span className="font-medium">{conversationMetrics.messageCount || 0}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span>Tempo de resposta</span>
+                        </div>
+                        <span className="font-medium">
+                          {conversationMetrics.responseTime 
+                            ? `${Math.round(conversationMetrics.responseTime)}min` 
+                            : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center">
+                          <CalendarClock className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span>Satisfação do cliente</span>
+                        </div>
+                        <span className="font-medium">
+                          {conversationMetrics.customerSatisfaction 
+                            ? `${conversationMetrics.customerSatisfaction}/5` 
+                            : 'N/A'}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-1">
+                      Dados não disponíveis
+                    </p>
+                  )}
                 </CardContent>
               </Card>
               
@@ -212,24 +303,70 @@ const ContextPanel = () => {
             <CardHeader className="p-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Histórico de Interações</CardTitle>
-                <Button variant="outline" size="sm" className="h-7 text-xs">Ver Tudo</Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 text-xs"
+                  onClick={() => window.open(`/contacts/${selectedConversation?.contactId}/conversations`, '_blank')}
+                >
+                  Ver Tudo
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y">
-                {[1, 2, 3].map((item) => (
-                  <div key={item} className="p-3 hover:bg-muted/50 cursor-pointer">
-                    <div className="flex items-center justify-between mb-1">
-                      <Badge variant="outline" className="text-[10px] h-4 px-1">
-                        WhatsApp
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">15 dias atrás</span>
+              {loadingHistory ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : conversationHistory && conversationHistory.length > 0 ? (
+                <div className="divide-y">
+                  {conversationHistory.map((conversation: {
+                    id: number;
+                    contactId: number;
+                    channelType?: string;
+                    subject?: string;
+                    status: string;
+                    messageCount?: number;
+                    resolutionTime?: number;
+                    createdAt: string | Date;
+                    updatedAt: string | Date;
+                  }) => (
+                    <div 
+                      key={conversation.id} 
+                      className="p-3 hover:bg-muted/50 cursor-pointer"
+                      onClick={() => window.open(`/inbox?conversation=${conversation.id}`, '_blank')}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="outline" className="text-[10px] h-4 px-1">
+                          {conversation.channelType || 'WhatsApp'}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {conversation.updatedAt ? 
+                            formatDistanceToNow(new Date(conversation.updatedAt), { 
+                              addSuffix: true, 
+                              locale: ptBR 
+                            }) : 'Data desconhecida'}
+                        </span>
+                      </div>
+                      <p className="text-sm mb-1 font-medium">
+                        {conversation.subject || 'Conversa sem assunto'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {conversation.messageCount || '0'} mensagens · 
+                        {conversation.status === 'resolved' ? ' Resolvido' : ' Em andamento'}
+                        {conversation.resolutionTime ? 
+                          ` em ${Math.round(conversation.resolutionTime)} minutos` : ''}
+                      </p>
                     </div>
-                    <p className="text-sm mb-1 font-medium">Atendimento sobre produto</p>
-                    <p className="text-xs text-muted-foreground">5 mensagens · Resolvido em 15 minutos</p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhuma conversa anterior encontrada para este contato.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
           

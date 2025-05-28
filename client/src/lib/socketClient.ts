@@ -19,6 +19,12 @@ export enum ServerEventTypes {
   CHANNEL_STATUS_UPDATED = 'channel_status_updated',
   WEBHOOK_RECEIVED = 'webhook_received',
   
+  // Eventos relacionados a KPIs e métricas
+  KPI_UPDATED = 'kpi_updated',
+  DASHBOARD_UPDATED = 'dashboard_updated',
+  TEAM_METRICS_UPDATED = 'team_metrics_updated',
+  GOAL_PROGRESS_UPDATED = 'goal_progress_updated',
+  
   // Eventos de sistema
   NOTIFICATION = 'notification'
 }
@@ -253,6 +259,19 @@ class SocketClient {
     }
     
     this.socket.emit(ClientEventTypes.READ_MESSAGES, { conversationId, userId, messageIds });
+  }
+
+  /**
+   * Emite um evento para o servidor
+   */
+  emit(event: string, data: any) {
+    if (!this.socket || !this.socket.connected) {
+      console.warn(`Socket não está conectado. Não é possível emitir evento ${event}.`);
+      return;
+    }
+    
+    this.socket.emit(event, data);
+    console.log(`Evento ${event} emitido:`, data);
   }
 
   /**

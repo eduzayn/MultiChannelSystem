@@ -1,5 +1,3 @@
-import { User } from './user';
-
 export interface Dashboard {
   id: number;
   name: string;
@@ -35,7 +33,18 @@ export interface DashboardWidget {
   data?: any; // Dados dinâmicos do widget
 }
 
-export type WidgetType = 'chart' | 'table' | 'kpi' | 'goal' | 'custom';
+export type WidgetType = 
+  | 'chart' 
+  | 'table' 
+  | 'kpi' 
+  | 'goal' 
+  | 'custom'
+  | 'gauge'
+  | 'map'
+  | 'heatmap'
+  | 'timeline'
+  | 'funnel'
+  | 'kanban';
 
 export type WidgetSize = 'small' | 'medium' | 'large';
 
@@ -46,9 +55,35 @@ export interface WidgetPosition {
   h: number;
 }
 
+export interface TimelineConfig {
+  groupBy?: 'date' | string;
+  dateFormat?: string;
+  showAxis?: boolean;
+  colorBy?: string;
+}
+
+export interface FunnelConfig {
+  direction?: 'vertical' | 'horizontal';
+  showValues?: boolean;
+  showPercentage?: boolean;
+}
+
+export interface KanbanConfig {
+  dragEnabled?: boolean;
+  cardTemplate?: string;
+  columns?: Array<{
+    id: string;
+    title: string;
+    color?: string;
+  }>;
+}
+
 export interface WidgetConfiguration {
   chartType?: 'line' | 'bar' | 'pie' | 'area' | 'scatter';
-  colors?: string[];
+  colors?: {
+    default?: string;
+    [key: string]: string | undefined;
+  };
   showLegend?: boolean;
   showGrid?: boolean;
   stacked?: boolean;
@@ -64,6 +99,41 @@ export interface WidgetConfiguration {
       };
     };
   };
+  // Configurações específicas do gauge
+  thresholds?: Array<{
+    value: number;
+    color: string;
+    label?: string;
+  }>;
+  // Configurações específicas do mapa
+  mapConfig?: {
+    center: [number, number]; // [latitude, longitude]
+    zoom: number;
+    style: string;
+    markers?: Array<{
+      position: [number, number];
+      label?: string;
+      color?: string;
+    }>;
+    regions?: Array<{
+      coordinates: Array<[number, number]>;
+      color?: string;
+      label?: string;
+    }>;
+  };
+  // Configurações específicas do heatmap
+  heatmapConfig?: {
+    xAxis: string;
+    yAxis: string;
+    colorScale: string[];
+    showValues: boolean;
+  };
+  // Configurações específicas do timeline
+  timelineConfig?: TimelineConfig;
+  // Configurações específicas do funil
+  funnelConfig?: FunnelConfig;
+  // Configurações específicas do kanban
+  kanbanConfig?: KanbanConfig;
   customOptions?: Record<string, any>;
 }
 
