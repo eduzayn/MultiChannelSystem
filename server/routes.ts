@@ -9,6 +9,7 @@ import { registerWebhookRoutes } from "./routes/webhookRoutes";
 import { registerKpiRoutes } from "./routes/kpiRoutes";
 import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerConversationRoutes } from "./routes/conversationRoutes";
+import { registerUserActivityRoutes } from "./routes/userActivityRoutes";
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -3163,6 +3164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registrar rotas para integração de conversas com CRM e relatórios
   registerConversationRoutes(app);
+  
+  // Registrar rotas para atividades do usuário
+  registerUserActivityRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

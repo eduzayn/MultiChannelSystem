@@ -262,6 +262,19 @@ class SocketClient {
   }
 
   /**
+   * Emite um evento para o servidor
+   */
+  emit(event: string, data: any) {
+    if (!this.socket || !this.socket.connected) {
+      console.warn(`Socket não está conectado. Não é possível emitir evento ${event}.`);
+      return;
+    }
+    
+    this.socket.emit(event, data);
+    console.log(`Evento ${event} emitido:`, data);
+  }
+
+  /**
    * Desconecta o socket
    */
   disconnect() {

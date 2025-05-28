@@ -159,7 +159,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
           }
         }));
         
-        console.log('Evento contact_updated:', {
+        socketClient.emit(ServerEventTypes.CONTACT_UPDATED, {
           conversationId,
           contactId: data.id
         });
@@ -234,7 +234,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         
         get().logUserActivity('update_conversation_status', conversationId, { status });
         
-        console.log('Evento CONVERSATION_UPDATED:', {
+        socketClient.emit(ServerEventTypes.CONVERSATION_UPDATED, {
           id: conversationId,
           status
         });
