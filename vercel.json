@@ -28,7 +28,7 @@
     },
     {
       "src": "^/favicon.ico",
-      "dest": "/dist/favicon.ico"
+      "dest": "/dist/logo-educhat.png"
     },
     {
       "handle": "filesystem"
