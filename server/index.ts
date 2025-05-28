@@ -1,3 +1,4 @@
+import './config'; // Importar configuração primeiro para carregar variáveis de ambiente
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { registerRoutes } from "./routes";
@@ -8,6 +9,7 @@ import MemoryStore from "memorystore";
 import { socketService } from "./services/socketService";
 import { channelMonitorService } from "./services/channelMonitorService";
 import { securityMiddleware } from './middleware/security';
+import { config } from './config';
 
 const app = express();
 app.use(express.json());
@@ -49,12 +51,12 @@ app.use((req, res, next) => {
 // Configuração de sessão
 const MemoryStoreSession = MemoryStore(session);
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'security-crm-secret',
+  secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 86400000 }, // 24 horas
+  cookie: { secure: false, maxAge: config.session.maxAge },
   store: new MemoryStoreSession({
-    checkPeriod: 86400000 // limpa as sessões expiradas a cada 24 horas
+    checkPeriod: config.session.maxAge // limpa as sessões expiradas a cada 24 horas
   })
 }));
 

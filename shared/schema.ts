@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, index, date, unique, float } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, varchar, jsonb, index, date, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -855,8 +855,8 @@ export const dashboardAlertHistory = pgTable("dashboard_alert_history", {
   id: serial("id").primaryKey(),
   alertId: integer("alert_id").references(() => dashboardAlerts.id).notNull(),
   triggeredAt: timestamp("triggered_at").notNull(),
-  value: float("value").notNull(),
-  threshold: float("threshold").notNull(),
+  value: integer("value").notNull(),
+  threshold: integer("threshold").notNull(),
   status: text("status").notNull(), // triggered, acknowledged, resolved
   acknowledgedBy: integer("acknowledged_by").references(() => users.id),
   acknowledgedAt: timestamp("acknowledged_at"),
@@ -1235,17 +1235,23 @@ export const insertDashboardAlertSchema = createInsertSchema(dashboardAlerts).pi
   isActive: true
 });
 
-export const insertDashboardAlertHistorySchema = createInsertSchema(dashboardAlertHistory).pick({
-  alertId: true,
-  triggeredAt: true,
-  value: true,
-  threshold: true,
-  status: true,
-  acknowledgedBy: true,
-  acknowledgedAt: true,
-  resolvedAt: true,
-  metadata: true
-});
+export const insertDashboardAlertHistorySchema = createInsertSchema(dashboardAlertHistory)
+  .omit({ value: true, threshold: true })
+  .extend({
+    value: z.number(),
+    threshold: z.number()
+  })
+  .pick({
+    alertId: true,
+    triggeredAt: true,
+    value: true,
+    threshold: true,
+    status: true,
+    acknowledgedBy: true,
+    acknowledgedAt: true,
+    resolvedAt: true,
+    metadata: true
+  });
 
 export const insertDashboardCommentSchema = createInsertSchema(dashboardComments).pick({
   dashboardId: true,
