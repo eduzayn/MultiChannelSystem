@@ -1,5 +1,5 @@
 import { db } from '../db';
-import { kpis, kpiValues, userActivities, messages, conversations, deals } from '../../shared/schema';
+import { kpis, kpiValues, userActivities, messages, conversations, deals, adminNotifications } from '../../shared/schema';
 import { eq, and, gte, lte, sql, desc, count, sum, avg } from 'drizzle-orm';
 import { insertKpiSchema, insertKpiValueSchema } from '../../shared/schema';
 import type { InferSelectModel } from 'drizzle-orm';
@@ -77,11 +77,42 @@ class KpiService {
   }
 
   /**
-   * Registra um novo valor para um KPI
+   * Verifica se um KPI está abaixo da meta e cria alerta se necessário
+   */
+  private async checkKpiThreshold(kpi: Kpi, currentValue: number): Promise<void> {
+    if (!kpi.warningThreshold || currentValue >= kpi.warningThreshold) {
+      return;
+    }
+
+    // Criar notificação de alerta usando o schema correto
+    const notification = {
+      title: `Alerta de KPI: ${kpi.name}`,
+      message: `O KPI "${kpi.name}" está abaixo da meta. Valor atual: ${currentValue}, Meta: ${kpi.warningThreshold}`,
+      type: 'kpi_alert',
+      priority: 'high',
+      isGlobal: false,
+      targetRoles: ['admin', 'manager'],
+      startDate: new Date(),
+      requiresAcknowledgement: true
+    };
+
+    await db.insert(adminNotifications).values(notification);
+  }
+
+  /**
+   * Registra um novo valor para um KPI e verifica alertas
    */
   async createKpiValue(kpiValue: InsertKpiValue): Promise<KpiValue> {
     const results = await db.insert(kpiValues).values(kpiValue).returning();
-    return results[0];
+    const newValue = results[0];
+
+    // Buscar o KPI completo para verificar thresholds
+    const kpi = await this.getKpi(kpiValue.kpiId);
+    if (kpi) {
+      await this.checkKpiThreshold(kpi, kpiValue.value);
+    }
+
+    return newValue;
   }
 
   /**
@@ -95,6 +126,7 @@ class KpiService {
         description: 'Tempo médio entre mensagens do cliente e respostas do atendente',
         category: 'customer_service',
         metricType: 'time',
+        warningThreshold: 900, // 15 minutos em segundos
       });
 
       const responseTimeResult = await db.execute(sql`
@@ -120,7 +152,7 @@ class KpiService {
       
       await this.createKpiValue({
         kpiId: responseTimeKpi.id,
-        value: Math.round(avgResponseTime * 100), // Armazenar em centésimos para preservar 2 casas decimais
+        value: Math.round(avgResponseTime * 100),
         textValue: `${avgResponseTime.toFixed(2)} min`,
         dateFrom,
         dateTo,
@@ -133,6 +165,7 @@ class KpiService {
         description: 'Percentual de conversas marcadas como resolvidas',
         category: 'customer_service',
         metricType: 'percentage',
+        warningThreshold: 7000, // 70% (valor armazenado em centésimos)
       });
 
       const totalConversations = await db.select({ count: count() }).from(conversations)
@@ -154,7 +187,7 @@ class KpiService {
 
       await this.createKpiValue({
         kpiId: resolutionRateKpi.id,
-        value: Math.round(resolutionRate * 100), // Armazenar em centésimos para preservar 2 casas decimais
+        value: Math.round(resolutionRate * 100),
         textValue: `${resolutionRate.toFixed(2)}%`,
         dateFrom,
         dateTo,
@@ -167,6 +200,7 @@ class KpiService {
         description: 'Média de mensagens enviadas por hora de trabalho',
         category: 'customer_service',
         metricType: 'ratio',
+        warningThreshold: 1000, // 10 mensagens/hora (valor armazenado em centésimos)
       });
 
       const messagesSent = await db.select({ count: count() }).from(messages)
@@ -184,7 +218,7 @@ class KpiService {
 
       await this.createKpiValue({
         kpiId: productivityKpi.id,
-        value: Math.round(productivity * 100), // Armazenar em centésimos para preservar 2 casas decimais
+        value: Math.round(productivity * 100),
         textValue: `${productivity.toFixed(2)} msgs/h`,
         dateFrom,
         dateTo,
@@ -208,6 +242,10 @@ class KpiService {
         description: 'Percentual de leads convertidos em vendas',
         category: 'sales',
         metricType: 'percentage',
+        warningThreshold: 2000, // 20% (valor armazenado em centésimos)
+        criticalThreshold: 1500, // 15%
+        goal: 3000, // 30%
+        unit: '%'
       });
 
       const totalLeads = await db.select({ count: count() }).from(deals)
@@ -229,7 +267,7 @@ class KpiService {
 
       await this.createKpiValue({
         kpiId: conversionRateKpi.id,
-        value: Math.round(conversionRate * 100), // Armazenar em centésimos para preservar 2 casas decimais
+        value: Math.round(conversionRate * 100),
         textValue: `${conversionRate.toFixed(2)}%`,
         dateFrom,
         dateTo,
@@ -241,7 +279,11 @@ class KpiService {
         name: 'Valor Médio de Venda',
         description: 'Valor médio das vendas fechadas',
         category: 'sales',
-        metricType: 'amount',
+        metricType: 'currency',
+        warningThreshold: 50000, // R$ 500,00 (valor armazenado em centavos)
+        criticalThreshold: 30000, // R$ 300,00
+        goal: 100000, // R$ 1.000,00
+        unit: 'BRL'
       });
 
       const dealValues = await db.select({ 
@@ -253,14 +295,12 @@ class KpiService {
           eq(deals.stage, 'won')
         ));
 
-      const avgValue = dealValues[0]?.avg || 0;
-      
-      const numericAvgValue = Number(avgValue || 0);
+      const avgValue = Number(dealValues[0]?.avg || 0);
       
       await this.createKpiValue({
         kpiId: avgDealValueKpi.id,
-        value: Math.round(numericAvgValue),
-        textValue: `R$ ${(numericAvgValue / 100).toFixed(2)}`, // Valor em centavos para reais
+        value: Math.round(avgValue),
+        textValue: `R$ ${(avgValue / 100).toFixed(2)}`,
         dateFrom,
         dateTo,
         periodType: this.determinePeriodType(dateFrom, dateTo),
@@ -272,6 +312,10 @@ class KpiService {
         description: 'Tempo médio do primeiro contato até o fechamento da venda',
         category: 'sales',
         metricType: 'time',
+        warningThreshold: 4320, // 72 horas em minutos
+        criticalThreshold: 5760, // 96 horas em minutos
+        goal: 2880, // 48 horas em minutos
+        unit: 'min'
       });
 
       const cycleResult = await db.execute(sql`
@@ -286,23 +330,140 @@ class KpiService {
             AND d.created_at BETWEEN ${dateFrom} AND ${dateTo}
           GROUP BY d.id, d.created_at
         )
-        SELECT AVG(EXTRACT(EPOCH FROM (deal_created - first_contact)) / 86400) AS avg_days
+        SELECT AVG(EXTRACT(EPOCH FROM (deal_created - first_contact)) / 60) AS avg_minutes
         FROM first_contacts
         WHERE first_contact IS NOT NULL
       `);
 
-      const avgDaysRaw = cycleResult.rows[0]?.avg_days;
-      const avgDays = typeof avgDaysRaw === 'number' ? avgDaysRaw : 0;
+      const avgMinutesRaw = cycleResult.rows[0]?.avg_minutes;
+      const avgMinutes = typeof avgMinutesRaw === 'number' ? avgMinutesRaw : 0;
       
       await this.createKpiValue({
         kpiId: salesCycleKpi.id,
-        value: Math.round(avgDays * 100), // Armazenar em centésimos para preservar 2 casas decimais
-        textValue: `${avgDays.toFixed(2)} dias`,
+        value: Math.round(avgMinutes),
+        textValue: `${Math.floor(avgMinutes / 60)}h ${Math.round(avgMinutes % 60)}m`,
         dateFrom,
         dateTo,
         periodType: this.determinePeriodType(dateFrom, dateTo),
-        metadata: { unit: 'days' }
+        metadata: { unit: 'minutes' }
       });
+
+      const salesValueKpi = await this.getOrCreateKpi({
+        name: 'Valor Total de Vendas',
+        description: 'Soma do valor de todas as vendas no período',
+        category: 'sales',
+        metricType: 'currency',
+        warningThreshold: 1000000, // R$ 10.000,00 (valor armazenado em centavos)
+        criticalThreshold: 500000, // R$ 5.000,00
+        goal: 2000000, // R$ 20.000,00
+        unit: 'BRL'
+      });
+
+      const totalSales = await db.select({ 
+        sum: sum(deals.value) 
+      }).from(deals)
+        .where(and(
+          gte(deals.createdAt, dateFrom),
+          lte(deals.createdAt, dateTo),
+          eq(deals.stage, 'won')
+        ));
+      
+      const totalSalesValue = Number(totalSales[0]?.sum || 0);
+      
+      await this.createKpiValue({
+        kpiId: salesValueKpi.id,
+        value: Math.round(totalSalesValue),
+        textValue: `R$ ${(totalSalesValue / 100).toFixed(2)}`,
+        dateFrom,
+        dateTo,
+        periodType: this.determinePeriodType(dateFrom, dateTo),
+        metadata: { currency: 'BRL' }
+      });
+
+      const avgTicketKpi = await this.getOrCreateKpi({
+        name: 'Ticket Médio',
+        description: 'Valor médio por venda',
+        category: 'sales',
+        metricType: 'currency',
+        warningThreshold: 50000, // R$ 500,00 (valor armazenado em centavos)
+        criticalThreshold: 30000, // R$ 300,00
+        goal: 100000, // R$ 1.000,00
+        unit: 'BRL'
+      });
+
+      const avgTicket = totalSalesValue > 0 ? totalSalesValue / won : 0;
+      
+      await this.createKpiValue({
+        kpiId: avgTicketKpi.id,
+        value: Math.round(avgTicket),
+        textValue: `R$ ${(avgTicket / 100).toFixed(2)}`,
+        dateFrom,
+        dateTo,
+        periodType: this.determinePeriodType(dateFrom, dateTo),
+        metadata: { currency: 'BRL' }
+      });
+
+      // Novos KPIs de vendas
+      const leadsBySourceKpi = await this.getOrCreateKpi({
+        name: 'Leads por Origem',
+        description: 'Distribuição de leads por fonte de origem',
+        category: 'sales',
+        metricType: 'ratio',
+        unit: 'leads'
+      });
+
+      const leadsBySource = await db.select({
+        source: deals.source,
+        count: count()
+      })
+      .from(deals)
+      .where(and(
+        gte(deals.createdAt, dateFrom),
+        lte(deals.createdAt, dateTo)
+      ))
+      .groupBy(deals.source);
+
+      await this.createKpiValue({
+        kpiId: leadsBySourceKpi.id,
+        value: leadsBySource.length,
+        textValue: JSON.stringify(leadsBySource),
+        dateFrom,
+        dateTo,
+        periodType: this.determinePeriodType(dateFrom, dateTo),
+        metadata: { sources: leadsBySource }
+      });
+
+      const dealsByRegionKpi = await this.getOrCreateKpi({
+        name: 'Vendas por Região',
+        description: 'Distribuição geográfica das vendas',
+        category: 'sales',
+        metricType: 'ratio',
+        unit: 'deals'
+      });
+
+      const dealsByRegion = await db.select({
+        region: deals.region,
+        count: count(),
+        value: sum(deals.value)
+      })
+      .from(deals)
+      .where(and(
+        gte(deals.createdAt, dateFrom),
+        lte(deals.createdAt, dateTo),
+        eq(deals.stage, 'won')
+      ))
+      .groupBy(deals.region);
+
+      await this.createKpiValue({
+        kpiId: dealsByRegionKpi.id,
+        value: dealsByRegion.length,
+        textValue: JSON.stringify(dealsByRegion),
+        dateFrom,
+        dateTo,
+        periodType: this.determinePeriodType(dateFrom, dateTo),
+        metadata: { regions: dealsByRegion }
+      });
+
     } catch (error) {
       console.error('Erro ao atualizar KPIs de vendas:', error);
       throw error;
