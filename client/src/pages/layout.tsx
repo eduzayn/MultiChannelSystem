@@ -13,7 +13,14 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const { isMobileOpen, closeMobileSidebar } = useSidebarStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading } = useAuthStore();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation('/login');
+    }
+  }, [isAuthenticated, isLoading, setLocation]);
 
   // Close sidebar when clicking outside of it
   useEffect(() => {
@@ -36,8 +43,12 @@ export default function Layout({ children }: LayoutProps) {
     };
   }, [isMobileOpen, closeMobileSidebar]);
 
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  }
+
   if (!isAuthenticated) {
-    return <div>Please log in</div>;
+    return null; // O redirecionamento será feito pelo useEffect
   }
 
   return (

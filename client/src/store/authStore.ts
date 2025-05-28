@@ -18,15 +18,13 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: {
-    id: '1',
-    name: 'Ana Silva',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80',
-    role: userRoles.ADMIN,
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
   setUser: (user) => set({ user, isAuthenticated: !!user }),
-  login: (user) => set({ user, isAuthenticated: true }),
-  logout: () => set({ user: null, isAuthenticated: false }),
+  login: (user) => set({ user, isAuthenticated: true, isLoading: false }),
+  logout: () => {
+    localStorage.removeItem('auth_token');
+    set({ user: null, isAuthenticated: false, isLoading: false });
+  },
 }));
