@@ -1,97 +1,190 @@
-import { Headphones, HandshakeIcon, Clock, Smile } from 'lucide-react';
+import { Headphones, HandshakeIcon, Clock, Smile, Loader2 } from 'lucide-react';
 import { StatsCard } from '@/components/stats-card';
 import { ActivityFeed } from '@/components/activity-feed';
 import { Attendances } from '@/components/attendances';
 import { TopPerformers } from '@/components/top-performers';
 import { QuickActions } from '@/components/quick-actions';
+import { useKpis, useKpiValues } from '@/hooks/useKpis';
+import { useUserActivities, useTeamPerformance, useTeamRanking } from '@/hooks/useTeamMetrics';
+import { useDefaultDashboard, useDashboardWidgets } from '@/hooks/useDashboard';
+import { useEffect, useState } from 'react';
 
 export default function Dashboard() {
-  // Activity data
-  const activities = [
-    {
-      id: '1',
-      title: 'Nova mensagem recebida',
-      description: 'Carlos Oliveira via WhatsApp',
-      icon: 'message' as const,
-      timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-    },
-    {
-      id: '2',
-      title: 'Oportunidade fechada',
-      description: 'Plano Premium - Empresa ABC Ltda.',
-      icon: 'check' as const,
-      timestamp: new Date(Date.now() - 27 * 60 * 1000), // 27 minutes ago
-    },
-    {
-      id: '3',
-      title: 'Novo contato adicionado',
-      description: 'Mariana Santos via formulário do site',
-      icon: 'user' as const,
-      timestamp: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-    },
-    {
-      id: '4',
-      title: 'Alerta de SLA',
-      description: 'Ticket #5782 - 4 horas sem resposta',
-      icon: 'alert' as const,
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    },
-  ];
-
-  // Attendances data
-  const attendances = [
-    {
-      id: '1',
-      name: 'Maria Silva',
-      channel: 'WhatsApp',
-      subject: 'Dúvida sobre plano de assinatura',
-      status: 'success' as const,
-      time: '4m',
-    },
-    {
-      id: '2',
-      name: 'João Costa',
-      channel: 'Chat',
-      subject: 'Solicitação de demonstração',
-      status: 'warning' as const,
-      time: '12m',
-    },
-    {
-      id: '3',
-      name: 'Empresa XYZ',
-      channel: 'Email',
-      subject: 'Reclamação sobre atendimento',
-      status: 'danger' as const,
-      time: '28m',
-      isUrgent: true,
-    },
-  ];
-
-  // Top performers data
-  const performers = [
-    {
-      id: '1',
-      name: 'Lucas Fernandes',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=crop&w=32&h=32&q=80',
-      attendances: 24,
-      score: 98,
-    },
-    {
-      id: '2',
-      name: 'Carla Santos',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&auto=format&fit=crop&w=32&h=32&q=80',
-      attendances: 18,
-      score: 95,
-    },
-    {
-      id: '3',
-      name: 'André Martins',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-1.2.1&auto=format&fit=crop&w=32&h=32&q=80',
-      attendances: 16,
-      score: 92,
-    },
-  ];
-
+  const [dateRange, setDateRange] = useState<'today' | 'week' | 'month'>('today');
+  const [teamId, setTeamId] = useState<number>(1); // ID da equipe padrão
+  
+  const { data: kpis, isLoading: loadingKpis } = useKpis('customer_service');
+  
+  const { data: userActivities, isLoading: loadingActivities } = useUserActivities(1, 10); // ID do usuário atual
+  
+  const { data: teamPerformance, isLoading: loadingTeamPerformance } = useTeamPerformance(
+    teamId,
+    dateRange === 'today' ? 'daily' : dateRange === 'week' ? 'weekly' : 'monthly'
+  );
+  
+  const { data: teamRanking, isLoading: loadingRanking } = useTeamRanking(
+    teamId,
+    'conversationsHandled',
+    dateRange === 'today' ? 'daily' : dateRange === 'week' ? 'weekly' : 'monthly',
+    5
+  );
+  
+  const { data: defaultDashboard, isLoading: loadingDashboard } = useDefaultDashboard();
+  
+  const { data: dashboardWidgets, isLoading: loadingWidgets } = useDashboardWidgets(
+    defaultDashboard?.id || 0
+  );
+  
+  const { data: responseTimeKpi } = useKpiValues(
+    kpis?.find((k: { name: string; id: number }) => k.name === 'Tempo Médio de Resposta')?.id || 0,
+    'daily',
+    1
+  );
+  
+  const { data: resolutionRateKpi } = useKpiValues(
+    kpis?.find((k: { name: string; id: number }) => k.name === 'Taxa de Resolução')?.id || 0,
+    'daily',
+    1
+  );
+  
+  const { data: productivityKpi } = useKpiValues(
+    kpis?.find((k: { name: string; id: number }) => k.name === 'Produtividade do Atendente')?.id || 0,
+    'daily',
+    1
+  );
+  
+  const { data: satisfactionKpi } = useKpiValues(
+    kpis?.find((k: { name: string; id: number }) => k.name === 'Satisfação do Cliente')?.id || 0,
+    'daily',
+    1
+  );
+  
+  const activities = userActivities?.map((activity: { 
+    id: number; 
+    activityType: string; 
+    details?: any; 
+    performedAt: string;
+  }) => ({
+    id: activity.id.toString(),
+    title: activity.activityType === 'message_received' 
+      ? 'Nova mensagem recebida'
+      : activity.activityType === 'deal_created'
+      ? 'Oportunidade criada'
+      : activity.activityType === 'contact_created'
+      ? 'Novo contato adicionado'
+      : activity.activityType === 'sla_alert'
+      ? 'Alerta de SLA'
+      : activity.activityType,
+    description: activity.details?.description || '',
+    icon: activity.activityType === 'message_received' 
+      ? 'message' 
+      : activity.activityType === 'deal_created'
+      ? 'check'
+      : activity.activityType === 'contact_created'
+      ? 'user'
+      : activity.activityType === 'sla_alert'
+      ? 'alert'
+      : 'info',
+    timestamp: new Date(activity.performedAt),
+  })) || [];
+  
+  const [attendances, setAttendances] = useState<Array<{
+    id: string;
+    name: string;
+    channel: string;
+    subject: string;
+    status: 'success' | 'warning' | 'danger';
+    time: string;
+    isUrgent?: boolean;
+  }>>([]);
+  
+  useEffect(() => {
+    const formatElapsedTime = (date: Date): string => {
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      if (diffMins < 60) {
+        return `${diffMins}m`;
+      } else if (diffMins < 1440) {
+        return `${Math.floor(diffMins / 60)}h`;
+      } else {
+        return `${Math.floor(diffMins / 1440)}d`;
+      }
+    };
+    
+    const fetchActiveConversations = async () => {
+      try {
+        
+        const mockData = [
+          {
+            id: '1',
+            name: 'Maria Silva',
+            channel: 'WhatsApp',
+            subject: 'Dúvida sobre plano de assinatura',
+            status: 'success' as const,
+            lastMessageAt: new Date(Date.now() - 4 * 60 * 1000), // 4 minutos atrás
+          },
+          {
+            id: '2',
+            name: 'João Costa',
+            channel: 'Chat',
+            subject: 'Solicitação de demonstração',
+            status: 'warning' as const,
+            lastMessageAt: new Date(Date.now() - 12 * 60 * 1000), // 12 minutos atrás
+          },
+          {
+            id: '3',
+            name: 'Empresa XYZ',
+            channel: 'Email',
+            subject: 'Reclamação sobre atendimento',
+            status: 'danger' as const,
+            lastMessageAt: new Date(Date.now() - 28 * 60 * 1000), // 28 minutos atrás
+            isUrgent: true,
+          },
+        ];
+        
+        const formattedData = mockData.map(item => ({
+          id: item.id,
+          name: item.name,
+          channel: item.channel,
+          subject: item.subject,
+          status: item.status,
+          time: formatElapsedTime(item.lastMessageAt),
+          isUrgent: item.isUrgent,
+        }));
+        
+        setAttendances(formattedData);
+      } catch (error) {
+        console.error('Erro ao buscar atendimentos ativos:', error);
+      }
+    };
+    
+    fetchActiveConversations();
+    
+    const intervalId = setInterval(() => {
+      fetchActiveConversations();
+    }, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+  
+  const performers = teamRanking?.map((performer: { 
+    userId: number; 
+    name?: string; 
+    avatar?: string; 
+    metrics?: { 
+      conversationsHandled?: number; 
+      customerSatisfaction?: number; 
+    } 
+  }, index: number) => ({
+    id: performer.userId.toString(),
+    name: performer.name || `Usuário ${performer.userId}`,
+    avatar: performer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(performer.name || 'User')}&background=random`,
+    attendances: performer.metrics?.conversationsHandled || 0,
+    score: performer.metrics?.customerSatisfaction ? Math.round(performer.metrics.customerSatisfaction * 20) : 90 - (index * 3),
+  })) || [];
+  
   // Quick actions data
   const quickActions = [
     {
@@ -122,46 +215,54 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatsCard
           title="Atendimentos hoje"
-          value="72"
+          value={teamPerformance?.metrics?.conversationsHandled?.toString() || "0"}
           icon={<Headphones className="h-6 w-6" />}
           iconBgColor="bg-primary-50"
           iconColor="text-primary-500"
-          changeValue={12}
+          changeValue={teamPerformance?.metrics?.conversationsHandledChange || 0}
           changeText="vs. ontem"
-          isPositive={true}
+          isPositive={teamPerformance?.metrics?.conversationsHandledChange > 0}
+          isLoading={loadingTeamPerformance}
         />
         
         <StatsCard
           title="Oportunidades abertas"
-          value="24"
+          value={teamPerformance?.metrics?.dealsCreated?.toString() || "0"}
           icon={<HandshakeIcon className="h-6 w-6" />}
           iconBgColor="bg-secondary-50"
           iconColor="text-secondary-500"
-          changeValue={3}
+          changeValue={teamPerformance?.metrics?.dealsCreatedChange || 0}
           changeText="vs. semana passada"
-          isPositive={false}
+          isPositive={teamPerformance?.metrics?.dealsCreatedChange > 0}
+          isLoading={loadingTeamPerformance}
         />
         
         <StatsCard
           title="Tempo médio de resposta"
-          value="5.2 min"
+          value={responseTimeKpi?.value 
+            ? `${responseTimeKpi.value.toFixed(1)} min` 
+            : "0 min"}
           icon={<Clock className="h-6 w-6" />}
           iconBgColor="bg-success-50"
           iconColor="text-success-500"
-          changeValue={7}
-          changeText="melhor que ontem"
-          isPositive={true}
+          changeValue={responseTimeKpi?.change || 0}
+          changeText="vs. ontem"
+          isPositive={responseTimeKpi?.change < 0} // Menor tempo é melhor
+          isLoading={loadingKpis}
         />
         
         <StatsCard
           title="Satisfação do cliente"
-          value="92%"
+          value={satisfactionKpi?.value 
+            ? `${Math.round(satisfactionKpi.value * 100)}%` 
+            : "0%"}
           icon={<Smile className="h-6 w-6" />}
           iconBgColor="bg-warning-50"
           iconColor="text-warning-500"
-          changeValue={2}
+          changeValue={satisfactionKpi?.change ? Math.round(satisfactionKpi.change * 100) : 0}
           changeText="vs. média mensal"
-          isPositive={true}
+          isPositive={satisfactionKpi?.change > 0}
+          isLoading={loadingKpis}
         />
       </div>
       
@@ -172,38 +273,90 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center justify-between mb-4 sm:mb-6">
             <h2 className="text-base sm:text-lg font-medium mb-2 sm:mb-0">Atendimentos por Canal</h2>
             <div className="flex space-x-1 sm:space-x-2">
-              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-primary-500 text-white">Hoje</button>
-              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Semana</button>
-              <button className="px-2 sm:px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-600">Mês</button>
+              <button 
+                className={`px-2 sm:px-3 py-1 text-xs rounded-md ${dateRange === 'today' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                onClick={() => setDateRange('today')}
+              >
+                Hoje
+              </button>
+              <button 
+                className={`px-2 sm:px-3 py-1 text-xs rounded-md ${dateRange === 'week' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                onClick={() => setDateRange('week')}
+              >
+                Semana
+              </button>
+              <button 
+                className={`px-2 sm:px-3 py-1 text-xs rounded-md ${dateRange === 'month' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-600'}`}
+                onClick={() => setDateRange('month')}
+              >
+                Mês
+              </button>
             </div>
           </div>
           
-          {/* Chart Placeholder */}
-          <div className="h-48 sm:h-56 md:h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
-            <div className="text-center px-2 sm:px-4">
-              <div className="text-3xl sm:text-4xl text-gray-300 mb-2 sm:mb-3">📊</div>
-              <p className="text-xs sm:text-sm text-gray-500">Gráfico de distribuição de atendimentos por canal</p>
+          {/* Chart Content */}
+          {loadingWidgets ? (
+            <div className="h-48 sm:h-56 md:h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Carregando dados do gráfico...</p>
+              </div>
             </div>
-          </div>
+          ) : dashboardWidgets?.find((w: { type: string }) => w.type === 'channel_distribution') ? (
+            <div className="h-48 sm:h-56 md:h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+              {/* Aqui seria implementado o gráfico real com os dados de dashboardWidgets */}
+              <div className="text-center px-2 sm:px-4">
+                <div className="text-3xl sm:text-4xl text-gray-300 mb-2 sm:mb-3">📊</div>
+                <p className="text-xs sm:text-sm text-gray-500">Gráfico de distribuição de atendimentos por canal</p>
+              </div>
+            </div>
+          ) : (
+            <div className="h-48 sm:h-56 md:h-64 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-center">
+              <div className="text-center px-2 sm:px-4">
+                <p className="text-sm text-gray-500">Nenhum dado disponível para exibição</p>
+              </div>
+            </div>
+          )}
           
           {/* Stats Below Chart */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6">
-            <div className="text-center p-2 bg-gray-50 rounded-md">
-              <div className="text-base sm:text-lg font-semibold text-success-500">42%</div>
-              <div className="text-xs text-gray-500">WhatsApp</div>
-            </div>
-            <div className="text-center p-2 bg-gray-50 rounded-md">
-              <div className="text-base sm:text-lg font-semibold text-primary-500">28%</div>
-              <div className="text-xs text-gray-500">Chat</div>
-            </div>
-            <div className="text-center p-2 bg-gray-50 rounded-md">
-              <div className="text-base sm:text-lg font-semibold text-secondary-500">18%</div>
-              <div className="text-xs text-gray-500">Email</div>
-            </div>
-            <div className="text-center p-2 bg-gray-50 rounded-md">
-              <div className="text-base sm:text-lg font-semibold text-warning-500">12%</div>
-              <div className="text-xs text-gray-500">Instagram</div>
-            </div>
+            {loadingWidgets ? (
+              Array(4).fill(0).map((_, index) => (
+                <div key={index} className="text-center p-2 bg-gray-50 rounded-md">
+                  <div className="flex justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">Carregando...</div>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="text-center p-2 bg-gray-50 rounded-md">
+                  <div className="text-base sm:text-lg font-semibold text-success-500">
+                    {teamPerformance?.channelDistribution?.whatsapp || '0'}%
+                  </div>
+                  <div className="text-xs text-gray-500">WhatsApp</div>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-md">
+                  <div className="text-base sm:text-lg font-semibold text-primary-500">
+                    {teamPerformance?.channelDistribution?.chat || '0'}%
+                  </div>
+                  <div className="text-xs text-gray-500">Chat</div>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-md">
+                  <div className="text-base sm:text-lg font-semibold text-secondary-500">
+                    {teamPerformance?.channelDistribution?.email || '0'}%
+                  </div>
+                  <div className="text-xs text-gray-500">Email</div>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-md">
+                  <div className="text-base sm:text-lg font-semibold text-warning-500">
+                    {teamPerformance?.channelDistribution?.instagram || '0'}%
+                  </div>
+                  <div className="text-xs text-gray-500">Instagram</div>
+                </div>
+              </>
+            )}
           </div>
         </div>
         
