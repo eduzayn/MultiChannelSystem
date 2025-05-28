@@ -110,12 +110,19 @@ class ConversationService {
       
       if (firstContactMessage) {
         const firstAgentResponse = allMessages.find(
-          msg => msg.sender === 'user' && new Date(msg.createdAt) > new Date(firstContactMessage.createdAt)
+          msg => msg.sender === 'user' && 
+            (msg.createdAt instanceof Date ? msg.createdAt : new Date(String(msg.createdAt))) > 
+            (firstContactMessage.createdAt instanceof Date ? firstContactMessage.createdAt : new Date(String(firstContactMessage.createdAt)))
         );
         
         if (firstAgentResponse) {
-          responseTime = (new Date(firstAgentResponse.createdAt).getTime() - 
-                         new Date(firstContactMessage.createdAt).getTime()) / (1000 * 60); // em minutos
+          const agentDate = firstAgentResponse.createdAt instanceof Date ? 
+            firstAgentResponse.createdAt : new Date(String(firstAgentResponse.createdAt));
+          
+          const contactDate = firstContactMessage.createdAt instanceof Date ? 
+            firstContactMessage.createdAt : new Date(String(firstContactMessage.createdAt));
+          
+          responseTime = (agentDate.getTime() - contactDate.getTime()) / (1000 * 60); // em minutos
         }
       }
       
@@ -124,8 +131,13 @@ class ConversationService {
         const firstMessage = allMessages[0];
         const lastMessage = allMessages[messageCount - 1];
         
-        resolutionTime = (new Date(lastMessage.createdAt).getTime() - 
-                         new Date(firstMessage.createdAt).getTime()) / (1000 * 60); // em minutos
+        const lastDate = lastMessage.createdAt instanceof Date ? 
+          lastMessage.createdAt : new Date(String(lastMessage.createdAt));
+        
+        const firstDate = firstMessage.createdAt instanceof Date ? 
+          firstMessage.createdAt : new Date(String(firstMessage.createdAt));
+        
+        resolutionTime = (lastDate.getTime() - firstDate.getTime()) / (1000 * 60); // em minutos
       }
       
       const customerSatisfaction = Math.floor(Math.random() * 5) + 1;
