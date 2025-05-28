@@ -48,7 +48,7 @@ export default function Layout({ children }: LayoutProps) {
   }
 
   if (!isAuthenticated) {
-    return null; // O redirecionamento será feito pelo useEffect
+    return null;
   }
 
   return (
