@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { useAuthStore } from '@/store/authStore';
 import { api } from '@/lib/api';
 
 export const useAuthInit = () => {
   const { setUser, logout } = useAuthStore();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -11,6 +13,7 @@ export const useAuthInit = () => {
       
       if (!token) {
         logout();
+        setLocation('/login');
         return;
       }
 
@@ -20,9 +23,10 @@ export const useAuthInit = () => {
         setUser(user);
       } catch (error) {
         logout();
+        setLocation('/login');
       }
     };
 
     initializeAuth();
-  }, [setUser, logout]);
+  }, [setUser, logout, setLocation]);
 };
