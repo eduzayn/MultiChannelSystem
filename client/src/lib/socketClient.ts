@@ -83,12 +83,16 @@ class SocketClient {
       return;
     }
 
-    // Não especificar URL fará com que o Socket.IO se conecte ao mesmo host que serviu a página
-    this.socket = io({
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    console.log('Conectando socket ao servidor:', apiUrl);
+    
+    this.socket = io(apiUrl, {
+      path: '/socket.io',
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: this.reconnectInterval,
-      timeout: 10000
+      timeout: 10000,
+      transports: ['websocket', 'polling']
     });
 
     // Eventos de conexão

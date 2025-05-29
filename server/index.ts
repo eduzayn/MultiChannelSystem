@@ -1,3 +1,8 @@
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { registerRoutes } from "./routes";
@@ -47,14 +52,17 @@ app.use((req, res, next) => {
 });
 
 // Configuração de sessão
+const SESSION_SECRET = process.env.SESSION_SECRET || 'security-crm-secret';
+const SESSION_MAX_AGE = 86400000; // 24 horas
+
 const MemoryStoreSession = MemoryStore(session);
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'security-crm-secret',
+  secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 86400000 }, // 24 horas
+  cookie: { secure: false, maxAge: SESSION_MAX_AGE },
   store: new MemoryStoreSession({
-    checkPeriod: 86400000 // limpa as sessões expiradas a cada 24 horas
+    checkPeriod: SESSION_MAX_AGE // limpa as sessões expiradas a cada 24 horas
   })
 }));
 
@@ -89,9 +97,10 @@ process.on('unhandledRejection', (reason, promise) => {
   channelMonitorService.start();
   
   // Iniciar monitoramento de saúde do sistema após 5 segundos
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
-      const { healthCheckService } = require('./services/healthCheckService');
+      const module = await import('./services/healthCheckService.js');
+      const { healthCheckService } = module;
       healthCheckService.startHealthCheck(60000); // Verificar a cada 1 minuto
       log("Serviço de monitoramento de saúde iniciado");
     } catch (error) {

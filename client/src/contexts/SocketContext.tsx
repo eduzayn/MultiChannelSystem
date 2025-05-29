@@ -38,12 +38,16 @@ export function SocketProvider({ children }: SocketProviderProps) {
           duration: 3000,
         });
       } else {
-        toast({
-          title: 'Conexão perdida',
-          description: 'Tentando reconectar ao servidor...',
-          duration: 5000,
-          variant: 'destructive',
-        });
+        setTimeout(() => {
+          if (!socketHook.isConnected) {
+            toast({
+              title: 'Conexão perdida',
+              description: 'Tentando reconectar ao servidor...',
+              duration: 5000,
+              variant: 'destructive',
+            });
+          }
+        }, 2000);
       }
     };
 

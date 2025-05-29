@@ -27,5 +27,8 @@
         }
       ]
     }
-  ]
-} 
+  ],
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://multi-channel-system-git-fix-vercel-deployment-edunexia.vercel.app"
+  }
+}    
