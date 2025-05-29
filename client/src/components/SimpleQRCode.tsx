@@ -19,9 +19,7 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
   useEffect(() => {
     if (!qrCodeData) return;
     
-    // Verificar se a resposta contém um erro da API ou está conectado
     try {
-      // Tentativa de decodificar base64 e verificar se é um JSON de erro
       if (/^[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
         try {
           const decodedData = atob(qrCodeData);
@@ -31,7 +29,6 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
             setIsError(true);
             return;
           } else if (decodedData.startsWith('{"connected":true}')) {
-            // WhatsApp já está conectado
             setErrorMessage("WhatsApp já está conectado com esta instância. Não é necessário escanear QR Code.");
             setIsError(true);
             return;
@@ -40,26 +37,24 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
           // Se não conseguir decodificar, continua o fluxo normal
         }
       }
+      
+      // Verificar se é uma imagem em base64
+      if (isImageQRCode || qrCodeData.startsWith('data:image')) {
+        setImageUrl(qrCodeData);
+      } else if (/^[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
+        setImageUrl(`data:image/png;base64,${qrCodeData}`);
+      } else {
+        setImageUrl(null);
+      }
+      
+      setIsError(false);
+      setErrorMessage(null);
     } catch (e) {
-      // Ignora erros de parsing
+      setIsError(true);
+      setErrorMessage("Erro ao processar QR Code");
     }
-    
-    // Verificar se é uma imagem em base64
-    if (isImageQRCode || qrCodeData.startsWith('data:image')) {
-      setImageUrl(qrCodeData);
-    } else if (/^[A-Za-z0-9+/=]+$/.test(qrCodeData)) {
-      // É um base64 sem o prefixo data:image
-      setImageUrl(`data:image/png;base64,${qrCodeData}`);
-    } else {
-      // Não é uma imagem, vamos usar como texto para QRCodeSVG
-      setImageUrl(null);
-    }
-    
-    setIsError(false);
-    setErrorMessage(null);
   }, [qrCodeData, isImageQRCode]);
   
-  // Se não há dados, mostra mensagem
   if (!qrCodeData) {
     return (
       <div className="flex items-center justify-center w-full h-full p-4 border border-dashed rounded-lg">
@@ -68,7 +63,6 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     );
   }
   
-  // Se há mensagem de erro, exibe-a
   if (isError && errorMessage) {
     return (
       <div className="flex flex-col items-center text-center p-4 border border-red-300 bg-red-50 rounded-lg">
@@ -79,7 +73,6 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     );
   }
   
-  // Se é uma imagem e não houve erro, mostra a imagem
   if (imageUrl && !isError) {
     return (
       <div className="flex flex-col items-center">
@@ -91,7 +84,6 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
           style={{ maxWidth: '100%', height: 'auto' }}
           className="rounded-md"
           onError={() => {
-            console.error("Erro ao carregar imagem QR code");
             setIsError(true);
             setErrorMessage("Não foi possível exibir o QR Code como imagem");
           }}
@@ -100,57 +92,6 @@ export function SimpleQRCode({ qrCodeData, size = 256, isImageQRCode }: SimpleQR
     );
   }
   
-  // Caso a imagem falhe ou seja um texto QR code, verificamos se é um base64 longo
-  // Se for base64 muito longo, usamos diretamente como uma imagem
-  if (qrCodeData.length > 1000 || qrCodeData.startsWith('data:image')) {
-    console.log("Usando imagem direta para QR Code, comprimento:", qrCodeData.length);
-    // Verificar se há um "value" dentro do base64 (que pode estar sendo enviado incorretamente)
-    let finalQrUrl = qrCodeData;
-    
-    // Se a imagem começa com data:image, mas contém "value", pode ser um objeto JSON serializado
-    if (qrCodeData.startsWith('data:image') && qrCodeData.includes('"value"')) {
-      try {
-        // Tenta obter o valor real do QR code que pode estar encapsulado
-        // Este é um caso especial onde a Z-API pode estar retornando um JSON dentro do base64
-        const encodedJson = qrCodeData.split('base64,')[1];
-        if (encodedJson) {
-          const decodedJson = atob(encodedJson);
-          const jsonData = JSON.parse(decodedJson);
-          if (jsonData && jsonData.value) {
-            finalQrUrl = jsonData.value;
-            console.log("Extraído valor encapsulado do QR code");
-          }
-        }
-      } catch (e) {
-        console.error("Erro ao tentar extrair valor encapsulado:", e);
-        // Continua usando a URL original em caso de erro
-      }
-    }
-    
-    return (
-      <div className="flex flex-col items-center">
-        <img 
-          src={finalQrUrl.startsWith('data:image') ? finalQrUrl : `data:image/png;base64,${finalQrUrl}`}
-          alt="QR Code para WhatsApp" 
-          width={size}
-          height={size}
-          style={{ maxWidth: '100%', height: 'auto' }}
-          className="rounded-md"
-          onError={(e) => {
-            console.error("Erro ao carregar QR code como imagem:", e);
-            e.currentTarget.style.display = 'none';
-            // Mostrar uma mensagem de erro
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'p-4 bg-red-50 rounded-md text-red-700 text-center';
-            errorDiv.innerHTML = 'Não foi possível carregar o QR code. Por favor, tente novamente.';
-            e.currentTarget.parentNode?.appendChild(errorDiv);
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Caso seja um texto QR normal (não muito longo), usamos QRCodeSVG
   return (
     <div className="flex flex-col items-center">
       <QRCodeSVG 
