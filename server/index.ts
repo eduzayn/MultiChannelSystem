@@ -1,7 +1,4 @@
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-dotenv.config();
+import './config'; // Importar configuração primeiro para carregar variáveis de ambiente
 
 console.log('DATABASE_URL loaded:', !!process.env.DATABASE_URL);
 
@@ -15,6 +12,7 @@ import MemoryStore from "memorystore";
 import { socketService } from "./services/socketService";
 import { channelMonitorService } from "./services/channelMonitorService";
 import { securityMiddleware } from './middleware/security';
+import { config } from './config';
 
 const app = express();
 app.use(express.json());
@@ -59,12 +57,12 @@ const SESSION_MAX_AGE = 86400000; // 24 horas
 
 const MemoryStoreSession = MemoryStore(session);
 app.use(session({
-  secret: SESSION_SECRET,
+  secret: config.session.secret,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: SESSION_MAX_AGE },
+  cookie: { secure: false, maxAge: config.session.maxAge },
   store: new MemoryStoreSession({
-    checkPeriod: SESSION_MAX_AGE // limpa as sessões expiradas a cada 24 horas
+    checkPeriod: config.session.maxAge // limpa as sessões expiradas a cada 24 horas
   })
 }));
 

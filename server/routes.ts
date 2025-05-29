@@ -11,8 +11,8 @@ import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerConversationRoutes } from "./routes/conversationRoutes";
 import { registerUserActivityRoutes } from "./routes/userActivityRoutes";
 import { registerHealthCheckRoutes } from "./routes/healthCheckRoutes";
-import * as path from 'path';
-import * as fs from 'fs';
+import path from 'path';
+import fs from 'fs';
 import { 
   insertUserSchema, 
   insertContactSchema, 

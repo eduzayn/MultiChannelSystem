@@ -1235,17 +1235,23 @@ export const insertDashboardAlertSchema = createInsertSchema(dashboardAlerts).pi
   isActive: true
 });
 
-export const insertDashboardAlertHistorySchema = createInsertSchema(dashboardAlertHistory).pick({
-  alertId: true,
-  triggeredAt: true,
-  value: true,
-  threshold: true,
-  status: true,
-  acknowledgedBy: true,
-  acknowledgedAt: true,
-  resolvedAt: true,
-  metadata: true
-});
+export const insertDashboardAlertHistorySchema = createInsertSchema(dashboardAlertHistory)
+  .omit({ value: true, threshold: true })
+  .extend({
+    value: z.number(),
+    threshold: z.number()
+  })
+  .pick({
+    alertId: true,
+    triggeredAt: true,
+    value: true,
+    threshold: true,
+    status: true,
+    acknowledgedBy: true,
+    acknowledgedAt: true,
+    resolvedAt: true,
+    metadata: true
+  });
 
 export const insertDashboardCommentSchema = createInsertSchema(dashboardComments).pick({
   dashboardId: true,
