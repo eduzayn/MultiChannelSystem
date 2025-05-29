@@ -84,7 +84,9 @@ class SocketClient {
     }
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? window.location.origin 
+        : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
       console.log('Conectando socket ao servidor:', apiUrl);
       
       if (this.socket) {

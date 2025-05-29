@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, Router } from 'express';
+import express, { Express, Request, Response, Router, static as expressStatic } from 'express';
 import { ParsedQs } from 'qs';
 import fileUpload from 'express-fileupload';
 import { Server, createServer } from 'http';
@@ -11,6 +11,8 @@ import { registerDashboardRoutes } from "./routes/dashboardRoutes";
 import { registerConversationRoutes } from "./routes/conversationRoutes";
 import { registerUserActivityRoutes } from "./routes/userActivityRoutes";
 import { registerHealthCheckRoutes } from "./routes/healthCheckRoutes";
+import * as path from 'path';
+import * as fs from 'fs';
 import { 
   insertUserSchema, 
   insertContactSchema, 
@@ -66,8 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   // Servir arquivos estáticos da pasta uploads
-  const path = require('path');
-  app.use('/uploads', require('express').static(path.join(process.cwd(), 'uploads')));
+  app.use('/uploads', expressStatic(path.join(process.cwd(), 'uploads')));
   // ===== API de Autenticação =====
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -627,8 +628,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Criar diretório uploads se não existir
-      const fs = require('fs');
-      const path = require('path');
       const uploadDir = path.join(process.cwd(), 'uploads');
       
       if (!fs.existsSync(uploadDir)) {

@@ -1,8 +1,23 @@
 {
+  "version": 2,
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node"
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "/api/socket.io/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
@@ -29,6 +44,7 @@
     }
   ],
   "env": {
+    "NODE_ENV": "production",
     "NEXT_PUBLIC_API_URL": "https://multi-channel-system-git-fix-vercel-deployment-edunexia.vercel.app"
   }
-}    
+}             

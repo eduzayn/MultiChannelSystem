@@ -1,7 +1,9 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config();
+
+console.log('DATABASE_URL loaded:', !!process.env.DATABASE_URL);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
@@ -99,7 +101,7 @@ process.on('unhandledRejection', (reason, promise) => {
   // Iniciar monitoramento de saúde do sistema após 5 segundos
   setTimeout(async () => {
     try {
-      const module = await import('./services/healthCheckService.js');
+      const module = await import('./services/healthCheckService.ts');
       const { healthCheckService } = module;
       healthCheckService.startHealthCheck(60000); // Verificar a cada 1 minuto
       log("Serviço de monitoramento de saúde iniciado");

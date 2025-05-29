@@ -26,7 +26,7 @@ export const useAuthInit = () => {
           
           setTimeout(() => {
             setLocation('/');
-          }, 100);
+          }, 300); // Aumentar delay para evitar race conditions
         } catch (error) {
           console.error('Erro ao verificar usuário:', error);
           logout();
