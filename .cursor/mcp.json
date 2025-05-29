@@ -1,38 +1,8 @@
 {
-    "mcpServers": {
-      "supabase": {
-        "command": "cmd",
-        "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres:Zayn@2025@db.baupxqyclqqjrccjxlwx.supabase.co:5432/postgres"]
-      },
-      "supabase-mcp-server": {
-        "command": "cmd",
-        "args": [
-          "/c",
-          "npx",
-          "-y",
-          "@smithery/cli@latest",
-          "run",
-          "@alexander-zuev/supabase-mcp-server",
-          "--config",
-          "{\"supabaseRegion\":\"us-east-1\",\"supabaseDbPassword\":\"Zayn@2025\",\"supabaseProjectRef\":\"baupxqyclqqjrccjxlwx\",\"supabaseAccessToken\":\"\",\"supabaseServiceRoleKey\":\"\"}"
-        ]
-      },
-      "Playwrite": {
-        "command": "cmd",
-        "args": [
-          "/c",
-          "npx",
-          "-y",
-          "@smithery/cli@latest",
-          "run",
-          "@executeautomation/playwright-mcp-server",
-          "--config",
-          "\"{}\""
-        ]
-      },
-      "Neon": {
-        "command": "npx",
-        "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
-      }
+  "mcpServers": {
+    "Neon": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.neon.tech/sse"]
     }
+  }
 }
