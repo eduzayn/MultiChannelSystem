@@ -12,14 +12,15 @@ const limiter = rateLimit({
 const cspConfig = {
   directives: {
     defaultSrc: ["'self'"],
-    scriptSrc: ["'self'", "'unsafe-inline'"],
-    styleSrc: ["'self'", "'unsafe-inline'"],
-    imgSrc: ["'self'", "data:", "https:"],
-    connectSrc: ["'self'", "https://api.z-api.io"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+    imgSrc: ["'self'", "data:", "https:", "blob:"],
+    connectSrc: ["'self'", "https://api.z-api.io", "wss:", "ws:", "https:", "http:"],
     fontSrc: ["'self'", "https:", "data:"],
     objectSrc: ["'none'"],
-    mediaSrc: ["'self'"],
-    frameSrc: ["'none'"],
+    mediaSrc: ["'self'", "https:", "blob:"],
+    frameSrc: ["'self'", "https:"],
+    workerSrc: ["'self'", "blob:"]
   }
 };
 
@@ -50,4 +51,4 @@ export const securityMiddleware = [
     
     next();
   }
-]; 
+];   
