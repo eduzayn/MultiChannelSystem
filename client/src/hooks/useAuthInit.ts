@@ -53,7 +53,9 @@ export const useAuthInit = () => {
   useEffect(() => {
     if (isAuthenticated) {
       console.log('Usuário autenticado, inicializando socket');
-      socketClient.init();
+      setTimeout(() => {
+        socketClient.init();
+      }, 500);
     } else {
       console.log('Usuário não autenticado, desconectando socket');
       socketClient.disconnect();

@@ -11,7 +11,6 @@ export function useSocket() {
 
   // Inicializa a conexão quando o componente é montado
   useEffect(() => {
-    socketClient.init();
 
     // Configurar ouvintes para eventos de conexão
     const connectListener = () => {

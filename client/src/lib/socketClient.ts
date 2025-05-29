@@ -83,24 +83,37 @@ class SocketClient {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-    console.log('Conectando socket ao servidor:', apiUrl);
-    
-    this.socket = io(apiUrl, {
-      path: '/socket.io',
-      reconnection: true,
-      reconnectionAttempts: this.maxReconnectAttempts,
-      reconnectionDelay: this.reconnectInterval,
-      timeout: 10000,
-      transports: ['websocket', 'polling']
-    });
-
-    // Eventos de conexão
-    this.socket.on('connect', this.handleConnect.bind(this));
-    this.socket.on('disconnect', this.handleDisconnect.bind(this));
-    this.socket.on('connect_error', this.handleConnectError.bind(this));
-    this.socket.on('reconnect_attempt', this.handleReconnectAttempt.bind(this));
-    this.socket.on('reconnect_failed', this.handleReconnectFailed.bind(this));
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      console.log('Conectando socket ao servidor:', apiUrl);
+      
+      if (this.socket) {
+        this.socket.disconnect();
+        this.socket = null;
+      }
+      
+      this.socket = io(apiUrl, {
+        path: '/socket.io',
+        reconnection: true,
+        reconnectionAttempts: this.maxReconnectAttempts,
+        reconnectionDelay: this.reconnectInterval,
+        timeout: 20000, // Aumentar timeout para evitar desconexões prematuras
+        transports: ['websocket', 'polling'],
+        forceNew: true, // Forçar nova conexão para evitar problemas de estado
+        autoConnect: false // Conectar manualmente para melhor controle
+      });
+      
+      // Eventos de conexão
+      this.socket.on('connect', this.handleConnect.bind(this));
+      this.socket.on('disconnect', this.handleDisconnect.bind(this));
+      this.socket.on('connect_error', this.handleConnectError.bind(this));
+      this.socket.on('reconnect_attempt', this.handleReconnectAttempt.bind(this));
+      this.socket.on('reconnect_failed', this.handleReconnectFailed.bind(this));
+      
+      this.socket.connect();
+    } catch (error) {
+      console.error('Erro ao inicializar socket:', error);
+    }
 
     // Configurar ouvintes para eventos do servidor
     Object.values(ServerEventTypes).forEach(eventType => {

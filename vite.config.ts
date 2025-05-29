@@ -60,6 +60,15 @@ export default defineConfig({
         changeOrigin: true,
         ws: true
       }
+    },
+    fs: {
+      strict: false,
+    },
+    hmr: {
+      overlay: false
+    },
+    watch: {
+      usePolling: false
     }
   },
   // Configurações de desenvolvimento

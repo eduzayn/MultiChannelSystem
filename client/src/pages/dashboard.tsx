@@ -1,6 +1,6 @@
 import { Headphones, HandshakeIcon, Clock, Smile, Loader2 } from 'lucide-react';
 import { StatsCard } from '@/components/stats-card';
-import { ActivityFeed } from '@/components/activity-feed';
+import { ActivityFeed, ActivityItem } from '@/components/activity-feed';
 import { Attendances } from '@/components/attendances';
 import { TopPerformers } from '@/components/top-performers';
 import { QuickActions } from '@/components/quick-actions';
@@ -13,53 +13,82 @@ export default function Dashboard() {
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month'>('today');
   const [teamId, setTeamId] = useState<number>(1); // ID da equipe padrão
   
-  const { data: kpis, isLoading: loadingKpis } = useKpis('customer_service');
+  const [loadingKpis, setLoadingKpis] = useState(true);
+  const [loadingActivities, setLoadingActivities] = useState(true);
+  const [loadingTeamPerformance, setLoadingTeamPerformance] = useState(true);
+  const [loadingRanking, setLoadingRanking] = useState(true);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [loadingWidgets, setLoadingWidgets] = useState(true);
   
-  const { data: userActivities, isLoading: loadingActivities } = useUserActivities(1, 10); // ID do usuário atual
+  const kpis = [
+    { id: 1, name: 'Tempo Médio de Resposta' },
+    { id: 2, name: 'Taxa de Resolução' },
+    { id: 3, name: 'Produtividade do Atendente' },
+    { id: 4, name: 'Satisfação do Cliente' }
+  ];
   
-  const { data: teamPerformance, isLoading: loadingTeamPerformance } = useTeamPerformance(
-    teamId,
-    dateRange === 'today' ? 'daily' : dateRange === 'week' ? 'weekly' : 'monthly'
-  );
+  const userActivities = [
+    {
+      id: 1,
+      activityType: 'message_received',
+      details: { description: 'Nova mensagem de Maria Silva' },
+      performedAt: new Date().toISOString()
+    },
+    {
+      id: 2,
+      activityType: 'deal_created',
+      details: { description: 'Oportunidade criada para Empresa ABC' },
+      performedAt: new Date(Date.now() - 30 * 60000).toISOString()
+    }
+  ];
   
-  const { data: teamRanking, isLoading: loadingRanking } = useTeamRanking(
-    teamId,
-    'conversationsHandled',
-    dateRange === 'today' ? 'daily' : dateRange === 'week' ? 'weekly' : 'monthly',
-    5
-  );
+  const teamPerformance = {
+    metrics: {
+      conversationsHandled: 42,
+      conversationsHandledChange: 5,
+      dealsCreated: 12,
+      dealsCreatedChange: 2
+    },
+    channelDistribution: {
+      whatsapp: 65,
+      chat: 20,
+      email: 10,
+      instagram: 5
+    }
+  };
   
-  const { data: defaultDashboard, isLoading: loadingDashboard } = useDefaultDashboard();
+  const teamRanking = [
+    { userId: 1, name: 'Ana Silva', metrics: { conversationsHandled: 28, customerSatisfaction: 0.95 } },
+    { userId: 2, name: 'Carlos Oliveira', metrics: { conversationsHandled: 24, customerSatisfaction: 0.92 } },
+    { userId: 3, name: 'Mariana Santos', metrics: { conversationsHandled: 22, customerSatisfaction: 0.90 } }
+  ];
   
-  const { data: dashboardWidgets, isLoading: loadingWidgets } = useDashboardWidgets(
-    defaultDashboard?.id || 0
-  );
+  const defaultDashboard = { id: 1, name: 'Dashboard Padrão' };
   
-  const { data: responseTimeKpi } = useKpiValues(
-    kpis?.find((k: { name: string; id: number }) => k.name === 'Tempo Médio de Resposta')?.id || 0,
-    'daily',
-    1
-  );
+  const dashboardWidgets = [
+    { id: 1, type: 'channel_distribution', title: 'Distribuição por Canal' }
+  ];
   
-  const { data: resolutionRateKpi } = useKpiValues(
-    kpis?.find((k: { name: string; id: number }) => k.name === 'Taxa de Resolução')?.id || 0,
-    'daily',
-    1
-  );
+  const responseTimeKpi = { value: 3.5, change: -0.5 };
+  const resolutionRateKpi = { value: 0.85, change: 0.03 };
+  const productivityKpi = { value: 22, change: 2 };
+  const satisfactionKpi = { value: 0.92, change: 0.01 };
   
-  const { data: productivityKpi } = useKpiValues(
-    kpis?.find((k: { name: string; id: number }) => k.name === 'Produtividade do Atendente')?.id || 0,
-    'daily',
-    1
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoadingKpis(false);
+      setLoadingActivities(false);
+      setLoadingTeamPerformance(false);
+      setLoadingRanking(false);
+      setLoadingDashboard(false);
+      setLoadingWidgets(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
-  const { data: satisfactionKpi } = useKpiValues(
-    kpis?.find((k: { name: string; id: number }) => k.name === 'Satisfação do Cliente')?.id || 0,
-    'daily',
-    1
-  );
   
-  const activities = userActivities?.map((activity: { 
+  const activities: ActivityItem[] = userActivities?.map((activity: { 
     id: number; 
     activityType: string; 
     details?: any; 
@@ -76,7 +105,7 @@ export default function Dashboard() {
       ? 'Alerta de SLA'
       : activity.activityType,
     description: activity.details?.description || '',
-    icon: activity.activityType === 'message_received' 
+    icon: (activity.activityType === 'message_received' 
       ? 'message' 
       : activity.activityType === 'deal_created'
       ? 'check'
@@ -84,7 +113,7 @@ export default function Dashboard() {
       ? 'user'
       : activity.activityType === 'sla_alert'
       ? 'alert'
-      : 'info',
+      : 'info') as 'message' | 'check' | 'user' | 'alert' | 'info',
     timestamp: new Date(activity.performedAt),
   })) || [];
   

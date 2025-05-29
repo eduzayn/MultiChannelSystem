@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Check, MessageSquare, UserPlus, AlertTriangle } from 'lucide-react';
 import { getRelativeTime } from '@/lib/utils';
 
-interface ActivityItem {
+export interface ActivityItem {
   id: string;
   title: string;
   description: string;
-  icon: 'message' | 'check' | 'user' | 'alert';
+  icon: 'message' | 'check' | 'user' | 'alert' | 'info';
   timestamp: Date;
 }
 
@@ -37,6 +37,12 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
         return { 
           icon: <AlertTriangle className="text-danger-500" />, 
           bgClass: 'bg-danger-100' 
+        };
+      case 'info':
+      default:
+        return { 
+          icon: <MessageSquare className="text-info-500" />, 
+          bgClass: 'bg-info-100' 
         };
     }
   };

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { useAuthInit } from "@/hooks/useAuthInit";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import NotFound from "@/pages/not-found";
 import Layout from "@/pages/layout";
 import Login from "@/pages/login";
@@ -80,14 +81,16 @@ function App() {
   useAuthInit();
   
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SocketProvider>
-          <Toaster />
-          <Router />
-        </SocketProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <SocketProvider>
+            <Toaster />
+            <Router />
+          </SocketProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
