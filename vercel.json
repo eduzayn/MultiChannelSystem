@@ -1,22 +1,22 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "chmod +x vercel-build.sh && ./vercel-build.sh",
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": "vite",
   "builds": [
     {
-      "src": "dist/**/*",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "dist/index.js",
+      "src": "package.json",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/socket.io/(.*)",
       "dest": "/dist/index.js"
     },
     {
@@ -44,6 +44,7 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "PORT": "5000"
   }
-} 
+}    
