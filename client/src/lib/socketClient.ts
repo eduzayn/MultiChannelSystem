@@ -84,6 +84,12 @@ class SocketClient {
     }
 
     try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.warn('Token de autenticação não encontrado');
+        return;
+      }
+
       const apiUrl = process.env.NODE_ENV === 'production' 
         ? window.location.origin 
         : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000');
@@ -102,7 +108,10 @@ class SocketClient {
         timeout: 20000, // Aumentar timeout para evitar desconexões prematuras
         transports: ['websocket', 'polling'],
         forceNew: true, // Forçar nova conexão para evitar problemas de estado
-        autoConnect: false // Conectar manualmente para melhor controle
+        autoConnect: false, // Conectar manualmente para melhor controle
+        auth: {
+          token
+        }
       });
       
       // Eventos de conexão
@@ -124,7 +133,7 @@ class SocketClient {
       });
     });
 
-    console.log('Socket.IO inicializado');
+    console.log('Socket.IO inicializado com autenticação');
   }
 
   /**

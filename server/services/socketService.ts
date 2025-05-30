@@ -1,5 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import { ClientEventTypes, ServerEventTypes } from '../types/socket';
+import { SessionData } from 'express-session';
 
 // Tipos de eventos que podem ser emitidos pelo servidor
 export enum ServerEventTypes {
@@ -46,6 +48,19 @@ export interface SocketServiceInterface {
   emitToRoom(room: string, event: ServerEventTypes, data: any): void;
 }
 
+interface CustomSocket extends Socket {
+  request: {
+    session: SessionData & {
+      user?: {
+        id: string;
+        username: string;
+        displayName: string;
+        role: string;
+      };
+    };
+  };
+}
+
 // Classe que gerencia a comunicação por socket
 class SocketService implements SocketServiceInterface {
   private io: Server | null = null;
@@ -59,8 +74,32 @@ class SocketService implements SocketServiceInterface {
 
     this.io = new Server(httpServer, {
       cors: {
-        origin: '*',
-        methods: ['GET', 'POST']
+        origin: process.env.NODE_ENV === 'production' 
+          ? process.env.FRONTEND_URL || 'https://multi-channel-system.vercel.app'
+          : 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+        credentials: true
+      }
+    });
+
+    // Middleware de autenticação
+    this.io.use((socket: CustomSocket, next) => {
+      const token = socket.handshake.auth.token;
+      
+      if (!token) {
+        return next(new Error('Autenticação necessária'));
+      }
+
+      try {
+        const session = socket.request.session;
+        if (!session?.user) {
+          return next(new Error('Usuário não autenticado'));
+        }
+        
+        socket.data.user = session.user;
+        next();
+      } catch (error) {
+        return next(new Error('Token inválido'));
       }
     });
 
