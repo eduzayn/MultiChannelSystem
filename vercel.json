@@ -2,6 +2,12 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "functions": {
+    "dist/index.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -55,8 +61,5 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "public": true,
-  "github": {
-    "silent": true
-  }
+  "public": false
 }   
