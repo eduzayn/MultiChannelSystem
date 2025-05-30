@@ -38,7 +38,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const response = await api.post('/auth/login', data);
-      const { user, token, redirectTo } = response.data;
+      const { user, token } = response.data;
       
       localStorage.setItem('auth_token', token);
       
@@ -49,13 +49,14 @@ export default function Login() {
         description: `Bem-vindo(a), ${user.displayName || user.username}!`,
       });
       
-      setTimeout(() => {
-        setLocation(redirectTo || '/');
-      }, 100);
+      setLocation('/');
+      
     } catch (error: any) {
+      console.error('Erro no login:', error);
+      
       toast({
         title: 'Erro no login',
-        description: error.response?.data?.message || 'Credenciais inválidas',
+        description: error.response?.data?.message || 'Erro ao fazer login. Tente novamente.',
         variant: 'destructive',
       });
     } finally {

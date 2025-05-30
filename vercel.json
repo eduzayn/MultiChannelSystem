@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/server/$1"
+      "destination": "/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "/server/socket.io/$1"
+      "destination": "/socket.io/$1"
     },
     {
       "source": "/(.*)",
@@ -22,7 +22,11 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "no-store, no-cache, must-revalidate"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         },
         {
           "key": "Access-Control-Allow-Methods",
@@ -30,7 +34,11 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
+          "value": "X-Requested-With, Content-Type, Authorization"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
         }
       ]
     },

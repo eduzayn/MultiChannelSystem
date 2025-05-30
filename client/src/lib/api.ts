@@ -3,11 +3,12 @@ import axios from 'axios';
 // Cria uma instância do axios com configurações base
 export const api = axios.create({
   baseURL: process.env.NODE_ENV === 'production' 
-    ? `${window.location.origin}/api` 
-    : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'),
+    ? '/api'
+    : 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: true
 });
 
 // Interceptor para adicionar o token de autenticação

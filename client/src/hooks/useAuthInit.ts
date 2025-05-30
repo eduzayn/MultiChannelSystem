@@ -10,28 +10,28 @@ export const useAuthInit = () => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      
-      if (!token && location !== '/login') {
-        logout();
-        setLocation('/login');
-        return;
-      }
-
-      if (token) {
-        try {
-          const response = await api.get('/auth/me');
-          const user = response.data;
-          setUser(user);
-          
-          if (location === '/login') {
-            setTimeout(() => {
-              setLocation('/');
-            }, 100);
+      try {
+        const token = localStorage.getItem('auth_token');
+        
+        if (!token) {
+          if (location !== '/login') {
+            logout();
+            setLocation('/login');
           }
-        } catch (error) {
-          console.error('Erro ao verificar usuário:', error);
-          logout();
+          return;
+        }
+
+        const response = await api.get('/auth/me');
+        const user = response.data;
+        setUser(user);
+        
+        if (location === '/login') {
+          setLocation('/');
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error);
+        logout();
+        if (location !== '/login') {
           setLocation('/login');
         }
       }
@@ -41,22 +41,13 @@ export const useAuthInit = () => {
   }, [setUser, logout, setLocation, location]);
 
   useEffect(() => {
-    let socketInitTimeout: NodeJS.Timeout;
-
     if (isAuthenticated) {
-      console.log('Usuário autenticado, inicializando socket');
-      socketInitTimeout = setTimeout(() => {
-        socketClient.init();
-      }, 500);
+      socketClient.init();
     } else {
-      console.log('Usuário não autenticado, desconectando socket');
       socketClient.disconnect();
     }
     
     return () => {
-      if (socketInitTimeout) {
-        clearTimeout(socketInitTimeout);
-      }
       socketClient.disconnect();
     };
   }, [isAuthenticated]);
