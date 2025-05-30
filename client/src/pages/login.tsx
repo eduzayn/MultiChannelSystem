@@ -42,7 +42,9 @@ export default function Login() {
       
       localStorage.setItem('auth_token', token);
       
-      login(user);
+      await login(user);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       toast({
         title: 'Login realizado com sucesso',

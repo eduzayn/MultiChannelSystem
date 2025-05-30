@@ -84,26 +84,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Credenciais inválidas" });
       }
       
-      // Gerar token de autenticação
-      const token = Buffer.from(`${user.id}:${user.username}:${Date.now()}`).toString('base64');
-      
-      // Armazenar o usuário na sessão
-      if (req.session) {
-        req.session.user = {
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          role: user.role
-        };
-        req.session.token = token;
-      }
+      // Gerar token de autenticação com dados mínimos necessários
+      const token = Buffer.from(`${user.id}:${user.username}`).toString('base64');
       
       // Retorna os dados do usuário (sem a senha) e o token
       const { password: _, ...userWithoutPassword } = user;
       res.json({
         user: userWithoutPassword,
-        token,
-        redirectTo: '/'
+        token
       });
       
     } catch (error) {

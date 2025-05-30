@@ -352,3 +352,8 @@ export async function initializeDatabase() {
     throw error;
   }
 }
+
+// Adicionar log para diagnóstico da URL de conexão
+console.log('Tentando conectar ao banco de dados com a URL configurada');
+// Não exibir a URL completa por segurança
+console.log('URL do banco:', process.env.DATABASE_URL?.substring(0, process.env.DATABASE_URL.indexOf('@')) + '@[oculto]');

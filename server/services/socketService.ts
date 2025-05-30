@@ -2,6 +2,7 @@ import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import { ClientEventTypes, ServerEventTypes } from '../types/socket';
 import { SessionData } from 'express-session';
+import { storage } from '../storage';
 
 // Tipos de eventos que podem ser emitidos pelo servidor
 export enum ServerEventTypes {
@@ -83,20 +84,34 @@ class SocketService implements SocketServiceInterface {
     });
 
     // Middleware de autenticação
-    this.io.use((socket: CustomSocket, next) => {
-      const token = socket.handshake.auth.token;
-      
-      if (!token) {
-        return next(new Error('Autenticação necessária'));
-      }
-
+    this.io.use(async (socket: CustomSocket, next) => {
       try {
-        const session = socket.request.session;
-        if (!session?.user) {
-          return next(new Error('Usuário não autenticado'));
+        const token = socket.handshake.auth.token;
+        
+        if (!token) {
+          return next(new Error('Autenticação necessária'));
+        }
+
+        // Decodificar o token
+        const [userId, username] = Buffer.from(token, 'base64')
+          .toString()
+          .split(':');
+
+        // Buscar usuário
+        const user = await storage.getUser(Number(userId));
+        
+        if (!user || user.username !== username) {
+          return next(new Error('Token inválido'));
         }
         
-        socket.data.user = session.user;
+        // Armazenar dados do usuário no socket
+        socket.data.user = {
+          id: user.id,
+          username: user.username,
+          displayName: user.displayName,
+          role: user.role
+        };
+        
         next();
       } catch (error) {
         return next(new Error('Token inválido'));
