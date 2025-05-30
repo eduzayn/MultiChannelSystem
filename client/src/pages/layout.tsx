@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Sidebar } from '@/components/sidebar/sidebar';
 import { Header } from '@/components/header';
 import { useSidebarStore } from '@/store/sidebarStore';
@@ -14,13 +14,26 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { isMobileOpen, closeMobileSidebar } = useSidebarStore();
   const { isAuthenticated, isLoading } = useAuthStore();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const mountedRef = useRef(true);
+
+  // Verificar se o componente está montado antes de fazer atualizações de estado
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated && mountedRef.current) {
       const token = localStorage.getItem('auth_token');
       if (!token) {
-        setLocation('/login');
+        // Adicionar timeout para evitar conflito de atualizações no ciclo de renderização
+        setTimeout(() => {
+          if (mountedRef.current) {
+            setLocation('/login');
+          }
+        }, 0);
       }
     }
   }, [isAuthenticated, isLoading, setLocation]);

@@ -6,79 +6,117 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SocketProvider } from "@/contexts/SocketContext";
 import { useAuthInit } from "@/hooks/useAuthInit";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { Suspense, lazy, useEffect, useState } from "react";
 import NotFound from "@/pages/not-found";
-import Layout from "@/pages/layout";
 import Login from "@/pages/login";
-import Dashboard from "@/pages/dashboard";
-import Chat from "@/pages/chat";
-import Inbox from "@/pages/inbox";
-import Contacts from "@/pages/contacts";
-import Companies from "@/pages/companies";
-import Deals from "@/pages/deals";
-import ProfAna from "@/pages/profana";
-import Goals from "@/pages/goals";
-import Campaigns from "@/pages/campaigns";
-import Automations from "@/pages/automations";
-import Reports from "@/pages/reports";
-import AISettings from "@/pages/settings-ai";
-import ChannelsSettings from "@/pages/settings-channels";
-import CRMSettings from "@/pages/settings-crm";
-import IntegrationsSettings from "@/pages/settings-integrations";
-import MarketingSettings from "@/pages/settings-marketing";
-import UsersSettings from "@/pages/settings-users";
-import BrandingSettings from "@/pages/settings-branding";
-import CompanySettings from "@/pages/settings-company";
-import GoalsSettings from "@/pages/settings-goals";
-import LocalizationSettings from "@/pages/settings-localization";
-import NotificationsSettings from "@/pages/settings-notifications";
-import SecuritySettings from "@/pages/settings-security";
-import SubscriptionSettings from "@/pages/settings-subscription";
-import Settings from "@/pages/settings";
-import ZapiTestPage from "@/pages/ZapiTestPage";
+// Importar o sistema de tratamento de erros
+import '@/lib/errorHandling';
+
+// Lazy loading para componentes de rota para melhorar a performance e evitar problemas de renderização
+const Layout = lazy(() => import("@/pages/layout"));
+const Dashboard = lazy(() => import("@/pages/dashboard"));
+const Chat = lazy(() => import("@/pages/chat"));
+const Inbox = lazy(() => import("@/pages/inbox"));
+const Contacts = lazy(() => import("@/pages/contacts"));
+const Companies = lazy(() => import("@/pages/companies"));
+const Deals = lazy(() => import("@/pages/deals"));
+const ProfAna = lazy(() => import("@/pages/profana"));
+const Goals = lazy(() => import("@/pages/goals"));
+const Campaigns = lazy(() => import("@/pages/campaigns"));
+const Automations = lazy(() => import("@/pages/automations"));
+const Reports = lazy(() => import("@/pages/reports"));
+const AISettings = lazy(() => import("@/pages/settings-ai"));
+const ChannelsSettings = lazy(() => import("@/pages/settings-channels"));
+const CRMSettings = lazy(() => import("@/pages/settings-crm"));
+const IntegrationsSettings = lazy(() => import("@/pages/settings-integrations"));
+const MarketingSettings = lazy(() => import("@/pages/settings-marketing"));
+const UsersSettings = lazy(() => import("@/pages/settings-users"));
+const BrandingSettings = lazy(() => import("@/pages/settings-branding"));
+const CompanySettings = lazy(() => import("@/pages/settings-company"));
+const GoalsSettings = lazy(() => import("@/pages/settings-goals"));
+const LocalizationSettings = lazy(() => import("@/pages/settings-localization"));
+const NotificationsSettings = lazy(() => import("@/pages/settings-notifications"));
+const SecuritySettings = lazy(() => import("@/pages/settings-security"));
+const SubscriptionSettings = lazy(() => import("@/pages/settings-subscription"));
+const Settings = lazy(() => import("@/pages/settings"));
+const ZapiTestPage = lazy(() => import("@/pages/ZapiTestPage"));
+
+// Componente de loading para o Suspense
+const Loading = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="flex flex-col items-center gap-2">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <span className="text-gray-600">Carregando...</span>
+    </div>
+  </div>
+);
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/:rest*">
-        <Layout>
-          <Switch>
-            <Route path="/" component={Dashboard} />
-            <Route path="/chat" component={Chat} />
-            <Route path="/inbox" component={Inbox} />
-            <Route path="/contacts" component={Contacts} />
-            <Route path="/companies" component={Companies} />
-            <Route path="/deals" component={Deals} />
-            <Route path="/profana" component={ProfAna} />
-            <Route path="/goals" component={Goals} />
-            <Route path="/campaigns" component={Campaigns} />
-            <Route path="/campaigns/new" component={Campaigns} />
-            <Route path="/automations" component={Automations} />
-            <Route path="/reports" component={Reports} />
-            <Route path="/settings" component={Settings} />
-            <Route path="/settings/ai" component={AISettings} />
-            <Route path="/settings/channels" component={ChannelsSettings} />
-            <Route path="/settings/crm" component={CRMSettings} />
-            <Route path="/settings/integrations" component={IntegrationsSettings} />
-            <Route path="/settings/marketing" component={MarketingSettings} />
-            <Route path="/settings/users" component={UsersSettings} />
-            <Route path="/settings/branding" component={BrandingSettings} />
-            <Route path="/settings/company" component={CompanySettings} />
-            <Route path="/settings/goals" component={GoalsSettings} />
-            <Route path="/settings/localization" component={LocalizationSettings} />
-            <Route path="/settings/notifications" component={NotificationsSettings} />
-            <Route path="/settings/security" component={SecuritySettings} />
-            <Route path="/settings/subscription" component={SubscriptionSettings} />
-            <Route component={NotFound} />
-          </Switch>
-        </Layout>
-      </Route>
-    </Switch>
+    <ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        <Switch>
+          <Route path="/login" component={Login} />
+          <Route path="/:rest*">
+            <Layout>
+              <Suspense fallback={<Loading />}>
+                <Switch>
+                  <Route path="/" component={Dashboard} />
+                  <Route path="/chat" component={Chat} />
+                  <Route path="/inbox" component={Inbox} />
+                  <Route path="/contacts" component={Contacts} />
+                  <Route path="/companies" component={Companies} />
+                  <Route path="/deals" component={Deals} />
+                  <Route path="/profana" component={ProfAna} />
+                  <Route path="/goals" component={Goals} />
+                  <Route path="/campaigns" component={Campaigns} />
+                  <Route path="/campaigns/new" component={Campaigns} />
+                  <Route path="/automations" component={Automations} />
+                  <Route path="/reports" component={Reports} />
+                  <Route path="/settings" component={Settings} />
+                  <Route path="/settings/ai" component={AISettings} />
+                  <Route path="/settings/channels" component={ChannelsSettings} />
+                  <Route path="/settings/crm" component={CRMSettings} />
+                  <Route path="/settings/integrations" component={IntegrationsSettings} />
+                  <Route path="/settings/marketing" component={MarketingSettings} />
+                  <Route path="/settings/users" component={UsersSettings} />
+                  <Route path="/settings/branding" component={BrandingSettings} />
+                  <Route path="/settings/company" component={CompanySettings} />
+                  <Route path="/settings/goals" component={GoalsSettings} />
+                  <Route path="/settings/localization" component={LocalizationSettings} />
+                  <Route path="/settings/notifications" component={NotificationsSettings} />
+                  <Route path="/settings/security" component={SecuritySettings} />
+                  <Route path="/settings/subscription" component={SubscriptionSettings} />
+                  <Route component={NotFound} />
+                </Switch>
+              </Suspense>
+            </Layout>
+          </Route>
+        </Switch>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
 function App() {
+  const [isAppReady, setIsAppReady] = useState(false);
+  
+  // Use o hook de autenticação
   useAuthInit();
+  
+  // Garante que o app só renderiza após a primeira verificação de autenticação
+  useEffect(() => {
+    // Breve delay para permitir que outras inicializações ocorram primeiro
+    const timer = setTimeout(() => {
+      setIsAppReady(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  if (!isAppReady) {
+    return <Loading />;
+  }
   
   return (
     <ErrorBoundary>
