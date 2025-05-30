@@ -38,20 +38,20 @@ export default function Login() {
     setIsLoading(true);
     try {
       const response = await api.post('/auth/login', data);
-      const { user } = response.data;
+      const { user, token, redirectTo } = response.data;
       
-      if (response.data.token) {
-        localStorage.setItem('auth_token', response.data.token);
-      }
+      localStorage.setItem('auth_token', token);
       
       login(user);
       
       toast({
         title: 'Login realizado com sucesso',
-        description: `Bem-vindo(a), ${user.name}!`,
+        description: `Bem-vindo(a), ${user.displayName || user.username}!`,
       });
       
-      setLocation('/');
+      setTimeout(() => {
+        setLocation(redirectTo || '/');
+      }, 100);
     } catch (error: any) {
       toast({
         title: 'Erro no login',

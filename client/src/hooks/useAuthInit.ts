@@ -18,27 +18,17 @@ export const useAuthInit = () => {
         return;
       }
 
-      if (token && location === '/login') {
-        try {
-          const response = await api.get('/auth/me');
-          const user = response.data;
-          setUser(user);
-          
-          setTimeout(() => {
-            setLocation('/');
-          }, 300); // Aumentar delay para evitar race conditions
-        } catch (error) {
-          console.error('Erro ao verificar usuário:', error);
-          logout();
-        }
-        return;
-      }
-
       if (token) {
         try {
           const response = await api.get('/auth/me');
           const user = response.data;
           setUser(user);
+          
+          if (location === '/login') {
+            setTimeout(() => {
+              setLocation('/');
+            }, 100);
+          }
         } catch (error) {
           console.error('Erro ao verificar usuário:', error);
           logout();
@@ -51,9 +41,11 @@ export const useAuthInit = () => {
   }, [setUser, logout, setLocation, location]);
 
   useEffect(() => {
+    let socketInitTimeout: NodeJS.Timeout;
+
     if (isAuthenticated) {
       console.log('Usuário autenticado, inicializando socket');
-      setTimeout(() => {
+      socketInitTimeout = setTimeout(() => {
         socketClient.init();
       }, 500);
     } else {
@@ -62,9 +54,10 @@ export const useAuthInit = () => {
     }
     
     return () => {
-      if (socketClient) {
-        socketClient.disconnect();
+      if (socketInitTimeout) {
+        clearTimeout(socketInitTimeout);
       }
+      socketClient.disconnect();
     };
   }, [isAuthenticated]);
 };

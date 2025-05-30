@@ -18,7 +18,10 @@ export default function Layout({ children }: LayoutProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      setLocation('/login');
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setLocation('/login');
+      }
     }
   }, [isAuthenticated, isLoading, setLocation]);
 
@@ -26,7 +29,6 @@ export default function Layout({ children }: LayoutProps) {
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (isMobileOpen) {
-        // This is a simplified check - in a real app, you might want to use refs
         const target = e.target as HTMLElement;
         if (!target.closest('#sidebar')) {
           closeMobileSidebar();
@@ -44,7 +46,14 @@ export default function Layout({ children }: LayoutProps) {
   }, [isMobileOpen, closeMobileSidebar]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-2">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <span className="text-gray-600">Carregando...</span>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
